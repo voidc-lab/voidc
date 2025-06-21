@@ -1060,9 +1060,18 @@
 
     builder = v_target_get_builder();
 
-    t_ = v_type_get_llvm_type(t);
+    t_front = v_get_temporaries_front();
 
-    var_value = LLVMBuildAlloca(builder, t_, "");
+    if (t_front)
+    {
+        v_save_builder_ip();
+
+        LLVMPositionBuilderBefore(builder, t_front);
+    }
+
+    var_value = LLVMBuildAlloca(builder, v_type_get_llvm_type(t), "");
+
+    if (t_front)  v_restore_builder_ip();
 
     LLVMBuildStore(builder, v, var_value);
 

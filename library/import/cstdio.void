@@ -91,9 +91,9 @@
         unsigned my_TMP_MAX      = TMP_MAX     ;
         """;
 
-      #if (v_defined(_WIN32))
+      #if (v_defined(_WIN32))           //- MSYS2, WTF ?!?
 
-        win32_str = "int __mingw_vswprintf(wchar_t *, size_t, const wchar_t *, va_list) { return 0; }";
+        win32_str = "int __mingw_vswprintf(wchar_t *a, size_t b, const wchar_t *c, va_list d) { return 0; }";
 
         fprintf(p, " - <<HEREDOC\n%s\n%s\nHEREDOC\n", source_str, win32_str);
 

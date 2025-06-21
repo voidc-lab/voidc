@@ -318,7 +318,6 @@ public:
     void adopt_result(v_type_t *type, LLVMValueRef value);
 
 public:
-
     try_to_convert_t get_try_to_convert_hook(void **paux);
     void             set_try_to_convert_hook(try_to_convert_t fun, void *aux);
 
