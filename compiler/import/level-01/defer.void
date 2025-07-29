@@ -225,7 +225,7 @@
 //---------------------------------------------------------------------
 {
     //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_defer_t", voidc_visitor_method_t);
+    f = v_function_hack("compile_ast_stmt_defer", voidc_visitor_method_t);
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
@@ -408,7 +408,7 @@
 
     v_store(quark, v_getelementptr(voidc_ast_stmt_defer_vtable, 0, 2));
 
-    voidc_visitor_set_method(vis, vis, quark, compile_ast_stmt_defer_t, 0);
+    voidc_visitor_set_method(vis, vis, quark, compile_ast_stmt_defer, 0);
 
     v_add_intrinsic("v_make_object", v_make_object_intrinsic, 0);
 }

@@ -595,7 +595,7 @@
 //---------------------------------------------------------------------
 {
     //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_if_then_else_t", voidc_visitor_method_t);
+    f = v_function_hack("compile_ast_stmt_if_then_else", voidc_visitor_method_t);
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
@@ -673,7 +673,7 @@
 
     v_store(quark, v_getelementptr(voidc_ast_stmt_if_then_else_vtable, 0, 2));
 
-    voidc_visitor_set_method(vis, vis, quark, compile_ast_stmt_if_then_else_t, 0);
+    voidc_visitor_set_method(vis, vis, quark, compile_ast_stmt_if_then_else, 0);
 }
 
 

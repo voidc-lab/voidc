@@ -220,7 +220,7 @@
 //---------------------------------------------------------------------
 {
     //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_loop_t", voidc_visitor_method_t);
+    f = v_function_hack("compile_ast_stmt_loop", voidc_visitor_method_t);
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
@@ -390,7 +390,7 @@
 
     v_store(quark, v_getelementptr(voidc_ast_stmt_loop_vtable, 0, 2));
 
-    voidc_visitor_set_method(vis, vis, quark, compile_ast_stmt_loop_t, 0);
+    voidc_visitor_set_method(vis, vis, quark, compile_ast_stmt_loop, 0);
 
     continue_q = v_quark_from_string("v_continue");
 
