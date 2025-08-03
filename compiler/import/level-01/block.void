@@ -230,7 +230,7 @@
 
 
 //---------------------------------------------------------------------
-//- compile_ast_stmt_block_t_helper_simple
+//- compile_ast_stmt_block_helper_simple
 //---------------------------------------------------------------------
 {   typ0 = v_alloca(v_type_ptr, 2);
     typ1 = v_getelementptr(typ0, 1);
@@ -241,7 +241,7 @@
     ft = v_function_type(void, typ0, 2, false);
 
     //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_block_t_helper_simple", ft);
+    f = v_function_hack("compile_ast_stmt_block_helper_simple", ft);
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
@@ -256,7 +256,7 @@
 
 
 //---------------------------------------------------------------------
-//- compile_ast_stmt_block_t_helper_complex
+//- compile_ast_stmt_block_helper_complex
 //---------------------------------------------------------------------
 {   typ0 = v_alloca(v_type_ptr, 4);
     typ1 = v_getelementptr(typ0, 1);
@@ -271,7 +271,7 @@
     ft = v_function_type(void, typ0, 4, false);
 
     //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_block_t_helper_complex", ft);
+    f = v_function_hack("compile_ast_stmt_block_helper_complex", ft);
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
@@ -387,8 +387,8 @@
     blk_exit_b_addr = LLVMBlockAddress(cur_f, blk_exit_b);
 
 
-    if (flag)   compile_ast_stmt_block_t_helper_complex(visitor, stmt_list, blk_leave_var_v, blk_exit_b_addr);
-    else        compile_ast_stmt_block_t_helper_simple(visitor, stmt_list);
+    if (flag)   compile_ast_stmt_block_helper_complex(visitor, stmt_list, blk_leave_var_v, blk_exit_b_addr);
+    else        compile_ast_stmt_block_helper_simple(visitor, stmt_list);
 
 
     cur_b = LLVMGetInsertBlock(builder);
