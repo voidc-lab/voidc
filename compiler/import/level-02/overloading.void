@@ -760,9 +760,7 @@ op_relation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
             if (N != 2)
             {
-                cmp_result_v := LLVMBuildAlloca(builder, bool_, "");
-
-                LLVMBuildStore(builder, LLVMConstNull(bool_), cmp_result_v);
+                cmp_result_v := v_make_temporary(_bool, LLVMConstNull(bool_));
 
                 branch_if_false_b := LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "branch_if_false_b");
             }

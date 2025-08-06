@@ -1955,9 +1955,7 @@
                 else                v_break();          //- Sic!!!
             }
 
-            v_assign(and_result_v, LLVMBuildAlloca(builder, bool_, ""));
-
-            LLVMBuildStore(builder, LLVMConstNull(bool_), and_result_v);
+            v_assign(and_result_v, v_make_temporary(_bool, LLVMConstNull(bool_)));
 
             v_assign(branch_if_false_b, LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "branch_if_false_b"));
         }
@@ -2179,9 +2177,7 @@
                 else                v_continue();
             }
 
-            v_assign(or_result_v, LLVMBuildAlloca(builder, bool_, ""));
-
-            LLVMBuildStore(builder, LLVMConstAllOnes(bool_), or_result_v);
+            v_assign(or_result_v, v_make_temporary(_bool, LLVMConstAllOnes(bool_)));
 
             v_assign(branch_if_true_b, LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "branch_if_true_b"));
         }
@@ -2759,9 +2755,7 @@
 
             if (v_icmp(LLVMIntNE, N, 2))
             {
-                v_assign(cmp_result_v, LLVMBuildAlloca(builder, bool_, ""));
-
-                LLVMBuildStore(builder, LLVMConstNull(bool_), cmp_result_v);
+                v_assign(cmp_result_v, v_make_temporary(_bool, LLVMConstNull(bool_)));
 
                 v_assign(branch_if_false_b, LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "branch_if_false_b"));
             }
