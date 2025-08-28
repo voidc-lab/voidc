@@ -57,36 +57,25 @@ void overloaded_intrinsic_default(void *aux, const visitor_t *vis, const ast_bas
 
     auto values = std::make_unique<LLVMValueRef[]>(arg_count);
 
-    auto ttag = lctx.result_type;
-    auto vtag = lctx.result_value;
+    lctx.push_result();
 
     for (int i=0; i<arg_count; ++i)
     {
+        if (i > 0)  lctx.reset_result();
+
         if (i < par_count)  lctx.result_type = par_types[i];
         else                lctx.result_type = UNREFERENCE_TAG;
-
-        lctx.result_value = 0;
 
         voidc_visitor_data_t::visit(*vis, *args[i]);
 
         values[i] = lctx.result_value;
     }
 
-    auto ret_type = ft->return_type();
-
-    if (ret_type == gctx.void_type)
-    {
-        LLVMBuildCall2(gctx.builder, ft->llvm_type(), fv, values.get(), arg_count, "");
-
-        return;
-    }
-
     auto v = LLVMBuildCall2(gctx.builder, ft->llvm_type(), fv, values.get(), arg_count, "");
 
-    lctx.result_type  = ttag;
-    lctx.result_value = vtag;
+    lctx.pop_result();
 
-    lctx.adopt_result(ret_type, v);
+    lctx.adopt_result(ft->return_type(), v);
 }
 
 //---------------------------------------------------------------------
@@ -181,11 +170,9 @@ void v_universal_intrinsic(void *void_aux, const visitor_t *vis, const ast_base_
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    auto ttag = lctx.result_type;
-    auto vtag = lctx.result_value;
+    lctx.push_result();
 
-    lctx.result_type  = UNREFERENCE_TAG;
-    lctx.result_value = 0;
+    lctx.result_type = UNREFERENCE_TAG;
 
     voidc_visitor_data_t::visit(*vis, args->data[0]);
 
@@ -232,8 +219,7 @@ void v_universal_intrinsic(void *void_aux, const visitor_t *vis, const ast_base_
         }
     }
 
-    lctx.result_type  = ttag;
-    lctx.result_value = vtag;
+    lctx.pop_result();
 
     fun(aux, vis, self, argp.get(), count);
 }
@@ -250,11 +236,9 @@ void v_std_any_get_value_intrinsic(void *void_quark, const visitor_t *vis, const
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    auto ttag = lctx.result_type;
-    auto vtag = lctx.result_value;
+    lctx.push_result();
 
-    lctx.result_type  = gctx.static_type_type;
-    lctx.result_value = 0;
+    lctx.result_type = gctx.static_type_type;
 
     voidc_visitor_data_t::visit(*vis, args->data[0]);       //- Type
 
@@ -266,8 +250,7 @@ void v_std_any_get_value_intrinsic(void *void_quark, const visitor_t *vis, const
 
     const ast_expr_t *argp = &args->data[1];
 
-    lctx.result_type  = ttag;
-    lctx.result_value = vtag;
+    lctx.pop_result();
 
     fun(aux, vis, self, &argp, 1);
 }
@@ -283,11 +266,9 @@ void v_std_any_get_pointer_intrinsic(void *void_quark, const visitor_t *vis, con
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    auto ttag = lctx.result_type;
-    auto vtag = lctx.result_value;
+    lctx.push_result();
 
-    lctx.result_type  = gctx.static_type_type;
-    lctx.result_value = 0;
+    lctx.result_type = gctx.static_type_type;
 
     voidc_visitor_data_t::visit(*vis, args->data[0]);       //- Type
 
@@ -299,8 +280,7 @@ void v_std_any_get_pointer_intrinsic(void *void_quark, const visitor_t *vis, con
 
     const ast_expr_t *argp = &args->data[1];
 
-    lctx.result_type  = ttag;
-    lctx.result_value = vtag;
+    lctx.pop_result();
 
     fun(aux, vis, self, &argp, 1);
 }
@@ -316,8 +296,9 @@ void v_std_any_set_value_intrinsic(void *void_quark, const visitor_t *vis, const
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    lctx.result_type  = UNREFERENCE_TAG;
-    lctx.result_value = 0;
+    lctx.push_result();
+
+    lctx.result_type = UNREFERENCE_TAG;
 
     voidc_visitor_data_t::visit(*vis, args->data[1]);       //- Second argument
 
@@ -331,6 +312,8 @@ void v_std_any_set_value_intrinsic(void *void_quark, const visitor_t *vis, const
     ast_expr_t arg1 = std::make_shared<const ast_expr_compiled_data_t>(type, value);
 
     const ast_expr_t *argp[2] = { &args->data[0], &arg1 };
+
+    lctx.pop_result();
 
     fun(aux, vis, self, argp, 2);
 }
@@ -346,8 +329,9 @@ void v_std_any_set_pointer_intrinsic(void *void_quark, const visitor_t *vis, con
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    lctx.result_type  = UNREFERENCE_TAG;
-    lctx.result_value = 0;
+    lctx.push_result();
+
+    lctx.result_type = UNREFERENCE_TAG;
 
     voidc_visitor_data_t::visit(*vis, args->data[1]);       //- Second argument
 
@@ -363,6 +347,8 @@ void v_std_any_set_pointer_intrinsic(void *void_quark, const visitor_t *vis, con
     ast_expr_t arg1 = std::make_shared<const ast_expr_compiled_data_t>(t, v);
 
     const ast_expr_t *argp[2] = { &args->data[0], &arg1 };
+
+    lctx.pop_result();
 
     fun(aux, vis, self, argp, 2);
 }

@@ -25,6 +25,8 @@ inlining test                                                  │inlining_test.
 unions test                                                    │unions_test.void
     ...                                                        │uni_import_test.void
                                                                │
+blocks etc test                                                │blocks_etc_test.void
+                                                               │
                                                                │
 ───────────────────────────────────────────────────────────────│
 ...                                                            │README.md

@@ -65,13 +65,11 @@ refcnt_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     arg0 = v_list_get_item(args, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -81,8 +79,7 @@ refcnt_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     typ = v_generic_type(refcnt_ptr_q, &arg, 1);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, v_cast(typ, LLVMValueRef));
 }
@@ -113,8 +110,9 @@ refcnt_ptr_ns_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
     arg0 = v_list_get_item(args, 0);        //- Type
     arg1 = v_list_get_item(args, 1);        //- Tag
 
+    v_reset_result();
+
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -356,8 +354,9 @@ instantiate_refcnt_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     static_type_t = v_find_type_q(q_static_type_t);
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -394,6 +393,8 @@ instantiate_refcnt_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_ba
     {
         item = v_list_get_item(&instantiate_ast, i);
 
+        v_reset_result();
+
         v_ast_accept_visitor(item, vis);
     }
 
@@ -419,13 +420,11 @@ make_refcnt_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     arg0 = v_list_get_item(args, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
-
     static_type_t = v_find_type_q(q_static_type_t);
 
+    v_push_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -456,8 +455,7 @@ make_refcnt_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     voidc_visitor_set_method(vis, vis, q, my_compile_expr_identifier, &ctx);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_ast_accept_visitor(&make_refcnt_ast, vis);
 

@@ -238,19 +238,23 @@ set_implementation_type_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
     static_type_t = v_find_type_q(q_static_type_t);
 
+    v_push_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
     type = (v_get_result_value() : *v_type_t);
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg1, vis);
 
     impl = (v_get_result_value() : *v_type_t);
+
+    v_pop_result();
 
     v_type_generic_set_implementation_type(type, impl);
 }
@@ -263,13 +267,11 @@ get_implementation_type_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
     arg0 = v_list_get_item(args, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -277,8 +279,7 @@ get_implementation_type_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
     impl = v_type_generic_get_implementation_type(type);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, (impl: LLVMValueRef));
 }
@@ -399,7 +400,6 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
     case 'n':       //- Number
 
         v_set_result_type(v_uint_type(64));
-        v_set_result_value(0);
 
         v_ast_accept_visitor(v_list_get_item(args, 0), vis);
 
@@ -407,12 +407,13 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
 
         n = LLVMConstIntGetZExtValue(n);
 
+        v_push_result();
+
         v_return(v_type_generic_number_arg(n));
 
     case 's':       //- String
 
         v_set_result_type(INVIOLABLE_TAG);          //- ?
-        v_set_result_value(0);
 
         v_ast_accept_visitor(v_list_get_item(args, 0), vis);
 
@@ -447,7 +448,6 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
     case 't':       //- Type
 
         v_set_result_type(v_find_type_q(q_static_type_t));
-        v_set_result_value(0);
 
         v_ast_accept_visitor(v_list_get_item(args, 0), vis);
 
@@ -488,15 +488,13 @@ v_generic_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     if (n)  aa := new (*v_type_generic_arg_t)[n];
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     q = compute_generic_arg_cons(vis, args, aa);
 
     t = v_generic_type(q, aa, (n: unsigned));
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(v_find_type_q(q_static_type_t), (t: LLVMValueRef));
 }
@@ -512,17 +510,17 @@ v_generic_ns_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
 
     args = v_ast_expr_call_get_arg_list(call);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_namespace_t = v_find_type_q(q_static_namespace_t);
 
     v_set_result_type(static_namespace_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_list_get_item(args, 0), vis);        //- Namespace
 
     ns = (v_get_result_value() : *v_namespace_t);
+
+    v_reset_result();
 
     ga = compute_generic_arg(vis, v_list_get_item(args, 1));
 
@@ -557,8 +555,7 @@ v_generic_ns_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
         v := (ns: LLVMValueRef);
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 }

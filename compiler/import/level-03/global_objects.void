@@ -190,49 +190,9 @@ mk_unit_stmt_term_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, 
 private
 obtain_special_result_value_global_ctx_t = struct
 {
-    name: *const char;                  //- Global variable name
-
     init_list: v_util_list_t;           //- List of initializers
     term_list: v_util_list_t;           //- List of terminators
 };
-
-//---------------------------------------------------------------------
-//- obtain_special_result_value_global ...
-//---------------------------------------------------------------------
-private
-obtain_special_result_value_global: (aux: *void, vis: *voidc_visitor_t, t: *v_type_t) ~> LLVMValueRef
-{
-    v_assert(v_type_is_special(t, q_initialize));
-
-    ctx = *(aux: *obtain_special_result_value_global_ctx_t);
-
-    raw_name = v_lookup_alias(ctx.name);
-
-    module = v_get_module();
-
-    v_assert(module);
-
-    v: &LLVMValueRef := LLVMGetNamedGlobal(module, raw_name);
-
-    if (!v)     //- WTF ???
-    {
-        t_ = v_type_get_llvm_type(t);
-
-        v := LLVMAddGlobal(module, t_, raw_name);
-
-        LLVMSetInitializer(v, LLVMGetUndef(t_));
-    }
-
-    //--------------------------------------------------------------
-    stmt: &v_ast_stmt_t := {};
-
-    voidc_make_special_intrinsic_call(&stmt, q_initialize, t, v, 0);
-
-    v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
-
-    //--------------------------------------------------------------
-    v_return(v);
-}
 
 //---------------------------------------------------------------------
 //- voidc_obtain_special_result_value ...
@@ -240,37 +200,8 @@ obtain_special_result_value_global: (aux: *void, vis: *voidc_visitor_t, t: *v_ty
 private
 my_obtain_special_result_value_ctx_t = struct
 {
-    global_flag: bool;
-    global_ctx:  obtain_special_result_value_global_ctx_t;
-
-    fun: *((*void, vis: *voidc_visitor_t, t: *v_type_t) ~> LLVMValueRef);
-    aux: *void;
+    global_ctx: obtain_special_result_value_global_ctx_t;
 };
-
-//---------------------------------------------------------------------
-private
-my_obtain_special_result_value_helper: (aux: *void, vis: *voidc_visitor_t, t: *v_type_t) ~> LLVMValueRef
-{
-    v_assert(v_type_is_special(t, q_initialize));
-
-    ctx = *(aux: *my_obtain_special_result_value_ctx_t);
-
-//  ttag = v_get_result_type();
-    vtag = v_get_result_value();
-
-    switch((vtag: intptr_t))
-    {
-    case -2:        //- GLOBAL_VTAG
-
-        ctx.global_flag := true;
-
-        v_return(obtain_special_result_value_global(&ctx.global_ctx, vis, t));
-
-    default:
-
-        v_return(ctx.fun(ctx.aux, vis, t));
-    }
-}
 
 
 //---------------------------------------------------------------------
@@ -435,15 +366,22 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     type  = v_list_get_item(list, 2);
     value = v_list_get_item(list, 3);
 
+    v_reset_result();
+
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(type, vis);
 
     var_type: &*v_type_t := (v_get_result_value() : *v_type_t);
     sym_type: &*v_type_t := var_type;
 
-    if (v_empty(value))                 //- Declaration
+    builder = v_target_get_builder();
+
+    anchor: &LLVMValueRef := 0;
+
+    have_value = !v_empty(value);
+
+    if (!have_value)                        //- Declaration
     block
     {
         v_assert(v_type_get_llvm_type(var_type));
@@ -458,7 +396,7 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
         sym_type := v_reference_type(var_type, 0);              //- HACK!
     }
-    else        //- !v_empty(value)     //- Definition
+    else        //- have_value              //- Definition
     {
         v_assert(v_type_is_reference(var_type));
 
@@ -469,16 +407,20 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         t = v_type_refptr_get_element_type(var_type);       //- Sic!
         a = v_type_refptr_get_address_space(var_type);      //- Sic!
 
-        v_set_result_type(t);
-        v_set_result_value(GLOBAL_VTAG);
-
-        ctx.global_flag := false;
-
-        ctx.global_ctx.name := v_obtain_alias(name, export);    //- ?
-
         prepare_initializer_function();
 
+        llvm_ctx = v_target_get_llvm_ctx();
+
+        ptr_ = LLVMPointerTypeInContext(llvm_ctx, 0);           //- 0?
+
+        anchor := LLVMBuildLoad2(builder, ptr_, LLVMGetUndef(ptr_), "anchor");
+
         v_push_temporaries();
+
+        v_reset_result();
+
+        v_set_result_type(t);
+        v_set_result_value(anchor);
 
         v_ast_accept_visitor(value, vis);
 
@@ -490,32 +432,10 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     if (export) v_export_symbol_type(name, sym_type);
     else        v_add_symbol(name, sym_type, 0);
 
-    if (!v_empty(value))                //- Definition
+    if (have_value)                         //- Definition
     {
         t = v_get_result_type();
         v = v_get_result_value();
-
-        flag: &bool := true;
-
-        if (v_type_is_special(t, q_initialize))
-        block
-        {
-            if (LLVMIsUndef(v)) v_break();
-            if (LLVMIsNull(v))  v_break();
-
-            if (!ctx.global_flag)
-            {
-               vv = obtain_special_result_value_global(&ctx.global_ctx, vis, t);        //- Sic!!!
-
-               stmt: &v_ast_stmt_t := {};
-
-               voidc_make_special_intrinsic_call(&stmt, q_copy, t, vv, v);              //- Sic!
-
-               v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
-            }
-
-            flag := false;
-        }
 
         value_g: &LLVMValueRef := v_undef();
 
@@ -523,7 +443,9 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
         if (private)  LLVMSetLinkage(value_g, LLVMPrivateLinkage);
 
-        if (flag)
+        is_special = v_type_is_special(t, q_initialize);
+
+        if (!is_special)
         {
             if (LLVMIsConstant(v))
             {
@@ -533,20 +455,39 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
             {
                 LLVMSetInitializer(value_g, LLVMGetUndef(v_type_get_llvm_type(t)));
 
-                builder = v_target_get_builder();
-
                 LLVMBuildStore(builder, v, value_g);
             }
         }
 
         v_pop_temporaries();
 
+        if (is_special)
+        {
+            LLVMSetInitializer(value_g, LLVMGetUndef(v_type_get_llvm_type(t)));
+
+            stmt: &v_ast_stmt_t := {};
+
+            voidc_make_special_intrinsic_call(&stmt, q_initialize, t, value_g, 0);
+
+            v_save_builder_ip();
+
+            LLVMPositionBuilderBefore(builder, anchor);
+
+            v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
+
+            v_restore_builder_ip();
+
+            LLVMReplaceAllUsesWith(anchor, value_g);            //- Sic!!!
+        }
+
+        LLVMInstructionEraseFromParent(anchor);
+
         finish_initializer_function(ctx.global_ctx);
 
         if (export) v_export_symbol_type(name, sym_type);           //- WTF ???
         else        v_add_symbol(name, sym_type, 0);                //- WTF ???
 
-        if (!flag  &&  v_type_is_special(t, q_terminate))
+        if (is_special  &&  v_type_is_special(t, q_terminate))
         {
             stmt: &v_ast_stmt_t := {};
 
@@ -667,33 +608,45 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     type  = v_list_get_item(list, 2);
     value = v_list_get_item(list, 3);
 
+    ttag: &*v_type_t := v_undef();
+
     if (v_empty(type))
     {
-        v_set_result_type(INVIOLABLE_TAG);
+        ttag := INVIOLABLE_TAG;
     }
     else
     {
+        v_reset_result();
+
         v_set_result_type(v_find_type_q(q_static_type_t));
-        v_set_result_value(0);
 
         v_ast_accept_visitor(type, vis);
 
-        v_set_result_type((v_get_result_value() : *v_type_t));
+        ttag := (v_get_result_value() : *v_type_t);
     }
 
     v_assert(v_get_module() == 0);
 
     v_set_module(v_obtain_module());
 
-    v_set_result_value(GLOBAL_VTAG);
-
-    ctx.global_flag := false;
-
-    ctx.global_ctx.name := name;
 
     prepare_initializer_function();
 
+
+    builder  = v_target_get_builder();
+    llvm_ctx = v_target_get_llvm_ctx();
+
+    ptr_ = LLVMPointerTypeInContext(llvm_ctx, 0);           //- 0?
+
+    anchor = LLVMBuildLoad2(builder, ptr_, LLVMGetUndef(ptr_), "anchor");
+
+
     v_push_temporaries();
+
+    v_reset_result();
+
+    v_set_result_type(ttag);
+    v_set_result_value(anchor);
 
     v_ast_accept_visitor(value, vis);
 
@@ -702,14 +655,16 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
     block
     {
-        void_aux: &*void := v_undef();
-
         q = voidc_abstract_static_constant_q;
+
+        void_aux: &*void := v_undef();
 
         fun = v_util_lookup_overload(q, t, &void_aux);
         if (!fun) v_break();
 
         v_pop_temporaries();
+
+        LLVMInstructionEraseFromParent(anchor);         //- ?
 
         finish_initializer_function(ctx.global_ctx);
 
@@ -733,6 +688,8 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     {
         v_pop_temporaries();
 
+        LLVMInstructionEraseFromParent(anchor);         //- ?
+
         finish_initializer_function(ctx.global_ctx);
 
         if (export) v_export_constant(name, t, v);
@@ -749,23 +706,6 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
             else        v_add_symbol(name, tt, 0);
         }
 
-        flag: &bool := true;
-
-        if (v_type_is_special(t, q_initialize))
-        {
-            if (!ctx.global_flag)
-            {
-               vv = obtain_special_result_value_global(&ctx.global_ctx, vis, t);        //- Sic!!!
-
-               stmt: &v_ast_stmt_t := {};
-
-               voidc_make_special_intrinsic_call(&stmt, q_copy, t, vv, v);              //- Sic!
-
-               v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
-            }
-
-            flag := false;
-        }
 
         value_g: &LLVMValueRef := v_undef();
 
@@ -773,7 +713,10 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
         if (private)  LLVMSetLinkage(value_g, LLVMPrivateLinkage);
 
-        if (flag)
+
+        is_special = v_type_is_special(t, q_initialize);
+
+        if (!is_special)
         {
             if (is_constant)    //- "Weak" constant
             {
@@ -785,8 +728,6 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
             {
                 LLVMSetInitializer(value_g, LLVMGetUndef(v_type_get_llvm_type(t)));
 
-                builder = v_target_get_builder();
-
                 LLVMBuildStore(builder, v, value_g);
 
                 //- TODO: How to make it "constant" ?!?!?!?!?
@@ -794,6 +735,27 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         }
 
         v_pop_temporaries();
+
+        if (is_special)
+        {
+            LLVMSetInitializer(value_g, LLVMGetUndef(v_type_get_llvm_type(t)));
+
+            stmt: &v_ast_stmt_t := {};
+
+            voidc_make_special_intrinsic_call(&stmt, q_initialize, t, value_g, 0);
+
+            v_save_builder_ip();
+
+            LLVMPositionBuilderBefore(builder, anchor);
+
+            v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
+
+            v_restore_builder_ip();
+
+            LLVMReplaceAllUsesWith(anchor, value_g);            //- Sic!!!
+        }
+
+        LLVMInstructionEraseFromParent(anchor);         //- ?
 
         finish_initializer_function(ctx.global_ctx);
 
@@ -806,7 +768,7 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
             else        v_add_symbol(name, tt, 0);                          //- WTF ???
         }                                                                   //- WTF ???
 
-        if (!flag  &&  v_type_is_special(t, q_terminate))
+        if (is_special  &&  v_type_is_special(t, q_terminate))
         {
             stmt: &v_ast_stmt_t := {};
 
@@ -926,6 +888,8 @@ compile_unit_stmt_init: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     //-------------------------------------------------------------
     prepare_initializer_function();
+
+    v_reset_result();
 
     v_ast_accept_visitor((&obj.body: *v_ast_base_t), vis);      //- Sic!
 
@@ -1303,7 +1267,7 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
     }
 
     //--------------------------------------------------------------
-    global_ctx.name := 0;
+//  global_ctx.name := 0;
 
     //--------------------------------------------------------------
     if (ctx.fun)  ctx.fun(ctx.ctx, module);
@@ -1458,7 +1422,7 @@ voidc_enable_global_objects_compiler: () ~> void
     v_add_constant_q(enabled_q, v_void_type(), 0);
 
     //-----------------------------------------------------------------
-    ctx = *v_malloc(v_global_objects_ctx_t) := 0;
+    ctx = *v_malloc(v_global_objects_ctx_t);
 
     obtain_spec = ctx.unit.obtain_spec;
 
@@ -1502,11 +1466,6 @@ voidc_enable_global_objects_compiler: () ~> void
 
         v_set_finish_module_hook(voidc_finish_module_cdtors, &ctx.fin_cdtors);
     }
-
-    //-----------------------------------------------------------------
-    obtain_spec.fun := v_get_handler(v_obtain_special_result_value, &obtain_spec.aux);
-
-    v_set_handler(v_obtain_special_result_value, my_obtain_special_result_value_helper, &obtain_spec);
 
     //-----------------------------------------------------------------
     ctx.fin_globals.global_ctx := &obtain_spec.global_ctx;

@@ -230,63 +230,27 @@
 
 
 //---------------------------------------------------------------------
-//- compile_ast_stmt_block_helper_simple
+//- compile_ast_stmt_block_helper
 //---------------------------------------------------------------------
 {   typ0 = v_alloca(v_type_ptr, 2);
     typ1 = v_getelementptr(typ0, 1);
 
-    v_store(voidc_visitor_ptr,   typ0);
-    v_store(v_ast_stmt_list_ptr, typ1);
+    v_store(LLVMValueRef, typ0);
+    v_store(LLVMValueRef, typ1);
 
     ft = v_function_type(void, typ0, 2, false);
 
     //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_block_helper_simple", ft);
+    f = v_function_hack("compile_ast_stmt_block_helper", ft);
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
-    v_add_parameter_name(f, 0, "visitor",   voidc_visitor_ptr);
-    v_add_parameter_name(f, 1, "stmt_list", v_ast_stmt_list_ptr);
-}
-{
-    base_ast = v_cast(stmt_list, v_ast_base_ptr);
-
-    v_ast_accept_visitor(base_ast, visitor);
-}
-
-
-//---------------------------------------------------------------------
-//- compile_ast_stmt_block_helper_complex
-//---------------------------------------------------------------------
-{   typ0 = v_alloca(v_type_ptr, 4);
-    typ1 = v_getelementptr(typ0, 1);
-    typ2 = v_getelementptr(typ0, 2);
-    typ3 = v_getelementptr(typ0, 3);
-
-    v_store(voidc_visitor_ptr,   typ0);
-    v_store(v_ast_stmt_list_ptr, typ1);
-    v_store(LLVMValueRef,        typ2);
-    v_store(LLVMValueRef,        typ3);
-
-    ft = v_function_type(void, typ0, 4, false);
-
-    //-----------------------------------------------------------------
-    f = v_function_hack("compile_ast_stmt_block_helper_complex", ft);
-
-    LLVMSetLinkage(f, LLVMPrivateLinkage);
-
-    v_add_parameter_name(f, 0, "visitor",    voidc_visitor_ptr);
-    v_add_parameter_name(f, 1, "stmt_list",  v_ast_stmt_list_ptr);
-    v_add_parameter_name(f, 2, "break_var",  LLVMValueRef);
-    v_add_parameter_name(f, 3, "break_addr", LLVMValueRef);
+    v_add_parameter_name(f, 0, "break_var",  LLVMValueRef);
+    v_add_parameter_name(f, 1, "break_addr", LLVMValueRef);
 }
 {
     v_add_variable_q(voidc_internal_branch_target_break_variable_q, 0, break_var);
     v_add_variable_q(voidc_internal_branch_target_break_q,          0, break_addr);
-
-    base_ast = v_cast(stmt_list, v_ast_base_ptr);
-
-    v_ast_accept_visitor(base_ast, visitor);
 }
 
 
@@ -310,7 +274,7 @@
 {
     builder = v_target_get_builder();
 
-    LLVMBuildStore(builder, break_addr, block_var);
+    if (block_var)  LLVMBuildStore(builder, break_addr, block_var);
 
     leave_bv = v_get_variable_value_q(voidc_internal_branch_target_leave_q);
     leave_b  = LLVMValueAsBasicBlock(leave_bv);
@@ -382,13 +346,15 @@
     v_add_variable_q(voidc_internal_branch_target_leave_q, 0, blk_leave_bv);        //- Sic!
 
 
-    blk_exit_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "blk_exit_b");
-
+    blk_exit_b      = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "blk_exit_b");
     blk_exit_b_addr = LLVMBlockAddress(cur_f, blk_exit_b);
 
+    if (flag)   compile_ast_stmt_block_helper(blk_leave_var_v, blk_exit_b_addr);
 
-    if (flag)   compile_ast_stmt_block_helper_complex(visitor, stmt_list, blk_leave_var_v, blk_exit_b_addr);
-    else        compile_ast_stmt_block_helper_simple(visitor, stmt_list);
+
+    base_ast = v_cast(stmt_list, v_ast_base_ptr);
+
+    v_ast_accept_visitor(base_ast, visitor);
 
 
     cur_b = LLVMGetInsertBlock(builder);

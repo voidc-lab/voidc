@@ -248,8 +248,7 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
     types: &**v_type_t := 0;
     defer if (types)  v_free(types);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
 
@@ -287,8 +286,9 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
 
             etmp = v_ast_stmt_get_expr(stmp);
 
+            if (i > 0)  v_reset_result();
+
             v_set_result_type(static_type_t);
-            v_set_result_value(0);
 
             v_ast_accept_visitor((etmp : v_ast_base_ptr), vis);
 
@@ -369,8 +369,7 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
         }
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, v_cast(type, LLVMValueRef));
 
@@ -492,8 +491,9 @@ compile_unit_union_defn: (aux: *void, vis: *voidc_visitor_t,
 
     ast = v_list_get_item(list, 0);
 
+    v_reset_result();
+
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(ast, vis);
 }

@@ -44,14 +44,13 @@ v_literal_integer_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     t_str = v_ast_expr_string_get_string(arg1);         //- Suffix string
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    t: &*v_type_t := v_get_result_type();
 
-    t: &*v_type_t := ttag;
-
-    if (t != INVIOLABLE_TAG  &&  t != UNREFERENCE_TAG  &&  v_type_is_reference(t))
+    if (INVIOLABLE_TAG != t != UNREFERENCE_TAG)
     {
-        t := v_type_refptr_get_element_type(t);         //- Sic!
+        if (v_type_is_reference(t)) t := v_type_refptr_get_element_type(t);
+
+        if (!v_type_is_integer(t))  t := 0;
     }
 
     signed: &bool := true;
@@ -114,11 +113,15 @@ v_literal_integer_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
         }
     }
 
+    if (radix != 10)  signed := false;          //- Sic !!!
+
     loop
     {
-        if (!*src)  v_break();
+        c = v_load(src);
 
-        if (*src != '\'')   v_std_string_append_char(dst, *src);
+        if (!c) v_break();
+
+        if (c != '\'')  v_std_string_append_char(dst, c);
 
         ++src;
     }
@@ -127,12 +130,14 @@ v_literal_integer_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
     {
         len: &size_t := v_std_string_get_size(dst);
 
-        if (v_std_string_get(dst)[0] == '-')  --len;
+        negative = v_std_string_get(dst)[0] == '-';
+
+        if (negative) --len;
 
         log:  (float(64)) ~> float(64);
         ceil: (float(64)) ~> float(64);
 
-        w = (ceil(len * (log(radix) / log(2))) : unsigned);     //- ???
+        w = signed + (ceil(len * (log(radix) / log(2))) : unsigned);
 
         _int      = v_find_type_q(int_q);
         _unsigned = v_find_type_q(unsigned_q);
@@ -157,9 +162,6 @@ v_literal_integer_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
     }
 
     v = LLVMConstIntOfString(v_type_get_llvm_type(t), v_std_string_get(dst), radix);
-
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
 
     v_adopt_result(t, v);
 }

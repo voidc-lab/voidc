@@ -1288,8 +1288,9 @@
     typ1 = v_reference(v_alloca(v_type_ptr));
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast0, v_ast_base_ptr), visitor);
 
@@ -1297,8 +1298,9 @@
     v_assign(val0, v_get_result_value());
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast1, v_ast_base_ptr), visitor);
 
@@ -1349,14 +1351,17 @@
     v_add_parameter_name(f, 7, "flag",    bool);
 }
 {
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
+
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(ast0, v_ast_base_ptr), visitor);
 
     v_assign(typ0, v_get_result_type());
     v_assign(val0, v_get_result_value());
 
+
+    v_reset_result();
 
     e0 = v_type_refptr_get_element_type(typ0);
 
@@ -1369,8 +1374,6 @@
     {
         v_set_result_type(e0);
     }
-
-    v_set_result_value(0);
 
 
     v_ast_accept_visitor(v_cast(ast1, v_ast_base_ptr), visitor);
@@ -1720,8 +1723,10 @@
     compile = v_cast(v_binop(LLVMAnd, v_cast(compile, intptr_t), v_cast(-2, intptr_t)), compile_op_ft_ptr);
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
+
+//    ttag = v_get_result_type();
+//    vtag = v_get_result_value();
 
 
     t0 = v_reference(v_alloca(v_type_ptr));
@@ -1750,8 +1755,7 @@
     LLVMBuildStore(builder, v1, v0);
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t0, v0);
 }
@@ -1895,8 +1899,7 @@
     }
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     builder = v_target_get_builder();
 
@@ -1929,8 +1932,9 @@
     {
         if (v_icmp(LLVMIntEQ, i, N))  v_break();
 
+        v_reset_result();
+
         v_set_result_type(UNREFERENCE_TAG);
-        v_set_result_value(0);
 
         ast_i = v_load(v_getelementptr(ast, i));
 
@@ -1996,8 +2000,7 @@
         v_assign(v, LLVMConstInt(bool_, static_result, false));
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(_bool, v);       //- ?!?!?
 }
@@ -2117,8 +2120,7 @@
     }
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     builder = v_target_get_builder();
 
@@ -2151,8 +2153,9 @@
     {
         if (v_icmp(LLVMIntEQ, i, N))  v_break();
 
+        v_reset_result();
+
         v_set_result_type(UNREFERENCE_TAG);
-        v_set_result_value(0);
 
         ast_i = v_load(v_getelementptr(ast, i));
 
@@ -2218,8 +2221,7 @@
         v_assign(v, LLVMConstInt(bool_, static_result, false));
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(_bool, v);       //- ?!?!?
 }
@@ -2261,8 +2263,7 @@
     v_add_parameter_name(f, 3, "compile", void_ptr);
 }
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     t0 = v_reference(v_alloca(v_type_ptr));
@@ -2276,8 +2277,7 @@
     v = compile(t0, v0, v1);
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t0, v);
 }
@@ -2519,24 +2519,27 @@
     l_t1 = v_reference(v_alloca(v_type_ptr));
     l_v1 = v_reference(v_alloca(LLVMValueRef));
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_adopt_result(t0, v0);
 
     v_assign(l_t0, v_get_result_type());
     v_assign(l_v0, v_get_result_value());
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
+
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(rhs, v_ast_base_ptr), visitor);
 
     v_assign(t1, v_get_result_type());
     v_assign(v1, v_get_result_value());
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_adopt_result(t1, v1);
 
@@ -2690,8 +2693,7 @@
     }
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     builder = v_target_get_builder();
 
@@ -2713,8 +2715,7 @@
 
     llvm_ctx = v_target_get_llvm_ctx();
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(v_load(ast), v_ast_base_ptr), visitor);
 
@@ -2812,8 +2813,7 @@
     }
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(typ, r);
 }
@@ -2857,12 +2857,10 @@
     v_add_parameter_name(f, 3, "compile", void_ptr);
 }
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast0, v_ast_base_ptr), visitor);
 
@@ -2870,8 +2868,9 @@
     v0 = v_get_result_value();
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast1, v_ast_base_ptr), visitor);
 
@@ -2886,8 +2885,7 @@
     v = compile(t0, v0, t1, v1, t);
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 }
@@ -3182,12 +3180,12 @@
     step_base = v_cast(step, v_ast_base_ptr);
 
 
+    v_reset_result();
+
     pf = v_type_is_pointer(st);
 
     if (pf) v_set_result_type(v_find_type_q(int_q));        //- ...
     else    v_set_result_type(st);
-
-    v_set_result_value(0);
 
     v_ast_accept_visitor(step_base, visitor);
 
@@ -3325,8 +3323,9 @@
     v_add_parameter_name(f, 2, "v",   LLVMValueRef);
 }
 {
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_adopt_result(t, v);
 
@@ -3445,8 +3444,9 @@
     v_add_parameter_name(f, 2, "v",   LLVMValueRef);
 }
 {
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_adopt_result(t, v);
 
@@ -3491,8 +3491,9 @@
     v_add_parameter_name(f, 2, "v",   LLVMValueRef);
 }
 {
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_adopt_result(t, v);
 
@@ -3570,11 +3571,9 @@
     v_add_parameter_name(f, 2, "compile", void_ptr);
 }
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(arg, v_ast_base_ptr), visitor);
 
@@ -3587,8 +3586,7 @@
 
     v = compile(visitor, t, v);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 }
@@ -3638,12 +3636,9 @@
     ast = v_list_get_item(arg_list, 1);
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
-
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(ast, v_ast_base_ptr), visitor);
 
@@ -3658,8 +3653,7 @@
 
         typ = v_pointer_type(typ, 0);       //- ...
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(t, v_cast(typ, LLVMValueRef));
     }
@@ -3669,8 +3663,7 @@
 
         v = compile_prefix_star(visitor, t, v);
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(t, v);
     }
@@ -3697,12 +3690,9 @@
     ast = v_list_get_item(arg_list, 1);
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
-
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(ast, v_ast_base_ptr), visitor);
 
@@ -3717,8 +3707,7 @@
 
         typ = v_reference_type(typ, 0);     //- ...
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(t, v_cast(typ, LLVMValueRef));
     }
@@ -3728,8 +3717,7 @@
 
         v = compile_prefix_amp(visitor, t, v);
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(t, v);
     }
@@ -3765,11 +3753,9 @@
     v_add_parameter_name(f, 3, "v0",   LLVMValueRef);
 }
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(eidx, v_ast_base_ptr), vis);
 
@@ -3802,8 +3788,9 @@
             else                                   v_assign(t1, v_vector_type(t1, count));
         }
 
+        v_reset_result();
+
         v_set_result_type(t1);
-        v_set_result_value(0);
 
         v_adopt_result(idx_t, idx_v);
 
@@ -3907,8 +3894,7 @@
         }
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 }
@@ -4062,12 +4048,9 @@
     }
 
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
-
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(agg, v_ast_base_ptr), visitor);
 
@@ -4094,8 +4077,9 @@
 
             if (idx_i)
             {
+                v_reset_result();
+
                 v_set_result_type(UNREFERENCE_TAG);
-                v_set_result_value(0);
 
                 v_ast_accept_visitor(v_cast(idx_i, v_ast_base_ptr), visitor);
 
@@ -4125,8 +4109,7 @@
 
         v_free(idx);
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(static_type_t, agg_v);
 
@@ -4148,8 +4131,9 @@
 
         idx_i = v_load(v_getelementptr(idx, i));
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
+        v_reset_result();
+
+//      v_set_result_type(INVIOLABLE_TAG);
 
         op_postfix_index_helper(visitor, idx_i, agg_t, agg_v);
 
@@ -4161,8 +4145,7 @@
 
     v_free(idx);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(agg_t, agg_v);
 }
@@ -4210,11 +4193,9 @@
 
     arg = v_list_get_item(arg_list, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg, v_ast_base_ptr), visitor);
 
@@ -4224,8 +4205,7 @@
 
     typ = v_int_type(width);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(v_find_type_q(q_static_type_t), v_cast(typ, LLVMValueRef));
 }
@@ -4248,11 +4228,9 @@
 
     arg = v_list_get_item(arg_list, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg, v_ast_base_ptr), visitor);
 
@@ -4262,8 +4240,7 @@
 
     typ = v_uint_type(width);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(v_find_type_q(q_static_type_t), v_cast(typ, LLVMValueRef));
 }
@@ -4286,11 +4263,9 @@
 
     arg = v_list_get_item(arg_list, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg, v_ast_base_ptr), visitor);
 
@@ -4308,8 +4283,7 @@
     case 128:   v_assign(typ, v_f128_type());   v_break();
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(v_find_type_q(q_static_type_t), v_cast(typ, LLVMValueRef));
 }
@@ -4333,22 +4307,21 @@
     ast0 = v_list_get_item(args, 0);
     ast1 = v_list_get_item(args, 1);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast0, v_ast_base_ptr), vis);
 
     et = v_cast(v_get_result_value(), v_type_ptr);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast1, v_ast_base_ptr), vis);
 
@@ -4358,8 +4331,7 @@
 
     typ = v_pointer_type(et, as);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, v_cast(typ, LLVMValueRef));
 }
@@ -4383,22 +4355,21 @@
     ast0 = v_list_get_item(args, 0);
     ast1 = v_list_get_item(args, 1);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast0, v_ast_base_ptr), vis);
 
     et = v_cast(v_get_result_value(), v_type_ptr);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(ast1, v_ast_base_ptr), vis);
 
@@ -4408,8 +4379,7 @@
 
     typ = v_reference_type(et, as);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, v_cast(typ, LLVMValueRef));
 }
@@ -4433,22 +4403,21 @@
     arg0 = v_list_get_item(arg_list, 0);
     arg1 = v_list_get_item(arg_list, 1);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg0, v_ast_base_ptr), visitor);
 
     elt = v_cast(v_get_result_value(), v_type_ptr);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg1, v_ast_base_ptr), visitor);
 
@@ -4458,8 +4427,7 @@
 
     typ = v_vector_type(elt, size);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, v_cast(typ, LLVMValueRef));
 }
@@ -4483,22 +4451,21 @@
     arg0 = v_list_get_item(arg_list, 0);
     arg1 = v_list_get_item(arg_list, 1);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg0, v_ast_base_ptr), visitor);
 
     elt = v_cast(v_get_result_value(), v_type_ptr);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_cast(arg1, v_ast_base_ptr), visitor);
 
@@ -4508,8 +4475,7 @@
 
     typ = v_svector_type(elt, size);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(static_type_t, v_cast(typ, LLVMValueRef));
 }

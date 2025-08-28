@@ -45,8 +45,7 @@
 
     builder = v_target_get_builder();
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     arg0 = v_list_get_item(arg_list, 0);
@@ -55,7 +54,6 @@
 
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg0, v_ast_base_ptr);
 
@@ -68,8 +66,9 @@
     opc = v_cast(opv, LLVMOpcode);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg1, v_ast_base_ptr);
 
@@ -80,8 +79,9 @@
     t = v_get_result_type();
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg2, v_ast_base_ptr);
 
@@ -93,8 +93,7 @@
     ret = LLVMBuildBinOp(builder, opc, lhs, rhs, "");
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, ret);
 }
@@ -149,8 +148,7 @@
 
     builder = v_target_get_builder();
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     arg0 = v_list_get_item(arg_list, 0);
@@ -159,7 +157,6 @@
 
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg0, v_ast_base_ptr);
 
@@ -172,8 +169,9 @@
     opc = v_cast(opv, LLVMIntPredicate);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg1, v_ast_base_ptr);
 
@@ -184,8 +182,9 @@
     t = v_get_result_type();
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg2, v_ast_base_ptr);
 
@@ -200,8 +199,7 @@
     t = make_return_type(t);
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, ret);
 }
@@ -225,8 +223,7 @@
 
     builder = v_target_get_builder();
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
 
     arg0 = v_list_get_item(arg_list, 0);
@@ -235,7 +232,6 @@
 
 
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg0, v_ast_base_ptr);
 
@@ -248,8 +244,9 @@
     opc = v_cast(opv, LLVMRealPredicate);
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg1, v_ast_base_ptr);
 
@@ -260,8 +257,9 @@
     t = v_get_result_type();
 
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg2, v_ast_base_ptr);
 
@@ -276,8 +274,7 @@
     t = make_return_type(t);
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, ret);
 }

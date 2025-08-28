@@ -262,8 +262,9 @@ static_array_of_types_index_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_a
 {
     types = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : **v_type_t);
 
+    v_push_result();
+
     v_set_result_type(v_find_type_q(unsigned_q));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg_ptrs[1], vis);
 
@@ -274,6 +275,8 @@ static_array_of_types_index_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_a
     t = types[i];
 
     static_type_t = v_find_type_q(q_static_type_t);
+
+    v_pop_result();
 
     v_adopt_result(static_type_t, (t: LLVMValueRef));
 }
@@ -498,8 +501,9 @@ static_array_of_generic_args_index_intrinsic: (*void, vis: *voidc_visitor_t, sel
 {
     args = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : **v_type_generic_arg_t);
 
+    v_push_result();
+
     v_set_result_type(v_find_type_q(unsigned_q));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg_ptrs[1], vis);
 
@@ -510,6 +514,8 @@ static_array_of_generic_args_index_intrinsic: (*void, vis: *voidc_visitor_t, sel
     a = args[i];
 
     generic_arg_t = v_find_type_q(q_static_generic_arg_t);
+
+    v_pop_result();
 
     v_adopt_result(generic_arg_t, (a: LLVMValueRef));
 }
@@ -572,20 +578,15 @@ v_typeof_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
-
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_push_result();
 
     v_ast_accept_visitor(v_list_get_item(args, 0), vis);        //- Sic !?!?!?!?!?!?!
 
     t = v_get_result_type();
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
-
     static_type_t = v_find_type_q(q_static_type_t);
+
+    v_pop_result();
 
     v_adopt_result(static_type_t, (t: LLVMValueRef));
 }
@@ -599,20 +600,19 @@ v_eq_types_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_list_get_item(args, 0), vis);
 
     v0 = v_get_result_value();
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(v_list_get_item(args, 1), vis);
 
@@ -621,8 +621,7 @@ v_eq_types_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
     tr = v_uint_type(1);
     vr = LLVMConstInt(v_type_get_llvm_type(tr), v0 == v1, false);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(tr, vr);
 }

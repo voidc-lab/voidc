@@ -490,6 +490,7 @@
     v_export_symbol_type("v_restore_variables", ft);
     v_export_symbol_type("v_push_temporaries", ft);
     v_export_symbol_type("v_pop_temporaries", ft);
+    v_export_symbol_type("v_erase_temporary", ft);
     v_export_symbol_type("v_finish_function", ft);
     v_export_symbol_type("v_save_builder_ip", ft);
     v_export_symbol_type("v_restore_builder_ip", ft);
@@ -570,6 +571,45 @@
 
     ft = v_function_type(void, typ0, 1, false);
     v_export_symbol_type("v_set_result_value", ft);
+
+    //-------------------------------------------------------------
+    ft = v_function_type(void, 0, 0, false);
+    v_export_symbol_type("v_push_result", ft);
+    v_export_symbol_type("v_pop_result", ft);
+    v_export_symbol_type("v_reset_result", ft);
+    v_export_symbol_type("v_push_variables", ft);
+    v_export_symbol_type("v_pop_variables", ft);
+    v_export_symbol_type("v_push_temporaries", ft);
+    v_export_symbol_type("v_pop_temporaries", ft);
+
+    v_store(void_ptr, typ0);                //-
+
+    act_ft = v_function_type(void, typ0, 1, false);
+
+    act_ft_ptr = v_pointer_type(act_ft, 0);
+
+    v_store(void_ptr_ptr, typ0);            //- ctx
+
+    ft = v_function_type(act_ft_ptr, typ0, 1, false);
+    v_export_symbol_type("v_get_push_result_hook", ft);
+    v_export_symbol_type("v_get_pop_result_hook", ft);
+    v_export_symbol_type("v_get_reset_result_hook", ft);
+    v_export_symbol_type("v_get_push_variables_hook", ft);
+    v_export_symbol_type("v_get_pop_variables_hook", ft);
+    v_export_symbol_type("v_get_push_temporaries_hook", ft);
+    v_export_symbol_type("v_get_pop_temporaries_hook", ft);
+
+    v_store(act_ft_ptr,   typ0);            //- fun
+    v_store(void_ptr,     typ1);            //- ctx
+
+    ft = v_function_type(void, typ0, 2, false);
+    v_export_symbol_type("v_set_push_result_hook", ft);
+    v_export_symbol_type("v_set_pop_result_hook", ft);
+    v_export_symbol_type("v_set_reset_result_hook", ft);
+    v_export_symbol_type("v_set_push_variables_hook", ft);
+    v_export_symbol_type("v_set_pop_variables_hook", ft);
+    v_export_symbol_type("v_set_push_temporaries_hook", ft);
+    v_export_symbol_type("v_set_pop_temporaries_hook", ft);
 
     //-------------------------------------------------------------
     v_store(v_type_ptr,   typ0);            //-
@@ -740,7 +780,6 @@
     ft = v_function_type(void, typ0, 2, false);
     v_export_symbol_type("v_add_cleaner", ft);
     v_export_symbol_type("v_add_local_cleaner", ft);
-    v_export_symbol_type("v_add_temporary_cleaner", ft);
     v_export_symbol_type("v_export_effort", ft);
     v_export_symbol_type("v_add_effort", ft);
 }

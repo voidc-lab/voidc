@@ -31,11 +31,11 @@ test_t = struct { v_std_any_t; };
 
 (v_copy(_)): (*test_t, *const test_t, size_t) ~> void = derive;
 
-{ v_debug_print_module(1); }
+//{ v_debug_print_module(1); }
 {
     u: &test_t[2][3][4] := {};
 
-    U = *v_malloc(test_t[7]) := 0;
+    U = *v_malloc(test_t[7]);
 
     v_free(&U);
 }
@@ -138,10 +138,10 @@ test_t = struct { v_std_any_t; };
 
 
 //---------------------------------------------------------------------
-{   v_debug_print_module(2);
-
-    voidc_verify_jit_module_optimized(true);
-}
+//{   v_debug_print_module(2);
+//
+//    voidc_verify_jit_module_optimized(true);
+//}
 
 (_[]): (l: v_ast_expr_list_t, i: size_t) ~> v_ast_expr_t
 =
@@ -153,10 +153,10 @@ test_t = struct { v_std_any_t; };
 
 
 //---------------------------------------------------------------------
-{   v_debug_print_module(2);
-
-    voidc_verify_jit_module_optimized(true);
-}
+//{   v_debug_print_module(2);
+//
+//    voidc_verify_jit_module_optimized(true);
+//}
 
 {
     e: &v_ast_expr_t[3] := {};
@@ -210,6 +210,10 @@ test_t = struct { v_std_any_t; };
 
     printf("x: %d\n", x);
 
+    xx: &int := { a: &int := 1; a += 2; a+3 };
+
+    printf("xx: %d\n", xx);
+
     u: &int[2] := block { v_break({7, 77}); };
 
     printf("u: (%d, %d)\n", u[0], u[1]);
@@ -225,6 +229,10 @@ test_t = struct { v_std_any_t; };
     x = { a = 1; a = a+1;  a+1 };
 
     printf("x: %d\n", x);
+
+    y = { a: &int := 1; a += 1;  a+2 };
+
+    printf("y: %d\n", y);
 }
 
 

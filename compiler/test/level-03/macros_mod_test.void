@@ -74,7 +74,9 @@ list_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         tr      := v_type_refptr_get_element_type(tr);          //- Sic!
     }
 
-    vr = v_obtain_special_result_value(vis, tr);
+    vr: &LLVMValueRef := v_get_result_value();
+
+    if (vr == 0)  vr := v_make_temporary(tr, 0);
 
     list: &v_ast_stmt_list_t :=
     {'stmt_list'
@@ -104,8 +106,9 @@ list_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
     for (i: &int := 0; i < arg_count; ++i)
     {
+        v_reset_result();
+
         v_set_result_type(typ);
-        v_set_result_value(0);
 
         v_ast_accept_visitor(arg_ptrs[i], vis);
 
@@ -119,6 +122,8 @@ list_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     }
 
     v_ast_make_stmt_block(&stmt, &list, false);
+
+    v_reset_result();
 
     v_ast_accept_visitor(&stmt, vis);
 
@@ -139,15 +144,17 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
     static_type_t = v_find_type_q(q_static_type_t);
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
     elt = (v_get_result_value() : *v_type_t);
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg1, vis);
 

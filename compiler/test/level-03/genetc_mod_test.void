@@ -33,6 +33,10 @@
 
     q = v_quark_ptr_from_string;
 
+    v_add_symbol("T_q", q_ref, q("T"));
+
+    v_add_symbol("expr_identifier_q", q_ref, q("expr_identifier"));
+
     v_add_symbol("q_static_type_t", q_ref, q("v_static_type_t"));
 }
 
@@ -61,13 +65,11 @@ unique_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     arg0 = v_list_get_item(args, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -77,10 +79,9 @@ unique_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     typ = v_generic_type(unique_ptr_q, &arg, 1);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
-    v_adopt_result(static_type_t, v_cast(typ, LLVMValueRef));
+    v_adopt_result(static_type_t, (typ: LLVMValueRef));
 }
 
 private
@@ -93,6 +94,57 @@ unique_ptr_obtain_llvm_type: (*void, typ: *v_type_t) ~> LLVMTypeRef
     v_type_set_cached_llvm_type(typ, rt_);
 
     v_return(rt_);
+}
+
+
+//---------------------------------------------------------------------
+unique_ptr_ns = v_object_intrinsic("unique_ptr.namespace");
+
+//---------------------------------------------------------------------
+private
+unique_ptr_ns_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+    args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
+
+    arg0 = v_list_get_item(args, 0);        //- Type
+
+    v_reset_result();
+
+    v_set_result_type(v_find_type_q(q_static_type_t));
+
+    v_ast_accept_visitor(arg0, vis);
+
+    elt = (v_get_result_value() : *v_type_t);
+
+    sstr: &v_std_string_t := {};
+
+    v_std_string_set(&sstr, "unique_ptr_ns-");
+
+    voidc_internal_std_string_append_type(&sstr, elt);
+
+    ns_name = v_quark_from_string(v_std_string_get(&sstr));
+
+    ns = (aux: *v_namespace_t);
+
+    if (a = v_map_find(&ns->map, (ns_name: intptr_t)))
+    {
+        q = v_std_any_get_value(v_quark_t, a);
+
+        t: &*v_type_t    := v_undef();
+        v: &LLVMValueRef := v_undef();
+
+        v_find_constant_q(q, &t, &v);
+
+        v_set_result_type(t);
+        v_set_result_value(v);
+    }
+    else
+    {
+        ns = v_obtain_namespace_q(ns_name);                 //- WTF ?!?!?!?!?
+
+        v_set_result_type(v_find_type("v_static_namespace_t"));
+        v_set_result_value((ns: LLVMValueRef));
+    }
 }
 
 
@@ -163,6 +215,18 @@ namespace my
 
       v_return(dst);
   }
+
+  //-------------------------------------------------------------
+  namespace unique_ptr_ns(T)
+  {
+    inlinehint
+    create: () ~> unique_ptr(T)
+    {
+        ret = v_get_return_value();
+
+        ret.reset(new T);
+    }
+  }   //- namespace unique_ptr_ns(T)
 }   //- namespace my
 """;
 
@@ -171,12 +235,13 @@ namespace my
 private
 template_ast: &v_ast_generic_list_t := {};
 
+//---------------------------------------------------------------------
 private
 fgetc_fun: (void_data: *void) ~> int
 {
-    cur_pos = *(void_data : *int);
+    cur_pos = *(void_data : **const char);
 
-    c = (template_src[cur_pos] : uint(8));
+    c = (*cur_pos : uint(8));
 
     if (!c) v_return(-1);
 
@@ -187,10 +252,8 @@ fgetc_fun: (void_data: *void) ~> int
 
 //---------------------------------------------------------------------
 private
-parse_template: () ~> void
+parse_template: (tag: *const char, src: *const char) ~> v_std_any_t
 {
-    if (!v_empty(&template_ast))  v_return();
-
     ctx: &v_peg_context_t[2] := {};
 
     my_ctx    = ctx + 0;
@@ -200,7 +263,7 @@ parse_template: () ~> void
 
     v_assert(grm);
 
-    cur_pos: &int := 0;
+    cur_pos: &*const char := src;
 
     v_peg_make_context(my_ctx, fgetc_fun, &cur_pos, grm);
 
@@ -211,16 +274,11 @@ parse_template: () ~> void
 
     v_copy(cur_ctx, my_ctx);
 
-    res: &v_std_any_t := {};
+    ret = v_get_return_value();
 
-    v_peg_parse(&res, v_quark_from_string("unit_defn_list"));
-
-    ast = v_std_any_get_pointer(v_ast_generic_list_t, &res);
-
-    v_assert(ast);
-
-    v_copy(&template_ast, ast);
+    v_peg_parse(&ret, v_quark_from_string(tag));
 }
+
 
 //---------------------------------------------------------------------
 private
@@ -269,8 +327,9 @@ instantiate_unique_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     static_type_t = v_find_type_q(q_static_type_t);
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 
@@ -307,6 +366,8 @@ instantiate_unique_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_ba
     {
         item = v_list_get_item(&template_ast, i);
 
+        v_reset_result();       //- ?
+
         v_ast_accept_visitor(item, vis);
     }
 
@@ -320,6 +381,13 @@ make_unique = v_object_intrinsic("my.make_unique");
 
 //---------------------------------------------------------------------
 private
+make_unique_src: &const char[] := ".my.unique_ptr_ns(T).create()";
+
+private
+make_unique_ast: &v_ast_expr_t := {};
+
+//---------------------------------------------------------------------
+private
 make_unique_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
 //printf("make_unique_intrinsic start\n");
@@ -329,52 +397,72 @@ make_unique_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     arg0 = v_list_get_item(args, 0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    static_type_t = v_find_type_q(q_static_type_t);
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_push_result();
+
+    v_set_result_type(static_type_t);
 
     v_ast_accept_visitor(arg0, vis);
 
     elt = (v_get_result_value() : *v_type_t);
 
-    arg = v_type_generic_type_arg(elt);
+    //-------------------------------------------------------------
+    //- T - type parameter ...
+    //-------------------------------------------------------------
 
-    tr = v_generic_type(unique_ptr_q, &arg, 1);
+    static_type_t = v_find_type_q(q_static_type_t);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    par: &v_ast_expr_t := {};
 
-    vr = v_obtain_special_result_value(vis, tr);        //- Sic !?!
+    v_ast_make_expr_compiled(&par, static_type_t, (elt: LLVMValueRef));
 
-    expr: &v_ast_expr_t := {};
+    ctx: &my_compile_expr_identifier_ctx_t := v_undef();
 
-    v_ast_make_expr_compiled(&expr, v_find_type_q(q_static_type_t), (elt: LLVMValueRef));
+    q = expr_identifier_q;
 
-    list: &v_ast_expr_list_t := {};
+    ctx.fun := voidc_visitor_get_method(vis, q, &ctx.aux);
 
-    v_make_list(&list, &expr, 1);
+    ctx.par := &par;
 
-    v_ast_make_expr_identifier(&expr, "v.op_prefix_new");           //- Sic!
+    //-------------------------------------------------------------
+    v_assert(vis == v_get_compiler());
 
-    v_ast_make_expr_call(&expr, &expr, &list);
+    saved_vis: &voidc_visitor_t := {};
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_copy(&saved_vis, vis);
 
-    v_ast_accept_visitor(&expr, vis);
+    voidc_visitor_set_method(vis, vis, q, my_compile_expr_identifier, &ctx);
 
-    ptr_v = v_get_result_value();
+    v_pop_result();
 
-    builder = v_target_get_builder();
+    v_ast_accept_visitor(&make_unique_ast, vis);
 
-    LLVMBuildStore(builder, ptr_v, vr);             //- Sic !!!
+    v_copy(vis, &saved_vis);
+}
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
 
-    v_adopt_result(tr, vr);
+//---------------------------------------------------------------------
+private
+parse_templates: () ~> void
+{
+    if (!v_empty(&template_ast))  v_return();
+
+    any = parse_template("unit_defn_list", template_src);
+
+    ast = v_std_any_get_pointer(v_ast_generic_list_t, &any);
+
+    v_assert(ast);
+
+    v_copy(&template_ast, ast);
+
+    any = parse_template("expr", make_unique_src);
+
+    ast = v_std_any_get_pointer(v_ast_expr_t, &any);
+
+    v_assert(ast);
+
+    v_copy(&make_unique_ast, ast);
 }
 
 
@@ -386,9 +474,11 @@ enable_unique_ptr: () ~> void
 
     v_type_generic_set_obtain_llvm_type_hook(unique_ptr_q, unique_ptr_obtain_llvm_type, 0);
 
+    v_add_intrinsic("unique_ptr.namespace", unique_ptr_ns_intrinsic, v_find_constant_value("my"));
+
     v_add_intrinsic("my.instantiate_unique_ptr", instantiate_unique_ptr_intrinsic, 0);
 
-    parse_template();       //- ?!?!?!?!?!?!?
+    parse_templates();
 
     v_add_intrinsic("my.make_unique", make_unique_intrinsic, 0);
 }

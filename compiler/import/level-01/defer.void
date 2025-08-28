@@ -291,15 +291,13 @@
 {
     args = v_ast_expr_call_get_arg_list(v_cast(self, *v_ast_expr_t));
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
 
     builder = v_target_get_builder();
 
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     arg0 = v_list_get_item(args, 0);                //- Type
 
@@ -313,8 +311,9 @@
 
     if (v_list_get_size(args) > 1)
     {
+        v_reset_result();
+
         v_set_result_type(v_find_type_q(size_t_q));
-        v_set_result_value(0);
 
         arg1 = v_list_get_item(args, 1);                //- Counter
 
@@ -343,8 +342,9 @@
 
     v_ast_make_expr_call(expr+0, expr+0, list);         //- v_alloca
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
+
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(expr+0, *v_ast_base_t), vis);
 
@@ -359,8 +359,9 @@
 
     v_ast_make_expr_call(expr+0, expr+0, list);         //- v_initialize
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
+
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(expr+0, *v_ast_base_t), vis);
 
@@ -375,13 +376,13 @@
 
     v_ast_make_stmt_defer(stmt, stmt);                  //- defer
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
+
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor(v_cast(stmt, *v_ast_base_t), vis);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 

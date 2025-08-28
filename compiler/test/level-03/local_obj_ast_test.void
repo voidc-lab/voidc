@@ -102,15 +102,27 @@ mk_stmt: (name: *const char, expr: v_ast_expr_t) ~> v_ast_stmt_t
 private
 mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+//printf("mk_ast_list_intrinsic: start\n");
+//defer printf("mk_ast_list_intrinsic: stop\n");
 
     tr = (aux: *v_type_t);
 
-    vr = v_obtain_special_result_value(vis, tr);
+    vr: &LLVMValueRef := v_get_result_value();
+
+    vr_temporary = vr == 0;
+
+    if (vr_temporary)
+    {
+        vr := v_make_temporary(tr, 0);
+    }
 
     is_generic = tr == v_find_type("v_ast_generic_list_t");
 
+
+    v_push_result();
+
+
+    builder = v_target_get_builder();
 
     arg_list = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
@@ -128,13 +140,9 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
         e = mk_expr_call(mk_expr_identifier("v_make_list_nil"), list);
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
-
         v_ast_accept_visitor((&e: *v_ast_base_t), vis);
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(tr, vr);
 
@@ -157,8 +165,6 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
         item_t := v_find_type("v_ast_stmt_t");
     }
 
-
-    builder = v_target_get_builder();
 
     lltyp: &LLVMTypeRef :=  v_undef();
 
@@ -196,6 +202,8 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
         ei = LLVMBuildGEP2(builder, item_t_, buf_v, &i_, 1, "ei");
 
+        v_reset_result();
+
         v_set_result_type(item_t);
         v_set_result_value(ei);
 
@@ -223,8 +231,10 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
         expr = mk_expr_call(mk_expr_identifier("v_make_list"), list);
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
+        v_reset_result();
+
+//        v_set_result_type(INVIOLABLE_TAG);
+//        v_set_result_value(0);
 
         v_ast_accept_visitor((&expr: *v_ast_base_t), vis);
     }
@@ -249,8 +259,7 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     LLVMBuildCall2(builder, lltyp, llvm_stackrestore_f, &blk, 1, "");
 
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(tr, vr);
 }

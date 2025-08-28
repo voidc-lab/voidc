@@ -550,8 +550,7 @@ coerce_to_type: (vis: *voidc_visitor_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_
 {
     if (t0 == t1)   v_return(v0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     l = get_coe_map_list(t0, full_dir_q, t1);
 
@@ -579,8 +578,9 @@ coerce_to_type: (vis: *voidc_visitor_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_
 
         v_ast_make_expr_call(&expr, &expr, &list);
 
+        v_reset_result();
+
         v_set_result_type(item.type);
-        v_set_result_value(0);
 
         v_ast_accept_visitor((&expr: *v_ast_base_t), vis);
 
@@ -590,8 +590,7 @@ coerce_to_type: (vis: *voidc_visitor_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_
 
     v_assert(t == t1);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_return(v);
 }
@@ -602,8 +601,7 @@ cast_to_type: (vis: *voidc_visitor_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_ty
 {
     if (t0 == t1)   v_return(v0);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     l = get_coe_map_list(t0, full_rev_q, t1);
 
@@ -631,8 +629,7 @@ cast_to_type: (vis: *voidc_visitor_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_ty
 
         v_ast_make_expr_call(&expr, &expr, &list);
 
-        v_set_result_type(INVIOLABLE_TAG);          //- ?!?!?!?!?!?!?!?
-        v_set_result_value(0);
+        v_reset_result();
 
         v_ast_accept_visitor((&expr: *v_ast_base_t), vis);
 
@@ -642,8 +639,7 @@ cast_to_type: (vis: *voidc_visitor_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_ty
 
     v_assert(t == t1);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_return(v);
 }
@@ -776,11 +772,7 @@ my_cast_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
     arg0 = v_list_get_item(args, 0);        //- Value
     arg1 = v_list_get_item(args, 1);        //- Type
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
-
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_push_result();
 
     v_ast_accept_visitor((arg0: *v_ast_base_t), vis);       //- Value
 
@@ -789,8 +781,9 @@ my_cast_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
 
     static_type_t = v_find_type_q(q_static_type_t);
 
+    v_reset_result();
+
     v_set_result_type(static_type_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor((arg1: *v_ast_base_t), vis);       //- Type
 
@@ -798,8 +791,7 @@ my_cast_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
 
     if (t0 == t1)
     {
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(t0, v0);
 
@@ -810,8 +802,7 @@ my_cast_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
     {
         v1 = cast_to_type(vis, t0, v0, t1);
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         v_adopt_result(t1, v1);
 
@@ -834,8 +825,7 @@ my_cast_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
 
     v_ast_make_expr_call(&expr, &expr, &list);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *my_cast_intrinsic_ctx_t);
 
@@ -862,8 +852,7 @@ my_op_assign_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                       t0: *v_type_t, v0: LLVMValueRef, qh: v_quark_t, q: v_quark_t,
                       rhs: *v_ast_expr_t) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t    := lookup_coe_over(t0, q);
     v: &LLVMValueRef := v0;
@@ -871,8 +860,7 @@ my_op_assign_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     if (t)  v := coerce_to_type(vis, t0, v0, t);
     else    t := t0;
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *op_assign_helper_ctx_t);
 
@@ -901,8 +889,7 @@ my_op_binary_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 {
     ctx = *(aux: *op_binary_helper_ctx_t);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t := lookup_coe_over(t0, q0);
 
@@ -910,8 +897,7 @@ my_op_binary_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     {
         v = coerce_to_type(vis, t0, v0, t);
 
-        v_set_result_type(ttag);
-        v_set_result_value(vtag);
+        v_pop_result();
 
         ctx.fun(ctx.aux, vis, self, t, v, qh, q0, q1, rhs);
 
@@ -920,8 +906,7 @@ my_op_binary_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     //- Second argument
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
 
     v_ast_accept_visitor((rhs : *v_ast_base_t), vis);
 
@@ -939,8 +924,7 @@ my_op_binary_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     v_ast_make_expr_compiled(&expr, t, v);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx.fun(ctx.aux, vis, self, t0, v0, qh, q0, q1, &expr);
 }
@@ -973,8 +957,7 @@ my_op_relation_helper: (aux: *void, vis: *voidc_visitor_t,
 {
     ctx = *(aux: *op_relation_helper_ctx_t);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t := lookup_coe_over(t0, q0);
 
@@ -982,16 +965,14 @@ my_op_relation_helper: (aux: *void, vis: *voidc_visitor_t,
     {
         v = coerce_to_type(vis, t0, v0, t);
 
-        v_set_result_type(ttag);        //- Sic !?!
-        v_set_result_value(vtag);       //- Sic !?!
+        v_pop_result();
 
         v_return(ctx.fun(ctx.aux, vis, ast, qh, q0, q1, t, v, t1, v1));
     }
 
     //- Second argument
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_reset_result();
 
     v_ast_accept_visitor((ast[1] : *v_ast_base_t), vis);
 
@@ -1018,8 +999,7 @@ my_op_relation_helper: (aux: *void, vis: *voidc_visitor_t,
     typ: &*v_type_t    := t1;
     val: &LLVMValueRef := v1;
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_return(ctx.fun(ctx.aux, vis, arg_ptrs, qh, q0, q1, t0, v0, typ, val));
 }
@@ -1044,8 +1024,7 @@ my_op_unary_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                      t0: *v_type_t, v0: LLVMValueRef, qh: v_quark_t, q: v_quark_t
                     ) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t    := lookup_coe_over(t0, q);
     v: &LLVMValueRef := v0;
@@ -1053,8 +1032,7 @@ my_op_unary_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     if (t)  v := coerce_to_type(vis, t0, v0, t);
     else    t := t0;
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *op_unary_helper_ctx_t);
 
@@ -1081,8 +1059,7 @@ my_expr_call_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                       args: *v_ast_expr_list_t, t0: *v_type_t, v0: LLVMValueRef
                      ) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t    := lookup_coe_over(t0, q_op_postfix_call);
     v: &LLVMValueRef := v0;
@@ -1090,8 +1067,7 @@ my_expr_call_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     if (t)  v := coerce_to_type(vis, t0, v0, t);
     else    t := t0;
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *expr_call_helper_ctx_t);
 
@@ -1120,8 +1096,7 @@ my_op_postfix_index_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
                              idx: **v_ast_expr_list_t, count: unsigned
                             ) ~> bool
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t    := lookup_coe_over(agg_t, q_op_postfix_index_pack);
     v: &LLVMValueRef := agg_v;
@@ -1131,8 +1106,7 @@ my_op_postfix_index_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
     if (t)  v := coerce_to_type(vis, agg_t, agg_v, t);
     else    t := agg_t;
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *op_postfix_index_helper_ctx_t);
 
@@ -1213,16 +1187,14 @@ my_op_postfix_dot_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         }
     }
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     v: &LLVMValueRef := v0;
 
     if (t)  v := coerce_to_type(vis, t0, v0, t);
     else    t := t0;                                    //- ???
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *op_postfix_dot_helper_ctx_t);
 
@@ -1249,8 +1221,7 @@ my_op_postfix_to_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
                           t0: *v_type_t, v0: LLVMValueRef
                          ) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t: &*v_type_t    := lookup_coe_over(t0, q_op_postfix_to);
     v: &LLVMValueRef := v0;
@@ -1258,8 +1229,7 @@ my_op_postfix_to_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
     if (t)  v := coerce_to_type(vis, t0, v0, t);
     else    t := t0;
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     ctx = *(aux: *op_postfix_to_helper_ctx_t);
 
@@ -1304,18 +1274,13 @@ voidc_trivial_coercion_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
 
     t = (aux: *v_type_t);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
-
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+    v_push_result();
 
     v_ast_accept_visitor((arg0: *v_ast_base_t), vis);
 
     v = v_get_result_value();
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 }

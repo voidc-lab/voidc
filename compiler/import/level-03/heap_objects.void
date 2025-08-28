@@ -303,12 +303,9 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
         while(check_index(agg, &agg, idx_i--)) ;
     }
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
-
+    v_push_result();
 
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor((agg: *v_ast_base_t), vis);
 
@@ -331,8 +328,9 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
         idx0 = v_list_get_item(idx_list, 0);        //- Just one!
 
+        v_reset_result();
+
         v_set_result_type(UNREFERENCE_TAG);
-        v_set_result_value(0);
 
         v_ast_accept_visitor((idx0: *v_ast_base_t), vis);
 
@@ -363,8 +361,9 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
         {
             idx0 = v_list_get_item(idx_list, 0);        //- Just one!
 
+            v_reset_result();
+
             v_set_result_type(UNREFERENCE_TAG);
-            v_set_result_value(0);
 
             v_ast_accept_visitor((idx0: *v_ast_base_t), vis);
 
@@ -396,8 +395,9 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     {
         //- Got overloading!
 
+        v_reset_result();
+
         v_set_result_type(v_pointer_type(root_t, 0));
-        v_set_result_value(0);
 
         if (N > 0)      //- array?
         {
@@ -505,8 +505,9 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
         v_ast_make_expr_call(&expr, &expr, &list);
 
+        v_reset_result();
+
         v_set_result_type(UNREFERENCE_TAG);
-        v_set_result_value(0);
 
         v_ast_accept_visitor((&expr[0]: *v_ast_base_t), vis);
 
@@ -534,8 +535,7 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
             make_special_intrinsic_call(&stmt, q_initialize, root_t, v, length, idx_v);
 
-            v_set_result_type(INVIOLABLE_TAG);
-            v_set_result_value(0);
+            v_reset_result();
 
             v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
         }
@@ -557,6 +557,8 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
         item_t := v_array_type(item_t, v_count);
 
+        v_reset_result();
+
         v_set_result_type(item_t);
 
         if (v_type_is_special(root_t, q_initialize))
@@ -567,8 +569,6 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
         }
         else
         {
-            v_set_result_value(0);
-
             v_ast_accept_visitor((value: *v_ast_base_t), vis);
 
             r = v_get_result_value();
@@ -578,8 +578,7 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     }
 
     //-----------------------------------------------------------------
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(t, v);
 }
@@ -595,8 +594,9 @@ op_prefix_delete_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
     arg = v_list_get_item(args, 1);         //- Sic!
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor((arg: *v_ast_base_t), vis);
 
@@ -622,8 +622,7 @@ op_prefix_delete_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     {
         //- Got overloading!
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
+        v_reset_result();
 
         expr: &v_ast_expr_t[2] := {};
 
@@ -646,8 +645,7 @@ op_prefix_delete_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     {
         make_special_intrinsic_call(&stmt, q_terminate, root_t, v, length, 0);      //- v?
 
-        v_set_result_type(INVIOLABLE_TAG);          //- ?..
-        v_set_result_value(0);                      //- ?..
+        v_reset_result();
 
         v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
     }
@@ -658,8 +656,7 @@ op_prefix_delete_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
     v_ast_make_stmt_call(&stmt, 0, q_aligned_free, &expr, 1);
 
-    v_set_result_type(INVIOLABLE_TAG);          //- ?..
-    v_set_result_value(0);                      //- ?..
+    v_reset_result();
 
     v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
 }
@@ -678,8 +675,9 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
 
     arg = v_list_get_item(args, 1);         //- Sic!
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     v_ast_accept_visitor((arg: *v_ast_base_t), vis);
 
@@ -707,8 +705,7 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
     {
         //- Got overloading!
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
+        v_reset_result();
 
         expr: &v_ast_expr_t[2] := {};
 
@@ -784,8 +781,7 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
     {
         make_special_intrinsic_call(&stmt, q_terminate, item_t, v, 1, idx_v);
 
-        v_set_result_type(INVIOLABLE_TAG);          //- ?..
-        v_set_result_value(0);                      //- ?..
+        v_reset_result();
 
         v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
     }
@@ -798,8 +794,7 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
 
     v_ast_make_stmt_call(&stmt, 0, q_aligned_free, &expr, 1);
 
-    v_set_result_type(INVIOLABLE_TAG);          //- ?..
-    v_set_result_value(0);                      //- ?..
+    v_reset_result();
 
     v_ast_accept_visitor((&stmt: *v_ast_base_t), vis);
 }

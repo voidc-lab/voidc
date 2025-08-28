@@ -136,8 +136,7 @@ compile_expr_compile_spy: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~>
 private
 handle_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
@@ -163,8 +162,7 @@ handle_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     v_ast_make_expr_call(expr+0, expr+0, list);
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor((expr+0: *v_ast_base_t), vis);
 
@@ -216,8 +214,7 @@ handle_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     v_ast_make_expr_call(expr+0, expr+0, list);
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_ast_accept_visitor((expr+0: *v_ast_base_t), vis);
 }

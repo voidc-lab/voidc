@@ -160,16 +160,11 @@ op_postfix_dot_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     //- Overloading only!
 
-    ttag: &*v_type_t    := v_undef();
-    vtag: &LLVMValueRef := v_undef();
-
     if (spc_flag)
     {
-        ttag := v_get_result_type();
-        vtag := v_get_result_value();
+        v_push_result();
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
+//      v_set_result_type(INVIOLABLE_TAG);
     }
 
     {   expr = v_make_object(v_ast_expr_t);
@@ -198,8 +193,7 @@ op_postfix_dot_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     tr = v_get_result_type();
     vr = v_get_result_value();
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_compile_expr_call(vis, self, alst, tr, vr);
 }
@@ -262,21 +256,18 @@ op_postfix_dot_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~>
 {
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     arg = v_list_get_item(args, 1);
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor((arg: *v_ast_base_t), vis);
 
     t0 = v_get_result_type();
     v0 = v_get_result_value();
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     op_postfix_dot_agent(vis, self, t0, v0);
 }
@@ -290,8 +281,7 @@ op_postfix_to_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                        t0: *v_type_t, v0: LLVMValueRef
                       ) ~> void
 {
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     t0: &*v_type_t    := t0;
     v0: &LLVMValueRef := v0;
@@ -310,8 +300,7 @@ op_postfix_to_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         arg_ptr: &*v_ast_expr_t := expr;                //- Value, compiled
 
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
+//      v_set_result_type(INVIOLABLE_TAG);
 
         fun(ctx, vis, self, &arg_ptr, 1);
 
@@ -336,8 +325,7 @@ op_postfix_to_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
         t0 := v_reference_type(e, a);
     }
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     op_postfix_dot_agent(vis, self, t0, v0);
 }
@@ -351,21 +339,18 @@ op_postfix_to_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 {
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     arg = v_list_get_item(args, 1);
 
-    v_set_result_type(INVIOLABLE_TAG);
-    v_set_result_value(0);
+//  v_set_result_type(INVIOLABLE_TAG);
 
     v_ast_accept_visitor((arg: *v_ast_base_t), vis);
 
     t0 = v_get_result_type();
     v0 = v_get_result_value();
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_compile_op_postfix_to(vis, self, t0, v0);
 }

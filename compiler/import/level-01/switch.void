@@ -498,8 +498,9 @@
 
     //- Compile switch argument
 
+    v_reset_result();
+
     v_set_result_type(UNREFERENCE_TAG);
-    v_set_result_value(0);
 
     arg_base = v_cast(arg, v_ast_base_ptr);
 
@@ -693,8 +694,9 @@
 
             //- "Normal" case
 
+            v_reset_result();
+
             v_set_result_type(typ0);
-            v_set_result_value(0);
 
             base_ast = v_cast(case_arg_i, v_ast_base_ptr);
 

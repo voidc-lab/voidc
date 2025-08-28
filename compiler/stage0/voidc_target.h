@@ -40,12 +40,23 @@ extern "C"
     typedef v_quark_t (*obtain_alias_t)(void *ctx, v_quark_t qname, bool _export);
     typedef v_quark_t (*lookup_alias_t)(void *ctx, v_quark_t qname);
 
+    typedef compile_ctx_action_t push_result_t;
+    typedef compile_ctx_action_t pop_result_t;
+    typedef compile_ctx_action_t reset_result_t;
+
+    typedef compile_ctx_action_t push_variables_t;
+    typedef compile_ctx_action_t pop_variables_t;
+
+    typedef compile_ctx_action_t push_temporaries_t;
+    typedef compile_ctx_action_t pop_temporaries_t;
+    typedef compile_ctx_action_t erase_temporary_t;
+
     typedef bool (*try_to_adopt_t)(void *ctx, v_type_t *type, LLVMValueRef value);
     typedef bool (*try_to_convert_t)(void *ctx, v_type_t *t0, LLVMValueRef v0, v_type_t *t1, LLVMValueRef &v1);
 
     typedef LLVMValueRef (*make_temporary_t)(void *ctx, v_type_t *t, LLVMValueRef v);
 
-    typedef compile_ctx_action_t temporary_cleaner_t;
+//  typedef compile_ctx_action_t temporary_cleaner_t;
 
     typedef LLVMModuleRef (*obtain_module_t)(void *ctx);
 
@@ -116,7 +127,7 @@ public:
         cleaners.push_front({fun, data});
     }
 
-protected:
+public:
     void run_cleaners(void)
     {
         for (auto &it: cleaners) it.first(it.second);
@@ -124,7 +135,7 @@ protected:
         cleaners.clear();       //- Sic!
     }
 
-protected:
+public:
     cleaners_t cleaners;
 };
 
@@ -161,6 +172,30 @@ public:
 protected:
     void initialize(void);
 };
+
+
+//---------------------------------------------------------------------
+//- Hooks ...
+//---------------------------------------------------------------------
+#define VOIDC_TARGET_HOOKS_SIMPLE(DEF) \
+    DEF(push_result) \
+    DEF(pop_result) \
+    DEF(reset_result) \
+    DEF(push_variables) \
+    DEF(pop_variables) \
+    DEF(push_temporaries) \
+    DEF(pop_temporaries) \
+    DEF(erase_temporary) \
+
+#define VOIDC_TARGET_HOOKS(DEF) \
+    DEF(obtain_alias) \
+    DEF(lookup_alias) \
+    DEF(obtain_module) \
+    DEF(finish_module) \
+    DEF(try_to_adopt) \
+    DEF(try_to_convert) \
+    DEF(make_temporary) \
+    VOIDC_TARGET_HOOKS_SIMPLE(DEF) \
 
 
 //---------------------------------------------------------------------
@@ -212,26 +247,30 @@ public:
     void add_effort(compile_ctx_action_t fun, void *aux);
 
 public:
-    obtain_alias_t get_obtain_alias_hook(void **paux);
-    void           set_obtain_alias_hook(obtain_alias_t fun, void *aux);
 
+#define DEF(name) \
+    name##_t get_##name##_hook(void **paux); \
+    void     set_##name##_hook(name##_t fun, void *aux); \
+
+    VOIDC_TARGET_HOOKS(DEF)
+
+#undef DEF
+
+public:
     v_quark_t obtain_alias(v_quark_t qname, bool _export)
     {
         void *aux;
         auto *fun = get_obtain_alias_hook(&aux);
 
-        return fun(aux, qname, _export);        //- Sic!
+        return fun(aux, qname, _export);
     }
-
-    lookup_alias_t get_lookup_alias_hook(void **paux);
-    void           set_lookup_alias_hook(lookup_alias_t fun, void *aux);
 
     v_quark_t lookup_alias(v_quark_t qname)
     {
         void *aux;
         auto *fun = get_lookup_alias_hook(&aux);
 
-        return fun(aux, qname);         //- Sic!
+        return fun(aux, qname);
     }
 
 public:
@@ -248,29 +287,22 @@ public:
 public:
     LLVMModuleRef module = nullptr;
 
-    obtain_module_t get_obtain_module_hook(void **paux);
-    void            set_obtain_module_hook(obtain_module_t fun, void *aux);
-
     LLVMModuleRef obtain_module(void)
     {
         void *aux;
         auto *fun = get_obtain_module_hook(&aux);
 
-        if (fun)  return fun(aux);
-        else      return nullptr;           //- Sic!
+        return fun(aux);
     }
 
     bool obtain_identifier(v_quark_t name, v_type_t * &type, LLVMValueRef &value);
-
-    finish_module_t get_finish_module_hook(void **paux);
-    void            set_finish_module_hook(finish_module_t fun, void *aux);
 
     void finish_module(LLVMModuleRef mod)
     {
         void *aux;
         auto *fun = get_finish_module_hook(&aux);
 
-        if (fun)  fun(aux, mod);
+        fun(aux, mod);
     }
 
 public:
@@ -291,22 +323,33 @@ public:
 
     variables_t vars;
 
-public:
-    void push_variables(void);
-    void pop_variables(void);
-
-private:
     using state_t = std::tuple<visitor_t, declarations_t, cleaners_t, variables_t>;
 
-    std::forward_list<state_t> vars_stack;      //- Sic!
+    std::forward_list<state_t> vars_stack;
 
 public:
     v_type_t    *result_type  = nullptr;
     LLVMValueRef result_value = nullptr;
 
-    try_to_adopt_t get_try_to_adopt_hook(void **paux);
-    void           set_try_to_adopt_hook(try_to_adopt_t fun, void *aux);
+public:
 
+#define DEF(name)                               \
+    void name(void)                             \
+    {                                           \
+        void *aux;                              \
+        auto *fun = get_##name##_hook(&aux);    \
+                                                \
+        fun(aux);                               \
+    }                                           \
+
+    VOIDC_TARGET_HOOKS_SIMPLE(DEF)
+
+#undef DEF
+
+public:
+    std::forward_list<std::pair<v_type_t *, LLVMValueRef>> result_stack;
+
+public:
     bool try_to_adopt(v_type_t *t0, LLVMValueRef v0)
     {
         void *aux;
@@ -318,9 +361,6 @@ public:
     void adopt_result(v_type_t *type, LLVMValueRef value);
 
 public:
-    try_to_convert_t get_try_to_convert_hook(void **paux);
-    void             set_try_to_convert_hook(try_to_convert_t fun, void *aux);
-
     bool try_to_convert(v_type_t *t0, LLVMValueRef v0, v_type_t *t1, LLVMValueRef &v1)
     {
         void *aux;
@@ -332,9 +372,6 @@ public:
     void convert_to_type(v_type_t *t0, LLVMValueRef v0, v_type_t *t1, LLVMValueRef &v1);
 
 public:
-    make_temporary_t get_make_temporary_hook(void **paux);
-    void             set_make_temporary_hook(make_temporary_t fun, void *aux);
-
     LLVMValueRef make_temporary(v_type_t *t, LLVMValueRef v)
     {
         void *aux;
@@ -343,13 +380,8 @@ public:
         return fun(aux, t, v);
     }
 
-    void add_temporary_cleaner(temporary_cleaner_t fun, void *data);
-
-    void push_temporaries(void);
-    void pop_temporaries(void);
-
 public:
-    std::forward_list<std::pair<LLVMValueRef, cleaners_t>> temporaries_stack;
+    std::forward_list<std::pair<LLVMValueRef, unsigned>> temporaries_stack;
 
 public:
     bool has_parent(void) const { return bool(parent_ctx); }

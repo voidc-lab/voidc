@@ -203,20 +203,19 @@ v_internal_va_arg_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
     arg0 = v_list_get_item(arg_list, 0);
     arg1 = v_list_get_item(arg_list, 1);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     va_list_ref = v_reference_type(v_find_type_q(va_list_q), 0);
 
     v_set_result_type(va_list_ref);
-    v_set_result_value(0);
 
     v_ast_accept_visitor((arg0: *v_ast_base_t), vis);
 
     va_lst = v_get_result_value();
 
+    v_reset_result();
+
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor((arg1: *v_ast_base_t), vis);
 
@@ -226,8 +225,7 @@ v_internal_va_arg_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     v = LLVMBuildVAArg(builder, va_lst, v_type_get_llvm_type(typ), "");
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     v_adopt_result(typ, v);
 }

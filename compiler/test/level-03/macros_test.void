@@ -109,6 +109,8 @@ block
 };
 
 
+//{ voidc_verify_jit_module_optimized(true); }
+//{ v_debug_print_module(2); }
 {   ns = ("Qwe" : *const char).str * 7;
 
     printf("ns: %s\n", v_std_string_get(&ns));

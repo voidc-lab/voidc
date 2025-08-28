@@ -221,8 +221,9 @@ inlinehint
 //---------------------------------------------------------------------
 inlinehint
 (_.append_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
+block
 {
-    if (len == 0) v_return(str);
+    if (len == 0) v_break(str);
 
     str_impl = str.impl;
 
@@ -256,7 +257,7 @@ inlinehint
 
     str_impl._size := sz_len;
 
-    str
+    v_break(str);
 };
 
 inlinehint

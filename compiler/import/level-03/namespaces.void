@@ -662,8 +662,9 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
         if (qsi.args)
         {
+            v_reset_result();
+
             v_set_result_type(static_namespace_t);
-            v_set_result_value(0);
 
             if (qsi.qname != 0)             //- ...
             {
@@ -868,8 +869,9 @@ compile_unit_defn_using: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
     {
         static_namespace_t = v_find_type_q(q_static_namespace_t);
 
+        v_reset_result();
+
         v_set_result_type(static_namespace_t);
-        v_set_result_value(0);
 
         v_ast_accept_visitor(expr, vis);
 
@@ -984,8 +986,9 @@ v_stmt_using_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
         static_namespace_t = v_find_type_q(q_static_namespace_t);
 
+        v_reset_result();
+
         v_set_result_type(static_namespace_t);
-        v_set_result_value(0);
 
         v_ast_accept_visitor(expr, vis);
 
@@ -1273,15 +1276,11 @@ my_postfix_dot_root_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
 
     v_set_lookup_alias_hook(ctx.fun, ctx.aux);
 
-    ttag = v_get_result_type();
-    vtag = v_get_result_value();
+    v_push_result();
 
     {   expr: &v_ast_expr_t := {};
 
         v_ast_make_expr_identifier_q(&expr, qr);
-
-        v_set_result_type(INVIOLABLE_TAG);
-        v_set_result_value(0);
 
         v_ast_accept_visitor(&expr, vis);
     }
@@ -1291,8 +1290,7 @@ my_postfix_dot_root_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
     tr = v_get_result_type();
     vr = v_get_result_value();
 
-    v_set_result_type(ttag);
-    v_set_result_value(vtag);
+    v_pop_result();
 
     if (alst)
     {
@@ -1504,8 +1502,9 @@ my_compile_unit_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~
 
     static_namespace_t = v_find_type_q(q_static_namespace_t);
 
+    v_reset_result();
+
     v_set_result_type(static_namespace_t);
-    v_set_result_value(0);
 
     v_ast_accept_visitor(nsid, vis);
 
@@ -1633,8 +1632,9 @@ my_var_decl_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
         nsid = v_list_get_item(args, 1);
 
+        v_reset_result();
+
         v_set_result_type(v_find_type_q(q_static_namespace_t));
-        v_set_result_value(0);
 
         v_ast_accept_visitor(nsid, vis);
 
@@ -1674,8 +1674,9 @@ my_var_decl_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
         }
     }
 
+    v_reset_result();
+
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(etype, vis);
 
@@ -1701,8 +1702,9 @@ type_as_namespace_coe_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_bas
 
     arg0 = v_list_get_item(args, 0);        //- Type
 
+    v_reset_result();
+
     v_set_result_type(v_find_type_q(q_static_type_t));
-    v_set_result_value(0);
 
     v_ast_accept_visitor(arg0, vis);
 

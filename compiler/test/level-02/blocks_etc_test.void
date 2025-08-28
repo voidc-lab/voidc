@@ -1,0 +1,144 @@
+{   v_import("level-00");
+    v_import("level-01");
+
+    v_import("level-02/literals.void");
+    v_import("level-02/loops_etc.void");
+    v_import("level-02/aggregates.void");
+    v_import("level-02/overloading.void");
+    v_import("level-02/projections.void");
+    v_import("level-02/structures.void");
+    v_import("level-02/mangling.void");
+    v_import("level-02/inlining.void");
+    v_import("level-02/unions.void");
+    v_import("level-02/blocks_etc.void");
+
+    v_import("printf.void");
+}
+
+{   v_enable_level_01();
+
+    voidc_enable_literals();
+    voidc_enable_loops_etc();
+    voidc_enable_aggregates();
+    voidc_enable_overloading();
+    voidc_enable_projections();
+    voidc_enable_structures();
+    voidc_enable_mangling();
+    voidc_enable_inlining();
+    voidc_enable_unions();
+    voidc_enable_blocks_etc();
+}
+
+
+//---------------------------------------------------------------------
+//{ voidc_verify_jit_module_optimized(true); }
+//{ v_debug_print_module(2); }
+{
+    a = block
+    {
+        x: &int := 5;
+
+        for (i: &int := 0; i < 5; ++i)
+        {
+            x += i;
+        }
+
+        v_break(x + 2);
+    };
+
+    printf("a: %d\n", a);
+}
+
+//---------------------------------------------------------------------
+//{ voidc_verify_jit_module_optimized(true); }
+//{ v_debug_print_module(2); }
+{
+    a: int  =  for (i: &int := 0; i < 100; ++i)
+    {
+        _a = v_get_break_value();
+
+        if (i == 0) _a := 0;
+        else        _a += i;
+
+//      printf("i: %d, _a: %d\n", i, _a);
+    };
+
+    printf("a: %d\n", a);
+
+}
+
+
+//---------------------------------------------------------------------
+//{ voidc_verify_jit_module_optimized(true); }
+//{ v_debug_print_module(2); }
+{
+    printf("\n");
+
+    x: &int := block { v_break(42); };
+
+    printf("x: %d\n", x);
+
+    xx: &int := { a: &int := 1; a += 2; a+3 };
+
+    printf("xx: %d\n", xx);
+
+    u: &int[2] := block { v_break({7, 77}); };
+
+    printf("u: (%d, %d)\n", u[0], u[1]);
+
+    v: vec(int, 2) = block { v_break({8, 88}); };
+
+    printf("v: [%d, %d]\n", v[0], v[1]);
+}
+
+
+//---------------------------------------------------------------------
+{ voidc_verify_jit_module_optimized(true); }
+{ v_debug_print_module(2); }
+{
+    printf("\n");
+
+    x = { a = 1; a = a+1;  a+1 };
+
+    printf("x: %d\n", x);
+
+    xx = { a = 1; a = a+1;  { b = a+1; b = b+1; b+1 } };
+
+    printf("xx: %d\n", xx);
+
+    y = { a: &int := 1; a += 1;  a+2 };
+
+    printf("y: %d\n", y);
+
+    yy = { a: &int := 1; a += 1;  { b: &int := a+1; b += 1;  b+2 } };
+
+    printf("yy: %d\n", yy);
+}
+
+
+//---------------------------------------------------------------------
+//{ voidc_verify_jit_module_optimized(true); }
+//{ v_debug_print_module(2); }
+
+foo: (a: int[2]) ~> int[2]
+{
+    block
+    {
+        v_break();
+    }
+
+    v_return({ a[0], 8 });
+}
+
+bar: (a: int[2]) ~> int[2]  =
+{
+    block
+    {
+        v_break();
+    }
+
+    { a[0], 8 }
+};
+
+
+
