@@ -929,7 +929,7 @@ base_pop_variables_default(void *void_ctx)
     lctx.vars_stack.pop_front();
 }
 
-}
+}   //- extern "C"
 
 
 //---------------------------------------------------------------------
@@ -962,16 +962,21 @@ base_push_temporaries_default(void *void_ctx)
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
     auto &gctx = lctx.global_ctx;
 
-    v_type_t    *t;
-    LLVMValueRef f;
+    LLVMValueRef stack_ptr = 0;
 
-    lctx.obtain_identifier(llvm_stacksave_q, t, f);
+    if (LLVMGetInsertBlock(lctx.global_ctx.builder))
+    {
+        v_type_t    *t;
+        LLVMValueRef f;
 
-    t = static_cast<v_type_pointer_t *>(t)->element_type();
+        lctx.obtain_identifier(llvm_stacksave_q, t, f);
 
-    auto stack_ptr = LLVMBuildCall2(gctx.builder, t->llvm_type(), f, nullptr, 0, "tmp_stack_ptr");
+        t = static_cast<v_type_pointer_t *>(t)->element_type();
 
-    lctx.temporaries_stack.push_front({stack_ptr, false});          //- Sic!
+        stack_ptr = LLVMBuildCall2(gctx.builder, t->llvm_type(), f, nullptr, 0, "tmp_stack_ptr");
+    }
+
+    lctx.temporaries_stack.push_front({stack_ptr, 0});          //- Sic!
 }
 
 //---------------------------------------------------------------------
@@ -980,16 +985,18 @@ base_pop_temporaries_default(void *void_ctx)
 {
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
 
-    {   auto cur_b = LLVMGetInsertBlock(lctx.global_ctx.builder);
-
+    if (auto cur_b = LLVMGetInsertBlock(lctx.global_ctx.builder))
+    {
         if (auto trm_v = LLVMGetBasicBlockTerminator(cur_b))
         {
             LLVMPositionBuilderBefore(lctx.global_ctx.builder, trm_v);
         }
     }
 
-    {   auto &stack_front = lctx.temporaries_stack.front();
+    auto &stack_front = lctx.temporaries_stack.front();
 
+    if (stack_front.first)
+    {
         if (stack_front.second)
         {
             v_type_t    *t;
@@ -1008,6 +1015,52 @@ base_pop_temporaries_default(void *void_ctx)
     }
 
     lctx.temporaries_stack.pop_front();
+}
+
+//---------------------------------------------------------------------
+static LLVMValueRef
+base_make_temporary_default(void *void_ctx, v_type_t *type, LLVMValueRef value)
+{
+    auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
+    auto &gctx = lctx.global_ctx;
+
+    auto &stack_front = lctx.temporaries_stack.front();
+
+    assert(stack_front.first);      //- !!!
+
+    stack_front.second += 1;        //- !
+
+    if (type == nullptr)            //- Sic !!!
+    {
+        auto ptr_ = LLVMPointerTypeInContext(gctx.llvm_ctx, 0);
+
+        auto anchor_tmp = LLVMBuildLoad2(gctx.builder, ptr_, LLVMGetUndef(ptr_), "anchor_tmp");
+
+        return  anchor_tmp;
+    }
+
+    auto tmp = LLVMBuildAlloca(gctx.builder, type->llvm_type(), "tmp");
+
+    if (value)  LLVMBuildStore(gctx.builder, value, tmp);           //- Sic!
+
+    return  tmp;
+}
+
+//---------------------------------------------------------------------
+static void
+base_erase_temporary_default(void *void_ctx)
+{
+    auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
+
+    auto &stack_front = lctx.temporaries_stack.front();
+
+    assert(stack_front.first);      //- !!!
+
+    auto &count = stack_front.second;
+
+    assert(count);
+
+    count -= 1;
 }
 
 
@@ -1376,45 +1429,7 @@ base_try_to_convert_default(void *void_ctx, v_type_t *t0, LLVMValueRef v0, v_typ
     return false;
 }
 
-//---------------------------------------------------------------------
-static LLVMValueRef
-base_make_temporary_default(void *void_ctx, v_type_t *type, LLVMValueRef value)
-{
-    auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
-    auto &gctx = lctx.global_ctx;
-
-    lctx.temporaries_stack.front().second += 1;             //- !
-
-    if (type == nullptr)        //- Sic !!!
-    {
-        auto ptr_ = LLVMPointerTypeInContext(gctx.llvm_ctx, 0);
-
-        auto anchor_tmp = LLVMBuildLoad2(gctx.builder, ptr_, LLVMGetUndef(ptr_), "anchor_tmp");
-
-        return  anchor_tmp;
-    }
-
-    auto tmp = LLVMBuildAlloca(gctx.builder, type->llvm_type(), "tmp");
-
-    if (value)  LLVMBuildStore(gctx.builder, value, tmp);           //- Sic!
-
-    return  tmp;
-}
-
-//---------------------------------------------------------------------
-static void
-base_erase_temporary_default(void *void_ctx)
-{
-    auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
-
-    auto &count = lctx.temporaries_stack.front().second;
-
-    assert(count);
-
-    count -= 1;
-}
-
-}
+}   //- extern "C"
 
 
 //---------------------------------------------------------------------

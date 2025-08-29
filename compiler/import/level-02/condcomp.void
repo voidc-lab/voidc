@@ -204,7 +204,11 @@ compile_stmt_ccif_list: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
             v_set_result_type(UNREFERENCE_TAG);
 
+            v_push_temporaries();
+
             v_ast_accept_visitor(cond, vis);
+
+            v_pop_temporaries();
 
             v = v_get_result_value();
 
@@ -648,7 +652,11 @@ compile_cc_assert: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     v_set_result_type(UNREFERENCE_TAG);
 
+    v_push_temporaries();
+
     v_ast_accept_visitor((expr: *v_ast_base_t), vis);
+
+    v_pop_temporaries();
 
     v = v_get_result_value();
 

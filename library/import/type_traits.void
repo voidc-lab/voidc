@@ -810,7 +810,7 @@ v_internal_type_traits_effort: (*void) ~> void
 
     v_add_type_q(q_static_array_of_generic_args_t, static_array_of_generic_args_t);
 
-    {   v_add_overload("v.op_postfix_index", static_array_of_generic_args_t, "my.static_array_of_genereic_args_index");
+    {   v_add_overload("v.op_postfix_index", static_array_of_generic_args_t, "my.static_array_of_generic_args_index");
 
         v_add_intrinsic("my.static_array_of_generic_args_index", static_array_of_generic_args_index_intrinsic,  0);
     }

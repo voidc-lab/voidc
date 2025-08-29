@@ -405,10 +405,10 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     builder  = v_target_get_builder();
     llvm_ctx = v_target_get_llvm_ctx();
 
-    stack_v: &LLVMValueRef := v_undef();        //- ...
-    anchor:  &LLVMValueRef := 0;
+    stack_v: &LLVMValueRef := 0;                //- !
+    anchor:  &LLVMValueRef := v_undef();
 
-    top_level = (v_get_variable_value_q(voidc_internal_expr_block_enabled_q) == 0);
+    top_level = v_get_variable_value_q(voidc_internal_expr_block_enabled_q) == 0;
 
     if (top_level)
     {
@@ -416,16 +416,19 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
         v_add_variable_q(voidc_internal_branch_target_leave_q, 0, 0);           //- Sic !!!
 
-        lltyp = v_alloca(LLVMTypeRef);
+        if (LLVMGetInsertBlock(builder))
+        {
+            lltyp = v_alloca(LLVMTypeRef);
 
-        llvm_stacksave_f   = v_obtain_function(voidc_llvm_stacksave_name, lltyp);
-        llvm_stacksave_ft_ = v_load(lltyp);
+            llvm_stacksave_f   = v_obtain_function(voidc_llvm_stacksave_name, lltyp);
+            llvm_stacksave_ft_ = v_load(lltyp);
 
-        stack_v := LLVMBuildCall2(builder, llvm_stacksave_ft_, llvm_stacksave_f, 0, 0, "stack_v");
+            stack_v := LLVMBuildCall2(builder, llvm_stacksave_ft_, llvm_stacksave_f, 0, 0, "stack_v");
 
-        ptr_ = LLVMPointerTypeInContext(llvm_ctx, 0);           //- 0?
+            ptr_ = LLVMPointerTypeInContext(llvm_ctx, 0);           //- 0?
 
-        anchor := LLVMBuildLoad2(builder, ptr_, LLVMGetUndef(ptr_), "anchor");
+            anchor := LLVMBuildLoad2(builder, ptr_, LLVMGetUndef(ptr_), "anchor");
+        }
     }
     else    //- ! top_level
     {
@@ -450,66 +453,69 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     if (top_level)
     {
-        t  = v_get_result_type();
-        t_ = v_type_get_llvm_type(t);
-
-        if (t_) block
+        if (stack_v)
         {
-            v = v_get_result_value();
+            t  = v_get_result_type();
+            t_ = v_type_get_llvm_type(t);
 
-            if (LLVMIsConstant(v)  &&  !check_parent(v))  v_break();
-
-            v_save_builder_ip();
-
-            LLVMPositionBuilderBefore(builder, anchor);
-
-            va = LLVMBuildAlloca(builder, t_, "");
-
-            v_restore_builder_ip();
-
-            LLVMBuildStore(builder, v, va);
-        }
-
-        LLVMInstructionEraseFromParent(anchor);
-
-
-        if (leave_bv = v_get_variable_value_q(voidc_internal_branch_target_leave_q))
-        {
-            cur_b = LLVMGetInsertBlock(builder);
-
-            v_assert(!LLVMGetBasicBlockTerminator(cur_b));          //- ?
-
-            leave_b = LLVMValueAsBasicBlock(leave_bv);
-
-            LLVMBuildBr(builder, leave_b);
-
-            leave_first_bv = v_get_variable_value_q(voidc_internal_branch_target_leave_first_q);
-            leave_first_b  = LLVMValueAsBasicBlock(leave_first_bv);
-
-            LLVMMoveBasicBlockAfter(leave_first_b, cur_b);
-
-            LLVMPositionBuilderAtEnd(builder, leave_first_b);
-        }
-
-        if (va = LLVMGetNextInstruction(stack_v))           //- Sic !!!
-        {
-            if (t_)
+            if (t_) block
             {
-                v = LLVMBuildLoad2(builder, t_, va, "");
+                v = v_get_result_value();
 
-                v_set_result_value(v);
+                if (LLVMIsConstant(v)  &&  !check_parent(v))  v_break();
+
+                v_save_builder_ip();
+
+                LLVMPositionBuilderBefore(builder, anchor);
+
+                va = LLVMBuildAlloca(builder, t_, "");
+
+                v_restore_builder_ip();
+
+                LLVMBuildStore(builder, v, va);
             }
 
-            lltyp: &LLVMTypeRef := v_undef();
+            LLVMInstructionEraseFromParent(anchor);
 
-            llvm_stackrestore_f   = v_obtain_function(voidc_llvm_stackrestore_name, &lltyp);
-            llvm_stackrestore_ft_ = v_load(&lltyp);
 
-            LLVMBuildCall2(builder, llvm_stackrestore_ft_, llvm_stackrestore_f, &stack_v, 1, "");
-        }
-        else
-        {
-            LLVMInstructionEraseFromParent(stack_v);
+            if (leave_bv = v_get_variable_value_q(voidc_internal_branch_target_leave_q))
+            {
+                cur_b = LLVMGetInsertBlock(builder);
+
+                v_assert(!LLVMGetBasicBlockTerminator(cur_b));          //- ?
+
+                leave_b = LLVMValueAsBasicBlock(leave_bv);
+
+                LLVMBuildBr(builder, leave_b);
+
+                leave_first_bv = v_get_variable_value_q(voidc_internal_branch_target_leave_first_q);
+                leave_first_b  = LLVMValueAsBasicBlock(leave_first_bv);
+
+                LLVMMoveBasicBlockAfter(leave_first_b, cur_b);
+
+                LLVMPositionBuilderAtEnd(builder, leave_first_b);
+            }
+
+            if (va = LLVMGetNextInstruction(stack_v))           //- Sic !!!
+            {
+                if (t_)
+                {
+                    v = LLVMBuildLoad2(builder, t_, va, "");
+
+                    v_set_result_value(v);
+                }
+
+                lltyp: &LLVMTypeRef := v_undef();
+
+                llvm_stackrestore_f   = v_obtain_function(voidc_llvm_stackrestore_name, &lltyp);
+                llvm_stackrestore_ft_ = v_load(&lltyp);
+
+                LLVMBuildCall2(builder, llvm_stackrestore_ft_, llvm_stackrestore_f, &stack_v, 1, "");
+            }
+            else
+            {
+                LLVMInstructionEraseFromParent(stack_v);
+            }
         }
 
         v_restore_variables();
@@ -525,7 +531,7 @@ my_compile_ast_stmt_block_etc: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_
         llvm_ctx = v_target_get_llvm_ctx();
         builder  = v_target_get_builder();
 
-        cur_b = LLVMGetInsertBlock(builder);
+        cur_b = LLVMGetInsertBlock(builder);        v_assert(cur_b);    //- !
         cur_f = LLVMGetBasicBlockParent(cur_b);
 
         sbl_leave_b  = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "sbl_leave_b");

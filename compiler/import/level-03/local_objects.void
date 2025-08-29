@@ -188,6 +188,7 @@ local_objects_ctx_t = struct
     try_to_convert: my_try_to_convert_ctx_t;
     return:         my_intrinsic_ctx_t;
     break:          my_intrinsic_ctx_t;
+    expr_block:     my_intrinsic_ctx_t;
     op_braces:      my_intrinsic_ctx_t;
     key_quark:      my_compute_key_quark_type_t;
     op_index:       op_postfix_index_helper_ctx_t;
@@ -663,7 +664,7 @@ my_compile_stmt: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     builder = v_target_get_builder();
 
-    if (name  &&  name[0])
+    if (LLVMGetInsertBlock(builder)  &&  name  &&  name[0])
     {
         llvm_ctx = v_target_get_llvm_ctx();
 
@@ -681,6 +682,7 @@ my_compile_stmt: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
     //---------------------------------------------------
 
     if (!anchor)  v_return();
+
 
     t = v_get_variable_type(name);
 
@@ -1282,17 +1284,21 @@ check_parent: (v: LLVMValueRef) ~> bool
 
 //---------------------------------------------------------------------
 private
-compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+my_compile_expr_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-//printf("compile_expr_block start\n");
-//defer printf("compile_expr_block stop\n");
+//printf("my_compile_expr_block start\n");
+//defer printf("my_compile_expr_block stop\n");
 
-    void_obj = v_ast_generic_get_object((self: *v_ast_expr_t));
+    builder = v_target_get_builder();
 
-    obj = *(void_obj: *v_ast_expr_block_t);
+    if (!LLVMGetInsertBlock(builder))
+    {
+        (aux: *local_objects_ctx_t)->expr_block(vis, self);
+
+        v_return();
+    }
 
 
-    builder  = v_target_get_builder();
     llvm_ctx = v_target_get_llvm_ctx();
 
     vr:      &LLVMValueRef := v_undef();
@@ -1327,6 +1333,11 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     }
 
     v_assert(v_get_variable_value_q(voidc_internal_expr_block_enabled_q) == 0);                 //- Sic !!!
+
+
+    void_obj = v_ast_generic_get_object((self: *v_ast_expr_t));
+
+    obj = *(void_obj: *v_ast_expr_block_t);
 
 
     v_push_result();
@@ -1830,8 +1841,10 @@ voidc_enable_local_objects_compiler: () ~> void
     expr_stmt_q  = q("expr_stmt");
     expr_block_q = q("expr_block");
 
-    voidc_visitor_set_method(vis, vis, expr_stmt_q,  my_compile_expr_stmt, 0);
-    voidc_visitor_set_method(vis, vis, expr_block_q, compile_expr_block, 0);
+    ctx.expr_block.fun := voidc_visitor_get_method(vis, expr_block_q,   &ctx.expr_block.aux);
+
+    voidc_visitor_set_method(vis, vis, expr_stmt_q,  my_compile_expr_stmt,  0);
+    voidc_visitor_set_method(vis, vis, expr_block_q, my_compile_expr_block, &ctx);
 
     //-----------------------------------------------------------------
     {   aux: &*void := v_undef();
