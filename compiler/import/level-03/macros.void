@@ -108,7 +108,7 @@ mk_macro_id_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_t
     kind = v_std_any_get_value(intptr_t, any+0);
     name = v_std_any_get_pointer(v_ast_expr_t, any+1);
 
-    quark: &v_quark_t := v_undef();
+    quark: &v_quark_t := undef;
 
     if (kind) quark := macro_defn_q;
     else      quark := macro_spec_defn_q;
@@ -252,7 +252,7 @@ macro_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_
 
         v_ast_accept_visitor(expr, vis);
 
-        v_return();
+        return;
     }
 
     bind.fun(bind.aux, vis, self);
@@ -358,7 +358,7 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
 
         v_ast_accept_visitor(&ctx.body, vis);
 
-        v_return();         //- Sic !!!
+        return;         //- Sic !!!
     }
 
     v_assert(!v_empty(&ctx.type));
@@ -488,7 +488,7 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
         v_ast_accept_visitor(&ctx.body, vis);
 
-        v_return();         //- Sic !!!
+        return;         //- Sic !!!
     }
 
     v_assert(!v_empty(&ctx.type));
@@ -787,7 +787,7 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
                 quark := v_ast_expr_identifier_get_name_q(name);
 
-                v_break();
+                break;
             }
 
             v_assert(!kind);        //- unit_defn ...
@@ -866,7 +866,7 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
                 {
                     types[i] := v_void_type();
 
-                    v_continue();
+                    continue;
                 }
 
                 v_reset_result();
@@ -879,7 +879,7 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
             }
         }
 
-        rtype: &*v_type_t := v_undef();
+        rtype: &*v_type_t := undef;
 
         if (v_empty(&ctx->type))
         {
@@ -927,13 +927,13 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
         v_add_intrinsic_q(qname, macro_spec_expand_intrinsic, ctx);
     }
 
-    if (kind) v_return();       //- Sic !!!
+    if (kind) return;       //- Sic !!!
 
-    if (!export)  v_return();
+    if (!export)  return;
 
     //-------------------------------------------------------------
     stmt_list = voidc_definitions_context_get_stmt_list();
-    if (!stmt_list)  v_return();
+    if (!stmt_list)  return;
 
     stmt: &v_ast_stmt_t := {};
 
@@ -960,7 +960,7 @@ voidc_enable_macros_compiler: () ~> void
 
     gen = v_get_ast_generator_visitor();
 
-    gen_aux: &*void := v_undef();
+    gen_aux: &*void := undef;
 
     gen_generic = voidc_visitor_get_method(gen, unit_defn_list_q, &gen_aux);
 

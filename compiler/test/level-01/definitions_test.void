@@ -1,5 +1,6 @@
 {   v_import("level-00");
 
+    v_import("level-01/function_hack.void");
     v_import("level-01/if_then_else.void");
     v_import("level-01/block.void");
     v_import("level-01/loop.void");
@@ -31,7 +32,7 @@
 
     loop
     {
-        if (i >= N) v_break();
+        if (i >= N) break;
 
         sprintf(buf, "sin(%d): %g", i, sin(i));
 
@@ -47,7 +48,7 @@
 
     loop
     {
-        if (i >= N) v_break();
+        if (i >= N) break;
 
         foo(qwerty, i, j);
 
@@ -138,7 +139,7 @@
 
     loop
     {
-        if (i >= 512)   v_break();
+        if (i >= 512)   break;
 
         z0v[i] += i;
 
@@ -153,7 +154,7 @@
 
 
 //---------------------------------------------------------------------
-utf8_symbols: &char[2][2][4] := v_undef();
+utf8_symbols: &char[2][2][4] := undef;
 
 strncpy: (dst: *char, src: *const char, count: size_t) ~> *char;
 
@@ -175,17 +176,17 @@ strncpy: (dst: *char, src: *const char, count: size_t) ~> *char;
 LLEN = 128;
 NUMS = 2 + 1*2*3*4*5*6;
 
-f_buf: &bool[LLEN][2] := v_undef();
+f_buf: &bool[LLEN][2] := undef;
 
 //---------------------------------------------------------------------
 //{ v_debug_print_module(1); }
 {
     n: &int := 1;
-    i: &int := v_undef();
+    i: &int := undef;
 
     loop
     {
-        if (n > NUMS)   v_break();
+        if (n > NUMS)   break;
 
         p = n & 1;
 
@@ -193,8 +194,8 @@ f_buf: &bool[LLEN][2] := v_undef();
 
         loop
         {
-            if (i >= LLEN)  v_break();
-            if (i > n)      v_break();
+            if (i >= LLEN)  break;
+            if (i > n)      break;
 
             f_buf[i][p] := (n%(i+1) == 0);
 
@@ -207,8 +208,8 @@ f_buf: &bool[LLEN][2] := v_undef();
 
             loop
             {
-                if (i >= LLEN)  v_break();
-                if (i > n)      v_break();
+                if (i >= LLEN)  break;
+                if (i > n)      break;
 
                 f0: int(2) = f_buf[i][0];       //- WTF?
                 f1: int(2) = f_buf[i][1];       //- WTF?
@@ -242,5 +243,31 @@ f_buf: &bool[LLEN][2] := v_undef();
 {
     printf("add(2, 3) = %d\n", add(2, 3));
 }
+
+
+//---------------------------------------------------------------------
+//{ v_debug_print_module(1); }
+foo: (x: int) ~> int
+{
+    printf("foo %d\n", x);
+
+    return x;
+}
+
+bar: (x: int) ~> void
+{
+    foo(x+1);
+
+    printf("bar %d\n", x);
+
+    return;
+}
+
+{
+    printf("\n");
+
+    bar(7);
+}
+
 
 

@@ -210,7 +210,7 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
 
     if (!v_empty(&obj.name))
     {
-        union_name: &*const char := v_undef();
+        union_name: &*const char := undef;
 
         tag = v_ast_base_get_tag((&obj.name: *v_ast_base_t));
 
@@ -259,14 +259,14 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
 
         i8_t = v_int_type(8);
 
-        ts: &v_type_ptr[2] := { v_undef(), v_array_type(i8_t, 0) };
+        ts: &v_type_ptr[2] := { undef, v_array_type(i8_t, 0) };
 
         if (N == 0)
         {
             if (type) v_type_struct_set_body(type, ts+1, 1, false);
             else      type := v_struct_type(ts+1, 1, false);
 
-            v_break();
+            break;
         }
 
         types := v_malloc(v_type_ptr, N);
@@ -278,7 +278,7 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
         num_size:  &size_t := 0;
         max_align: &size_t := 0;
 
-        ta: &v_type_ptr[2] := { v_uint_type(1), v_undef() };
+        ta: &v_type_ptr[2] := { v_uint_type(1), undef };
 
         for (i: &int := 0; i < N; ++i)
         {
@@ -377,7 +377,7 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
     //-----------------------------------------------------------------
     stmt_list = voidc_definitions_context_get_stmt_list();
 
-    if (!stmt_list)  v_return();
+    if (!stmt_list)  return;
 
 
     expr = v_make_object(v_ast_expr_t, 3);
@@ -405,7 +405,7 @@ compile_expr_union: (aux: *void, vis: *voidc_visitor_t,
     }
 
 
-    if (N == 0)  v_return();
+    if (N == 0)  return;
 
     shdr = v_std_string_get(hstr);
 

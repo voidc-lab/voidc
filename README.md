@@ -86,7 +86,7 @@ check_fruits: (a: &num_t, b: &num_t, c: &num_t) ~> bool     // By reference
 {
     ab = a + b;     ac = a + c;     bc = b + c;
 
-    v_return(a*ab*ac + b*ab*bc + c*ac*bc == 4*ab*ac*bc);
+    return  a*ab*ac + b*ab*bc + c*ac*bc == 4*ab*ac*bc;
 }
 
 //---------------------------------------------------------------------
@@ -164,7 +164,7 @@ sieve = new bool[S];    defer delete[] sieve;
         {
             ++n;
 
-            if (n == N) v_break();
+            if (n == N) break;
         }
     }
 

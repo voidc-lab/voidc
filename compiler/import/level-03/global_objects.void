@@ -215,7 +215,7 @@ prepare_initterm_function: (name: *const char) ~> void
 
     f = LLVMAddFunction(v_get_module(), name, ft_);
 
-    sz: &size_t := v_undef();
+    sz: &size_t := undef;
 
     uname = LLVMGetValueName2(f, &sz);          //- Get unique name...
 
@@ -309,7 +309,7 @@ my_abstract_static_type_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_
 
     //-------------------------------------------------------------
     stmt_list = voidc_definitions_context_get_stmt_list();
-    if (!stmt_list)  v_return();
+    if (!stmt_list)  return;
 
     expr: &v_ast_expr_t[2] := {};
 
@@ -386,8 +386,8 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     {
         v_assert(v_type_get_llvm_type(var_type));
 
-        if (v_type_is_reference(var_type))  v_break();
-        if (v_type_is_function(var_type))   v_break();
+        if (v_type_is_reference(var_type))  break;
+        if (v_type_is_function(var_type))   break;
 
         //- ... ? ...
 
@@ -437,13 +437,15 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         t = v_get_result_type();
         v = v_get_result_value();
 
-        value_g: &LLVMValueRef := v_undef();
+        value_g: &LLVMValueRef := undef;
 
         v_obtain_identifier(name, 0, &value_g);         //- Sic!
 
         if (private)  LLVMSetLinkage(value_g, LLVMPrivateLinkage);
 
-        is_special = v_type_is_special(t, q_initialize);
+        is_special: &bool := v_type_is_special(t, q_initialize);
+
+        if (is_special  &&  LLVMIsUndef(v)) is_special := false;
 
         if (!is_special)
         {
@@ -501,7 +503,7 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
 
     //-------------------------------------------------------------
-    if (private  ||  !stmt_list)  v_return();
+    if (private  ||  !stmt_list)  return;
 
 
     expr: &v_ast_expr_t[3] := {};
@@ -527,8 +529,8 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     if (v_empty(value))
     block
     {
-        if (v_type_is_reference(var_type))  v_break();
-        if (v_type_is_function(var_type))   v_break();
+        if (v_type_is_reference(var_type))  break;
+        if (v_type_is_function(var_type))   break;
 
         //- ... ? ...
 
@@ -564,15 +566,15 @@ check_parent: (v: LLVMValueRef) ~> bool
 {
     if (gv = LLVMIsAGlobalValue(v))
     {
-        if (LLVMGetGlobalParent(gv))  v_return(true);
+        if (LLVMGetGlobalParent(gv))  return true;
     }
 
     for (n = LLVMGetNumOperands(v), i: &int := 0; i < n; ++i)
     {
-        if (check_parent(LLVMGetOperand(v, i)))  v_return(true);
+        if (check_parent(LLVMGetOperand(v, i)))  return true;
     }
 
-    v_return(false);
+    return  false;
 }
 
 //---------------------------------------------------------------------
@@ -608,7 +610,7 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     type  = v_list_get_item(list, 2);
     value = v_list_get_item(list, 3);
 
-    ttag: &*v_type_t := v_undef();
+    ttag: &*v_type_t := undef;
 
     if (v_empty(type))
     {
@@ -657,10 +659,10 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
     {
         q = voidc_abstract_static_constant_q;
 
-        void_aux: &*void := v_undef();
+        void_aux: &*void := undef;
 
         fun = v_util_lookup_overload(q, t, &void_aux);
-        if (!fun) v_break();
+        if (!fun) break;
 
         v_pop_temporaries();
 
@@ -677,7 +679,7 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
         (fun: *intrinsic_ft)(void_aux, vis, self, t, v, name, export);
 
-        v_return();
+        return;
     }
 
     is_constant = LLVMIsConstant(v);
@@ -707,7 +709,7 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         }
 
 
-        value_g: &LLVMValueRef := v_undef();
+        value_g: &LLVMValueRef := undef;
 
         v_obtain_identifier(name, 0, &value_g);         //- Sic!
 
@@ -782,7 +784,7 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
 
     //-------------------------------------------------------------
-    if (private  ||  !stmt_list)  v_return();
+    if (private  ||  !stmt_list)  return;
 
 
     expr: &v_ast_expr_t[3] := {};
@@ -879,7 +881,7 @@ compile_unit_stmt_init: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     obj = *(void_obj: *v_ast_unit_stmt_t);
 
-    if (v_empty(&obj.body))   v_return();
+    if (v_empty(&obj.body))   return;
 
     //-------------------------------------------------------------
     module = v_get_module();
@@ -914,7 +916,7 @@ compile_unit_stmt_term: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     obj = *(void_obj: *v_ast_unit_stmt_t);
 
-    if (v_empty(&obj.body))   v_return();
+    if (v_empty(&obj.body))   return;
 
     //-------------------------------------------------------------
     module = v_get_module();
@@ -985,26 +987,26 @@ my_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
 
             v_adopt_result(ttag, v);        //- Sic!
 
-            v_return();
+            return;
         }
     }
 
     block
     {
-        if (v_get_variable_q(qname, 0, 0))  v_break();
+        if (v_get_variable_q(qname, 0, 0))  break;
 
         {   u: &LLVMValueRef := 0;
 
-            if (!v_find_constant_q(qname, 0, &u)) v_break();
+            if (!v_find_constant_q(qname, 0, &u)) break;
 
-            if (u)  v_break();
+            if (u)  break;
         }
 
         v_assert(v_type_is_reference(t));           //- HACK!
 
         t := v_type_refptr_get_element_type(t);     //- Sic!!!
 
-        if (v_type_is_special(t, q_initialize)) v_break();
+        if (v_type_is_special(t, q_initialize)) break;
 
         builder = v_target_get_builder();
 
@@ -1040,7 +1042,7 @@ my_compile_defn_list_unit: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
         v_ast_accept_visitor(self, visitor);            //- Sic!!!
 
-        v_return();
+        return;
     }
 
     //-------------------------------------------------------------
@@ -1139,7 +1141,7 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
     {
         list = lists[i];
 
-        if (!v_list_get_size(list)) v_continue();
+        if (!v_list_get_size(list)) continue;
 
         any = v_list_get_item(list, 0);
 
@@ -1147,11 +1149,11 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
         mod = LLVMGetGlobalParent(fv);
 
-        if (mod == module)  v_continue();
+        if (mod == module)  continue;
 
         if (ctx.fun)  ctx.fun(ctx.ctx, module);
 
-        v_return();
+        return;
     }
 
     //--------------------------------------------------------------
@@ -1177,7 +1179,7 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
     val: &LLVMValueRef[3] :=
     {
         LLVMConstInt(int32_t_, 101, 0),
-        v_undef(),
+        undef,
         LLVMConstNull(void_ptr_),
     };
 
@@ -1194,7 +1196,7 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
             cdname = cdtors[i];
 
-            ev: &*LLVMValueRef := v_undef();
+            ev: &*LLVMValueRef := undef;
 
             if (cdt = LLVMGetNamedGlobal(module, cdname))
             {
@@ -1267,9 +1269,6 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
     }
 
     //--------------------------------------------------------------
-//  global_ctx.name := 0;
-
-    //--------------------------------------------------------------
     if (ctx.fun)  ctx.fun(ctx.ctx, module);
 }
 
@@ -1303,8 +1302,8 @@ compare: (void_lhs: *const void, void_rhs: *const void) ~> int
     lhs = *(void_lhs: *const item_t);
     rhs = *(void_rhs: *const item_t);
 
-    if (lhs.pri == rhs.pri) v_return(lhs.num - rhs.num);
-    else                    v_return(lhs.pri - rhs.pri);
+    if (lhs.pri == rhs.pri)  return  lhs.num - rhs.num;
+    else                     return  lhs.pri - rhs.pri;
 }
 
 //---------------------------------------------------------------------
@@ -1327,7 +1326,7 @@ voidc_finish_module_cdtors: (void_ctx: *void, module: LLVMModuleRef) ~> void
     {
         cdt = LLVMGetNamedGlobal(module, cdtors[i]);
 
-        if (!cdt) v_continue();
+        if (!cdt) continue;
 
         cdt0 = LLVMGetOperand(cdt, 0);
 
@@ -1357,7 +1356,7 @@ voidc_finish_module_cdtors: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
         v_std_string_set(sstr, prefs[i]);
 
-        len: &size_t := v_undef();
+        len: &size_t := undef;
 
         v_std_string_append(sstr, LLVMGetModuleIdentifier(module, &len));
 

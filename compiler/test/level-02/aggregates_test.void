@@ -154,18 +154,18 @@ node_t = v_struct("struct.node_t", {int, *node_t});
 //---------------------------------------------------------------------
 { v_debug_print_module(1); }
 
-Z: int(1024) = v_undef();
+Z: int(1024) = undef;
 
 z: &int(1024) := Z;
 
-zz: &int(1024) := v_undef();
+zz: &int(1024) := undef;
 
 
-Y: float(64) = v_undef();
+Y: float(64) = undef;
 
 y: &float(64) := Y;
 
-yy: &float(64) := v_undef();
+yy: &float(64) := undef;
 
 
 W: int[][4][3][2] = { {}, {}, {}, {}, {} };

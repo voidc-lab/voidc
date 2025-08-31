@@ -85,8 +85,9 @@
     v_add_symbol("q_ast_make_expr_stmt",         q_ref, q("v_ast_make_expr_stmt"));
     v_add_symbol("q_ast_make_expr_block",        q_ref, q("v_ast_make_expr_block"));
 
-    v_add_symbol("q_ast_make_operator_unary",  q_ref, q("v_ast_make_operator_unary"));
-    v_add_symbol("q_ast_make_operator_binary", q_ref, q("v_ast_make_operator_binary"));
+    v_add_symbol("q_ast_make_operator_nullary", q_ref, q("v_ast_make_operator_nullary"));
+    v_add_symbol("q_ast_make_operator_unary",   q_ref, q("v_ast_make_operator_unary"));
+    v_add_symbol("q_ast_make_operator_binary",  q_ref, q("v_ast_make_operator_binary"));
 }
 
 
@@ -161,7 +162,7 @@ struct voidc_ast_generator_t
 
     if (gen.max_var < r)  gen.max_var := r;
 
-    v_return(r);
+    return  r;
 }
 
 (_.pop_var()): (gen: &voidc_ast_generator_t) ~> void
@@ -182,7 +183,7 @@ struct voidc_ast_generator_t
 
     qv = v_quark_from_string(v_std_string_get(&sstr));
 
-    if (qt == q_base)   v_return(qv);
+    if (qt == q_base)   return qv;
 
     v_std_string_append(&sstr, ".");
     v_std_string_append(&sstr, v_quark_to_string(qt));
@@ -208,7 +209,7 @@ struct voidc_ast_generator_t
         gen.add_stmt(&stmt);
     }
 
-    v_return(qr);
+    return  qr;
 }
 
 //---------------------------------------------------------------------
@@ -252,7 +253,7 @@ struct voidc_ast_generator_t
         gen.add_stmt(&stmt);
     }
 
-    v_return(qr);
+    return  qr;
 }
 
 //---------------------------------------------------------------------
@@ -882,7 +883,7 @@ gen_expr_string: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     estr = (self: *v_ast_expr_t);
 
-    len: &size_t := v_undef();
+    len: &size_t := undef;
 
     v_ast_expr_string_get_string_data(estr, &len);
 
@@ -1089,6 +1090,61 @@ gen_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
 
 //---------------------------------------------------------------------
+//- operator nullary
+//---------------------------------------------------------------------
+private
+gen_operator_nullary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+    gen = *(vis: *voidc_ast_generator_t);
+
+    void_obj = v_ast_generic_get_object(self);
+
+    obj = *(void_obj: *v_ast_operator_nullary_t);
+
+    quark =  obj[0];
+    pay   = &obj[1];
+
+    qr = gen.cast_var(gen.cur_var+1, q_expr);
+
+    expr: &v_ast_expr_t[3] := {};
+
+    v_ast_make_expr_identifier_q(expr+0, qr);
+
+    stmt: &v_ast_stmt_t := {};
+
+    if (v_empty(pay))
+    {
+        gen.push_var();
+
+        sstr: &v_std_string_t := {};
+
+        v_std_string_set(&sstr, "v_");
+
+        v_std_string_append(&sstr, v_quark_to_string(quark)+2);     //- Skip "v."
+
+        v_ast_make_expr_identifier(expr+1, v_std_string_get(&sstr));
+
+        v_ast_make_stmt_call(&stmt, 0, q_copy, expr, 2);
+    }
+    else
+    {
+        qpay = gen.cast_var(gen.cur_var+1, q_base);
+
+        gen.visit(pay);
+
+        v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
+
+        v_ast_make_expr_identifier_q(expr+2, qpay);
+
+        v_ast_make_stmt_call(&stmt, 0, q_ast_make_operator_nullary, expr, 3);
+    }
+
+    gen.add_stmt(&stmt);
+
+    gen.ret_var := qr;
+}
+
+//---------------------------------------------------------------------
 //- operator unary
 //---------------------------------------------------------------------
 private
@@ -1101,7 +1157,7 @@ gen_operator_unary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     obj = *(void_obj: *v_ast_operator_unary_t);
 
     quark =  obj[0];
-    prio  =  obj[1];
+    prec  =  obj[1];
     pay   = &obj[2];
 
     qr = gen.cast_var(gen.cur_var+1, q_expr);
@@ -1134,7 +1190,7 @@ gen_operator_unary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
         v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
 
-        v_ast_make_expr_integer(expr+2, prio);
+        v_ast_make_expr_integer(expr+2, prec);
 
         v_ast_make_expr_identifier_q(expr+3, qpay);
 
@@ -1158,10 +1214,10 @@ gen_operator_binary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     obj = *(void_obj: *v_ast_operator_binary_t);
 
-    quark =  obj[0];
-    prio  =  obj[1];
-    assoc =  obj[2];
-    pay   = &obj[3];
+    quark  =  obj[0];
+    prec_l =  obj[1];
+    prec_r =  obj[2];
+    pay    = &obj[3];
 
     qr = gen.cast_var(gen.cur_var+1, q_expr);
 
@@ -1193,8 +1249,8 @@ gen_operator_binary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
         v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
 
-        v_ast_make_expr_integer(expr+2, prio);
-        v_ast_make_expr_integer(expr+3, assoc);
+        v_ast_make_expr_integer(expr+2, prec_l);
+        v_ast_make_expr_integer(expr+3, prec_r);
 
         v_ast_make_expr_identifier_q(expr+4, qpay);
 
@@ -1260,6 +1316,7 @@ block
     voidc_visitor_set_method(vis, vis, q("cc_message"),          gen_generic_list,      0);
     voidc_visitor_set_method(vis, vis, q("cc_do"),               gen_generic_list,      0);
     voidc_visitor_set_method(vis, vis, q("cc_assert"),           gen_generic_list,      0);
+    voidc_visitor_set_method(vis, vis, q("operator_nullary"),    gen_operator_nullary,  0);
     voidc_visitor_set_method(vis, vis, q("operator_unary"),      gen_operator_unary,    0);
     voidc_visitor_set_method(vis, vis, q("operator_binary"),     gen_operator_binary,   0);
     voidc_visitor_set_method(vis, vis, q("projection_payload"),  gen_generic_list,      0);
@@ -1282,7 +1339,7 @@ private
 mk_quote_ast_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_t) ~> void
 {
     ast = v_ast_std_any_get_base(any);
-    if (!ast)   v_return();
+    if (!ast)   return;
 
     gen: &voidc_ast_generator_t := {};
 
@@ -1359,7 +1416,7 @@ mk_quote_ast_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
 export
 v_get_ast_generator_visitor: () ~> *voidc_visitor_t
 {
-    v_return(&gen_visitor);
+    return  &gen_visitor;
 }
 
 //---------------------------------------------------------------------

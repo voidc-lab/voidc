@@ -201,12 +201,12 @@ test_t = struct { v_std_any_t; };
 //
 //        v_std_string_set(&ss, "qwe");
 //
-//        v_break(ss);
+//        break  ss;
 //    };
 
     printf("s: %s\n", v_std_string_get(&s));
 
-    x: &int := block { v_break(42); };
+    x: &int := block { break 42; };
 
     printf("x: %d\n", x);
 
@@ -214,11 +214,11 @@ test_t = struct { v_std_any_t; };
 
     printf("xx: %d\n", xx);
 
-    u: &int[2] := block { v_break({7, 77}); };
+    u: &int[2] := block { break {7, 77}; };
 
     printf("u: (%d, %d)\n", u[0], u[1]);
 
-    v: vec(int, 2) = block { v_break({8, 88}); };
+    v: vec(int, 2) = block { break {8, 88}; };
 
     printf("v: [%d, %d]\n", v[0], v[1]);
 }

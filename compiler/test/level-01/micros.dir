@@ -35,6 +35,9 @@ reference_test                                                 │reference_test
                                                                │
 expr_test                                                      │expr_test.void
                                                                │
+--------------------                                           │
+Parsing expressions...                                         │parse_expr.void
+                                                               │
                                                                │
 ───────────────────────────────────────────────────────────────│
 ...                                                            │README.md

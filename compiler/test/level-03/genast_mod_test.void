@@ -94,7 +94,7 @@ refcnt_ptr_obtain_llvm_type: (*void, typ: *v_type_t) ~> LLVMTypeRef
 
     v_type_set_cached_llvm_type(typ, rt_);
 
-    v_return(rt_);
+    return  rt_;
 }
 
 
@@ -137,8 +137,8 @@ refcnt_ptr_ns_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
     {
         q = v_std_any_get_value(v_quark_t, a);
 
-        t: &*v_type_t    := v_undef();
-        v: &LLVMValueRef := v_undef();
+        t: &*v_type_t    := undef;
+        v: &LLVMValueRef := undef;
 
         v_find_constant_q(q, &t, &v);
 
@@ -197,13 +197,13 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
 
           r = *((p.impl: *char) - (&(0: *data_t)->data : intptr_t) : *data_t);
 
-          v_return(r);
+          return  r;
       }
 
       inlinehint
       inc: (p: &refcnt_ptr(T)) ~> void
       {
-          if (!p.impl)  v_return();
+          if (!p.impl)  return;
 
           d = get_data(p);
 
@@ -213,7 +213,7 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
       inlinehint
       dec: (p: &refcnt_ptr(T)) ~> void
       {
-          if (!p.impl)  v_return();
+          if (!p.impl)  return;
 
           d = get_data(p);
 
@@ -296,7 +296,7 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
     {
         v_copy(&dst, &src);
 
-        v_return(dst);
+        return  dst;
     }
 
     //-------------------------------------------------------------
@@ -331,7 +331,7 @@ my_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
     {
         v_ast_accept_visitor(ctx.par, vis);
 
-        v_return();
+        return;
     }
 
     ctx.fun(ctx.aux, vis, self);
@@ -370,7 +370,7 @@ instantiate_refcnt_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     v_ast_make_expr_compiled(&par, static_type_t, (elt: LLVMValueRef));
 
-    ctx: &my_compile_expr_identifier_ctx_t := v_undef();
+    ctx: &my_compile_expr_identifier_ctx_t := undef;
 
     q = expr_identifier_q;
 
@@ -438,7 +438,7 @@ make_refcnt_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     v_ast_make_expr_compiled(&par, static_type_t, (elt: LLVMValueRef));
 
-    ctx: &my_compile_expr_identifier_ctx_t := v_undef();
+    ctx: &my_compile_expr_identifier_ctx_t := undef;
 
     q = expr_identifier_q;
 

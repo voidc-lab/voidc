@@ -54,7 +54,7 @@ alwaysinline
 {
     v_move(&dst, &src);
 
-    v_return(dst);
+    return  dst;
 }
 
 //---------------------------------------------------------------------
@@ -73,7 +73,7 @@ N: &int := 7;
 //    voidc_verify_jit_module_optimized(true);
 //}
 
-{   a: &unique_ptr_int := v_undef();
+{   a: &unique_ptr_int := undef;
     v_initialize(&a);
     defer v_terminate(&a);
 

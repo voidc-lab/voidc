@@ -104,12 +104,12 @@ v_literal_integer_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
     {
         switch((src[1] : char32_t))
         {
-        case 0: v_break();
+        case 0: break;
 
-        case 'x': case 'X':     radix := 16;  src += 2;   v_break();
-        case 'b': case 'B':     radix :=  2;  src += 2;   v_break();
+        case 'x': case 'X':     radix := 16;  src += 2;   break;
+        case 'b': case 'B':     radix :=  2;  src += 2;   break;
 
-        default:                radix :=  8;  src += 1;   v_break();
+        default:                radix :=  8;  src += 1;   break;
         }
     }
 
@@ -119,7 +119,7 @@ v_literal_integer_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t)
     {
         c = v_load(src);
 
-        if (!c) v_break();
+        if (!c) break;
 
         if (c != '\'')  v_std_string_append_char(dst, c);
 
@@ -198,10 +198,10 @@ v_literal_real_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~>
 
             switch(width)
             {
-            case  16:   t := v_f16_type();  v_break();
-            case  32:   t := v_f32_type();  v_break();
-            case  64:   t := v_f64_type();  v_break();
-            case 128:   t := v_f128_type(); v_break();
+            case  16:   t := v_f16_type();  break;
+            case  32:   t := v_f32_type();  break;
+            case  64:   t := v_f64_type();  break;
+            case 128:   t := v_f128_type(); break;
             }
         }
         else
@@ -216,7 +216,7 @@ v_literal_real_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~>
 
     loop
     {
-        if (!*src)  v_break();
+        if (!*src)  break;
 
         if (*src != '\'')   v_std_string_append_char(dst, *src);
 

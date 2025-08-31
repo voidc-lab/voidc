@@ -58,6 +58,8 @@
     v_add_symbol("voidc_internal_expr_block_enabled_q",        q_ref, q("voidc.internal_expr_block_enabled"));
 
     v_add_symbol("q_static_type_t", q_ref, q("v_static_type_t"));
+
+    v_add_symbol("q_op_prefix_break", q_ref, q("v.op_prefix_break"));
 }
 
 
@@ -360,7 +362,7 @@ my_break_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     {
         ctx.break(vis, self);
 
-        v_return();
+        return;
     }
 
     stmt = v_make_object(v_ast_stmt_t);
@@ -368,6 +370,28 @@ my_break_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     v_ast_make_stmt_call(stmt, 0, q_break, 0, 0);
 
     ctx.break(vis, (stmt: *v_ast_base_t));        //- Sic !!!
+}
+
+//---------------------------------------------------------------------
+private
+compile_op_prefix_break: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+    call = (self: *v_ast_expr_t);
+
+    arg_list = v_ast_expr_call_get_arg_list(call);
+
+    expr = v_list_get_item(arg_list, 1);
+
+    elst = v_make_object(v_ast_expr_list_t);
+    etmp = v_make_object(v_ast_expr_t);
+
+    v_make_list(elst, expr, 1);
+
+    v_ast_make_expr_identifier_q(etmp, q_break);
+
+    v_ast_make_expr_call(etmp, etmp, elst);
+
+    v_ast_accept_visitor((etmp: *v_ast_base_t), vis);
 }
 
 
@@ -379,15 +403,15 @@ check_parent: (v: LLVMValueRef) ~> bool
 {
     if (gv = LLVMIsAGlobalValue(v))
     {
-        if (LLVMGetGlobalParent(gv))  v_return(true);
+        if (LLVMGetGlobalParent(gv))  return true;
     }
 
     for (n = LLVMGetNumOperands(v), i: &int := 0; i < n; ++i)
     {
-        if (check_parent(LLVMGetOperand(v, i)))  v_return(true);
+        if (check_parent(LLVMGetOperand(v, i)))  return true;
     }
 
-    v_return(false);
+    return  false;
 }
 
 //---------------------------------------------------------------------
@@ -406,7 +430,7 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     llvm_ctx = v_target_get_llvm_ctx();
 
     stack_v: &LLVMValueRef := 0;                //- !
-    anchor:  &LLVMValueRef := v_undef();
+    anchor:  &LLVMValueRef := undef;
 
     top_level = v_get_variable_value_q(voidc_internal_expr_block_enabled_q) == 0;
 
@@ -462,7 +486,7 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
             {
                 v = v_get_result_value();
 
-                if (LLVMIsConstant(v)  &&  !check_parent(v))  v_break();
+                if (LLVMIsConstant(v)  &&  !check_parent(v))  break;
 
                 v_save_builder_ip();
 
@@ -505,7 +529,7 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
                     v_set_result_value(v);
                 }
 
-                lltyp: &LLVMTypeRef := v_undef();
+                lltyp: &LLVMTypeRef := undef;
 
                 llvm_stackrestore_f   = v_obtain_function(voidc_llvm_stackrestore_name, &lltyp);
                 llvm_stackrestore_ft_ = v_load(&lltyp);
@@ -557,7 +581,7 @@ v_get_return_value_intrinsic: (aux: *void, *voidc_visitor_t, *v_ast_base_t) ~> v
     quark = ((aux: intptr_t) : v_quark_t);
 
     ret_type:  &*v_type_t    := v_get_variable_type_q(quark);
-    ret_value: &LLVMValueRef := v_undef();
+    ret_value: &LLVMValueRef := undef;
 
     if (quark == voidc_internal_return_value_q)
     {
@@ -590,6 +614,14 @@ v_get_return_value_intrinsic: (aux: *void, *voidc_visitor_t, *v_ast_base_t) ~> v
 
 
 //=====================================================================
+op_prefix_break: &v_ast_expr_t := undef;
+
+voidc_blocks_etc_internal_globals_cleaner: (*void) ~> void
+{
+    v_terminate(&op_prefix_break);
+}
+
+//---------------------------------------------------------------------
 //- Enable blocks etc...
 //---------------------------------------------------------------------
 export
@@ -619,6 +651,8 @@ voidc_enable_blocks_etc_compiler: () ~> void
     ctx.break.fun := (v_get_intrinsic_q(q_break, &ctx.break.aux) : *voidc_intrinsic_t);
 
     v_add_intrinsic_q(q_break, my_break_intrinsic, &ctx);
+
+    v_add_intrinsic_q(q_op_prefix_break, compile_op_prefix_break, 0);
 
     //-----------------------------------------------------------------
     q = v_quark_from_string;
@@ -652,8 +686,15 @@ voidc_enable_blocks_etc: () ~> void
     v_return_if_not(gr0);
     v_return_if(v_peg_grammar_get_parser(gr0, "expr_stmt", 0));
 
+    any_break_p = v_make_object(v_std_any_t);
+
+    v_std_any_set_pointer(any_break_p, &op_prefix_break);
+
     grammar gr0
     {
+    values:
+        op_prefix_break = any_break_p;
+
     actions:
         mk_expr_stmt  = mk_expr_stmt_grammar_action;
         mk_expr_block = mk_expr_block_grammar_action;
@@ -667,6 +708,8 @@ voidc_enable_blocks_etc: () ~> void
                   / stmt_while
                   / stmt_for
                   ;
+
+        prefix += "break" !ident_cont  { op_prefix_break };
 
         expr_block = '{'_ s:stmt_list_lr _ e:expr _'}'      { mk_expr_block(s, e) };
 
@@ -684,8 +727,12 @@ voidc_enable_blocks_etc: () ~> void
 //---------------------------------------------------------------------
 {   ast_expr_stmt_vtable[2]  := expr_stmt_q;
     ast_expr_block_vtable[2] := expr_block_q;
+
+    v_initialize(&op_prefix_break);
+
+    v_ast_make_operator_unary(&op_prefix_break, q_op_prefix_break, 0, 0);       //- Minimal priority
+
+    v_add_cleaner(voidc_blocks_etc_internal_globals_cleaner, 0);
 }
-
-
 
 

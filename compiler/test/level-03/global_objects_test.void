@@ -33,7 +33,7 @@ foo: (s: *const char) ~> int
 {
     printf("foo(%s)\n", s);
 
-    v_return(42);
+    return  42;
 }
 
 qwe: &int := foo("qwe");
@@ -52,7 +52,7 @@ bar: (s: *const char) ~> v_std_string_t
 zxc: &v_std_string_t := bar("Превед!");
 
 
-qaz: &int[7] := v_undef();
+qaz: &int[7] := undef;
 
 edc: (*int)[2] = { &qaz[1], &qaz[6] };
 
@@ -94,7 +94,7 @@ defer printf("Deferred printf\n");
 
 //---------------------------------------------------------------------
 private
-ptr_variable: &*int := v_undef();
+ptr_variable: &*int := undef;
 
 
 //---------------------------------------------------------------------
@@ -201,7 +201,7 @@ S: &v_std_string_t := block
 
     v_std_string_set(&ss, "QWE ---------------------------------------------------------->");
 
-    v_break(ss);
+    break  ss;
 };
 
 {   printf("S: %s\n", v_std_string_get(&S));

@@ -27,7 +27,7 @@
 
 
 //---------------------------------------------------------------------
-cur_str: &*const char := v_undef();
+cur_str: &*const char := undef;
 
 fgetc_fun: (void_data: *void) ~> int
 {
@@ -35,11 +35,11 @@ fgetc_fun: (void_data: *void) ~> int
 
     c = (cur_str[cur_pos] : uint(8));
 
-    if (!c) v_return(-1);
+    if (!c) return -1;
 
     ++cur_pos;
 
-    v_return(c);
+    return  c;
 }
 
 
@@ -65,7 +65,7 @@ fgetc_fun: (void_data: *void) ~> int
     my_ctx    = ctx + 0;
     saved_ctx = ctx + 1;
 
-    cur_pos: &int := v_undef();
+    cur_pos: &int := undef;
 
     v_peg_make_context(my_ctx, fgetc_fun, &cur_pos, grm);
 
@@ -89,7 +89,7 @@ fgetc_fun: (void_data: *void) ~> int
 
         pnum = v_std_any_get_pointer(intptr_t, res);
 
-        if (!pnum)  v_break();
+        if (!pnum)  break;
 
         printf("num: %d\n", (*pnum : int));
     }

@@ -42,7 +42,7 @@
 
 
 //---------------------------------------------------------------------
-v_op_braces: &v_ast_expr_t := v_undef();
+v_op_braces: &v_ast_expr_t := undef;
 
 voidc_aggregates_internal_gloabls_cleaner: (*void) ~> void
 {
@@ -62,7 +62,7 @@ v_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     is_reference = v_type_is_reference(t);
 
-    addr_sp: &unsigned := v_undef();
+    addr_sp: &unsigned := undef;
 
     if (is_reference)
     {
@@ -72,9 +72,9 @@ v_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     block
     {
-        if (!v_type_is_generic(t))  v_break();
+        if (!v_type_is_generic(t))  break;
 
-        if (v_type_generic_get_cons(t) != voidc_incomplete_array_type_tag)  v_break();
+        if (v_type_generic_get_cons(t) != voidc_incomplete_array_type_tag)  break;
 
         arg0 = v_type_generic_get_args(t)[0];
 
@@ -116,7 +116,7 @@ v_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
     {
         ets: &**v_type_t := 0;
 
-        et: &*v_type_t := v_undef();
+        et: &*v_type_t := undef;
 
         if (v_type_is_struct(t))  ets := v_type_struct_get_element_types(t);
         if (v_type_is_array(t))   et  := v_type_array_get_element_type(t);
@@ -186,7 +186,7 @@ v_struct_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
             type := v_struct_type_named(name);
 
-            if (n == ++i0) v_break();
+            if (n == ++i0) break;
         }
 
         if (i1 != i0)
@@ -202,7 +202,7 @@ v_struct_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
             if (qident == packed_q) packed := true;
 
-            if (n == ++i0) v_break();
+            if (n == ++i0) break;
         }
 
         if (i1 != i0)
@@ -311,7 +311,7 @@ voidc_enable_aggregates: () ~> void
 
     any_ = v_peg_grammar_get_value(gr0, "op_braces");
 
-    if (any_)  v_return();
+    if (any_)  return;
 
 
     voidc_enable_definitions();         //- Sic!

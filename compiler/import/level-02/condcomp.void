@@ -62,7 +62,7 @@ mk_unit_ccif_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
     {
         v_std_any_set_pointer(ret, (list: *v_ast_base_t));
 
-        v_return();
+        return;
     }
 
     expr = v_make_object(v_ast_expr_t);
@@ -91,7 +91,7 @@ mk_stmt_ccif_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
     {
         v_std_any_set_pointer(ret, (list: *v_ast_stmt_t));
 
-        v_return();
+        return;
     }
 
     expr = v_make_object(v_ast_expr_t);
@@ -120,7 +120,7 @@ mk_expr_ccif_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
     {
         v_std_any_set_pointer(ret, (list: *v_ast_expr_t));
 
-        v_return();
+        return;
     }
 
     etmp = v_make_object(v_ast_expr_t);
@@ -166,7 +166,7 @@ compile_unit_ccif_list: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
             v = LLVMBuildIsNotNull(builder, v, "");
 
-            if (!LLVMConstIntGetZExtValue(v))  v_continue();
+            if (!LLVMConstIntGetZExtValue(v))  continue;
         }
 
         undl = (v_list_get_item(list, i+1) : *v_ast_generic_list_t);
@@ -180,7 +180,7 @@ compile_unit_ccif_list: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
             v_ast_accept_visitor(item, vis);
         }
 
-        v_return();
+        return;
     }
 }
 
@@ -214,14 +214,14 @@ compile_stmt_ccif_list: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
             v = LLVMBuildIsNotNull(builder, v, "");
 
-            if (!LLVMConstIntGetZExtValue(v))  v_continue();
+            if (!LLVMConstIntGetZExtValue(v))  continue;
         }
 
         slst = v_list_get_item(list, i+1);
 
         v_ast_accept_visitor(slst, vis);
 
-        v_return();
+        return;
     }
 }
 
@@ -253,7 +253,7 @@ compile_expr_ccif_list: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
             v = LLVMBuildIsNotNull(builder, v, "");
 
-            if (!LLVMConstIntGetZExtValue(v))  v_continue();
+            if (!LLVMConstIntGetZExtValue(v))  continue;
         }
 
         expr = v_list_get_item(list, i+1);
@@ -262,7 +262,7 @@ compile_expr_ccif_list: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
         v_ast_accept_visitor(expr, vis);
 
-        v_return();
+        return;
     }
 }
 
@@ -423,9 +423,9 @@ mk_cc_message_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size
 
     switch(kind)
     {
-    case 0:   v_std_any_set_pointer(ret, (list : *v_ast_base_t));   v_break();      //- unit_defn
-    case 1:   v_std_any_set_pointer(ret, (list : *v_ast_stmt_t));   v_break();      //- stmt
-    case 2:   v_std_any_set_pointer(ret, (list : *v_ast_expr_t));   v_break();      //- expr
+    case 0:   v_std_any_set_pointer(ret, (list : *v_ast_base_t));   break;      //- unit_defn
+    case 1:   v_std_any_set_pointer(ret, (list : *v_ast_stmt_t));   break;      //- stmt
+    case 2:   v_std_any_set_pointer(ret, (list : *v_ast_expr_t));   break;      //- expr
     }
 }
 
@@ -499,20 +499,20 @@ my_expr_make_postfix_grammar_action: (ret: *v_std_any_t, aux: *void, any: *v_std
 
     ctx[0](ret, ctx[1], any, sz);
 
-    if (v_empty(ret))   v_return();
+    if (v_empty(ret))   return;
 
     ast = v_std_any_get_pointer(v_ast_expr_t, ret);
 
-    if (v_ast_base_get_tag((ast: *v_ast_base_t)) != v_ast_expr_call_tag)  v_return();
+    if (v_ast_base_get_tag((ast: *v_ast_base_t)) != v_ast_expr_call_tag)  return;
 
     call = (ast: *v_ast_expr_t);
 
     efun = v_ast_expr_call_get_fun_expr(call);
     elst = v_ast_expr_call_get_arg_list(call);
 
-    if (v_ast_base_get_tag((efun: *v_ast_base_t)) != v_ast_expr_identifier_tag) v_return();
+    if (v_ast_base_get_tag((efun: *v_ast_base_t)) != v_ast_expr_identifier_tag) return;
 
-    if (v_ast_expr_identifier_get_name_q(efun) != q_assert) v_return();
+    if (v_ast_expr_identifier_get_name_q(efun) != q_assert) return;
 
     args = v_make_object(v_ast_expr_list_t);
 
@@ -575,10 +575,10 @@ compile_cc_message: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     switch(tag)
     {
-    case 'e':   stag := "Error";    v_break();
-    case 'w':   stag := "Warning";  v_break();
-    case 'n':   stag := "Note";     v_break();
-    case 'f':   stag := "Fail";     v_break();
+    case 'e':   stag := "Error";    break;
+    case 'w':   stag := "Warning";  break;
+    case 'n':   stag := "Note";     break;
+    case 'f':   stag := "Fail";     break;
     }
 
     msg = v_ast_expr_string_get_string(v_list_get_item(elst, 0));      //- Sic!
@@ -592,7 +592,7 @@ compile_cc_message: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
         {
             fun = LLVMGetBasicBlockParent(cur_b);
 
-            len: &size_t := v_undef();
+            len: &size_t := undef;
 
             function := LLVMGetValueName2(fun, &len);
         }
@@ -639,7 +639,7 @@ compile_cc_do: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 private
 compile_cc_assert: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-    if (v_find_constant("NDEBUG", 0, 0))   v_return();
+    if (v_find_constant("NDEBUG", 0, 0))   return;
 
     list = (self: *v_ast_generic_list_t);
 
@@ -664,7 +664,7 @@ compile_cc_assert: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     v = LLVMBuildIsNotNull(builder, v, "");
 
-    if (LLVMConstIntGetZExtValue(v))  v_return();       //- Ok!
+    if (LLVMConstIntGetZExtValue(v))  return;       //- Ok!
 
     //- Game over!
 
@@ -679,7 +679,7 @@ compile_cc_assert: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     {
         fun = LLVMGetBasicBlockParent(cur_b);
 
-        len: &size_t := v_undef();
+        len: &size_t := undef;
 
         function := LLVMGetValueName2(fun, &len);
     }
@@ -703,7 +703,7 @@ compile_cc_assert: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 private
 v_assert_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-    if (v_find_constant("NDEBUG", 0, 0))   v_return();
+    if (v_find_constant("NDEBUG", 0, 0))  return;
 
     call = (self: *v_ast_expr_t);
 
@@ -726,7 +726,7 @@ v_assert_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
         {
             fun = LLVMGetBasicBlockParent(cur_b);
 
-            len: &size_t := v_undef();
+            len: &size_t := undef;
 
             function := LLVMGetValueName2(fun, &len);
         }
@@ -791,7 +791,7 @@ voidc_enable_condcomp_compiler: () ~> void
 
 #if (v_defined(_WIN32))
 
-    typ: &(*v_type_t)[3] := v_undef();
+    typ: &(*v_type_t)[3] := undef;
 
     typ[0] := _char_ptr;            //- message
     typ[1] := _char_ptr;            //- filename
@@ -803,7 +803,7 @@ voidc_enable_condcomp_compiler: () ~> void
 
 #else
 
-    typ: &(*v_type_t)[4] := v_undef();
+    typ: &(*v_type_t)[4] := undef;
 
     typ[0] := _char_ptr;            //- assertion
     typ[1] := _char_ptr;            //- filename

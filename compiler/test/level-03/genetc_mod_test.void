@@ -93,7 +93,7 @@ unique_ptr_obtain_llvm_type: (*void, typ: *v_type_t) ~> LLVMTypeRef
 
     v_type_set_cached_llvm_type(typ, rt_);
 
-    v_return(rt_);
+    return  rt_;
 }
 
 
@@ -130,8 +130,8 @@ unique_ptr_ns_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
     {
         q = v_std_any_get_value(v_quark_t, a);
 
-        t: &*v_type_t    := v_undef();
-        v: &LLVMValueRef := v_undef();
+        t: &*v_type_t    := undef;
+        v: &LLVMValueRef := undef;
 
         v_find_constant_q(q, &t, &v);
 
@@ -182,7 +182,7 @@ namespace my
 
       *(&sp: **T) := 0;
 
-      v_return(r);
+      return  r;
   }
 
   alwaysinline
@@ -213,7 +213,7 @@ namespace my
   {
       dst.reset(src.release());       //- Kinda   v_move(&dst, &src);
 
-      v_return(dst);
+      return  dst;
   }
 
   //-------------------------------------------------------------
@@ -243,11 +243,11 @@ fgetc_fun: (void_data: *void) ~> int
 
     c = (*cur_pos : uint(8));
 
-    if (!c) v_return(-1);
+    if (!c) return  -1;
 
     ++cur_pos;
 
-    v_return(c);
+    return  c;
 }
 
 //---------------------------------------------------------------------
@@ -304,7 +304,7 @@ my_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
     {
         v_ast_accept_visitor(ctx.par, vis);
 
-        v_return();
+        return;
     }
 
     ctx.fun(ctx.aux, vis, self);
@@ -343,7 +343,7 @@ instantiate_unique_ptr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     v_ast_make_expr_compiled(&par, static_type_t, (elt: LLVMValueRef));
 
-    ctx: &my_compile_expr_identifier_ctx_t := v_undef();
+    ctx: &my_compile_expr_identifier_ctx_t := undef;
 
     q = v_quark_from_string("expr_identifier");
 
@@ -417,7 +417,7 @@ make_unique_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     v_ast_make_expr_compiled(&par, static_type_t, (elt: LLVMValueRef));
 
-    ctx: &my_compile_expr_identifier_ctx_t := v_undef();
+    ctx: &my_compile_expr_identifier_ctx_t := undef;
 
     q = expr_identifier_q;
 
@@ -446,7 +446,7 @@ make_unique_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 private
 parse_templates: () ~> void
 {
-    if (!v_empty(&template_ast))  v_return();
+    if (!v_empty(&template_ast))  return;
 
     any = parse_template("unit_defn_list", template_src);
 

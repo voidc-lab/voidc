@@ -130,7 +130,7 @@ qwe: &int := 42;
 {
     qwe += n;
 
-    v_return(&qwe);
+    return  &qwe;
 }
 
 {

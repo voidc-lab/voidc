@@ -147,7 +147,7 @@ private alwaysinline
 private alwaysinline
 (_()): (ctx: &my_make_temporary_ctx_t, t: *v_type_t, v: LLVMValueRef) ~> LLVMValueRef
 {
-    v_return(ctx.fun(ctx.aux, t, v));
+    return  ctx.fun(ctx.aux, t, v);
 }
 
 private alwaysinline
@@ -159,13 +159,13 @@ private alwaysinline
 private alwaysinline
 (_()): (ctx: &my_try_to_adopt_ctx_t, t: *v_type_t, v: LLVMValueRef) ~> bool
 {
-    v_return(ctx.fun(ctx.aux, t, v));
+    return  ctx.fun(ctx.aux, t, v);
 }
 
 private alwaysinline
 (_()): (ctx: &my_try_to_convert_ctx_t, t0: *v_type_t, v0: LLVMValueRef, t1: *v_type_t, v1: &LLVMValueRef) ~> bool
 {
-    v_return(ctx.fun(ctx.aux, t0, v0, t1, v1));
+    return  ctx.fun(ctx.aux, t0, v0, t1, v1);
 }
 
 
@@ -249,10 +249,10 @@ v_type_check_special: (t: *v_type_t, q: v_quark_t) ~> void
     case v_type_kind_array:
     case v_type_kind_struct:
     case v_type_kind_generic:
-        v_break();
+        break;
 
     default:
-        v_return();
+        return;
     }
 
     sstr = v_make_object(v_std_string_t);
@@ -263,16 +263,16 @@ v_type_check_special: (t: *v_type_t, q: v_quark_t) ~> void
 
     q_checked = v_quark_from_string(v_std_string_get(sstr));
 
-    if (v_get_overload_q(q_checked, t))  v_return();
+    if (v_get_overload_q(q_checked, t))  return;
 
     block
     {
-        if (v_get_overload_q(q, t))  v_break();
+        if (v_get_overload_q(q, t))  break;
 
         if (v_type_is_array(t))
         {
             v_type_check_special(v_type_array_get_element_type(t), q);
-            v_break();
+            break;
         }
 
         flag: &bool := false;
@@ -286,14 +286,14 @@ v_type_check_special: (t: *v_type_t, q: v_quark_t) ~> void
             {
                 flag |= v_type_is_special(types[i], q);
 
-                if (flag)   v_break();
+                if (flag)   break;
             }
         }
         else
         {
             v_assert(v_type_is_generic(t));
 
-            if (v_type_generic_get_cons(t) != voidc_incomplete_array_type_tag)  v_break();
+            if (v_type_generic_get_cons(t) != voidc_incomplete_array_type_tag)  break;
 
             arg0 = v_type_generic_get_args(t)[0];
 
@@ -322,25 +322,25 @@ v_type_check_special: (t: *v_type_t, q: v_quark_t) ~> void
 export
 v_type_is_special: (t: *v_type_t, q: v_quark_t) ~> bool
 {
-    if (t == INVIOLABLE_TAG)  v_return(false);          //- ?
-    if (t == UNREFERENCE_TAG) v_return(false);          //- ?
+    if (t == INVIOLABLE_TAG)  return false;         //- ?
+    if (t == UNREFERENCE_TAG) return false;         //- ?
 
     switch(v_kind(t))
     {
     case v_type_kind_array:
-        v_return(v_type_is_special(v_type_array_get_element_type(t), q));
+        return  v_type_is_special(v_type_array_get_element_type(t), q);
 
     case v_type_kind_struct:
     case v_type_kind_generic:
-        v_break();
+        break;
 
     default:
-        v_return(false);        //- Sic!!!
+        return  false;          //- Sic!!!
     }
 
     v_type_check_special(t, q);
 
-    v_return(v_get_overload_q(q, t) != 0);
+    return  v_get_overload_q(q, t) != 0;
 }
 
 
@@ -383,7 +383,7 @@ my_type_function_obtain_llvm_type: (*void, ft: *v_type_t) ~> LLVMTypeRef
         else                                      *ppar := v_type_get_llvm_type(pt);
     }
 
-    ret: &LLVMTypeRef := v_undef();
+    ret: &LLVMTypeRef := undef;
 
     if (rt_initializable)   ret := LLVMVoidTypeInContext(llvm_ctx);
     else                    ret := v_type_get_llvm_type(rt);
@@ -394,7 +394,7 @@ my_type_function_obtain_llvm_type: (*void, ft: *v_type_t) ~> LLVMTypeRef
 
     v_type_set_cached_llvm_type(ft, ret);
 
-    v_return(ret);
+    return  ret;
 }
 
 
@@ -413,7 +413,7 @@ my_prepare_function_parameters: (aux: *void, fun: LLVMValueRef,
 
         ctx.fun(ctx.aux, fun, fun_type, fun_args);
 
-        v_return();
+        return;
     }
 
     vr = LLVMGetParam(fun, 0);
@@ -471,7 +471,7 @@ voidc_make_special_intrinsic_call: (stmt: *v_ast_stmt_t, q: v_quark_t,
 
             et := v_type_array_get_element_type(et);
 
-            if (!v_type_is_array(et))   v_break();
+            if (!v_type_is_array(et))   break;
         }
 
         v_assert(length != 0);              //- WTF ?..
@@ -614,7 +614,7 @@ my_make_temporary: (aux: *void, t: *v_type_t, v: LLVMValueRef) ~> LLVMValueRef
 
     if (!v_type_is_special(t, q_initialize))
     {
-        v_return(ctx.make_temporary(t, v));
+        return  ctx.make_temporary(t, v);
     }
 
     v_push_result();
@@ -645,7 +645,7 @@ my_make_temporary: (aux: *void, t: *v_type_t, v: LLVMValueRef) ~> LLVMValueRef
 
     v_pop_result();
 
-    v_return(rv);
+    return  rv;
 }
 
 
@@ -656,7 +656,7 @@ private
 my_compile_stmt: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     expr = v_ast_stmt_get_expr((self: *v_ast_stmt_t));
-    if (v_empty(expr))  v_return();                             //- Sic!
+    if (v_empty(expr))  return;                                 //- Sic!
 
     name = v_ast_stmt_get_name((self: *v_ast_stmt_t));
 
@@ -681,12 +681,12 @@ my_compile_stmt: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
     (aux: *local_objects_ctx_t)->compile_stmt(vis, self);
     //---------------------------------------------------
 
-    if (!anchor)  v_return();
+    if (!anchor)  return;
 
 
     t = v_get_variable_type(name);
 
-    v: &LLVMValueRef := v_undef();
+    v: &LLVMValueRef := undef;
 
     if (v_type_is_special(t, q_initialize))
     {
@@ -732,7 +732,7 @@ my_compile_expr_integer: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
 
         t = v_get_result_type();
 
-        if (!v_type_is_special(t, q_initialize))  v_break();
+        if (!v_type_is_special(t, q_initialize))  break;
 
         //- "Object" types ...
 
@@ -742,7 +742,7 @@ my_compile_expr_integer: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
 
         v_adopt_result(t, v);
 
-        v_return();
+        return;
     }
 
     //- "POD" types ...
@@ -782,7 +782,7 @@ my_llvm_build_call: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     values = v_malloc(LLVMValueRef, arg_count);
     defer v_free(values);
 
-    vr: &LLVMValueRef := v_undef();
+    vr: &LLVMValueRef := undef;
 
     i: &unsigned := 0;
 
@@ -801,7 +801,7 @@ my_llvm_build_call: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     for (; i < arg_count; ++i)
     {
-        j: &unsigned := v_undef();
+        j: &unsigned := undef;
 
         if (tr_initializable)   j := i-1;
         else                    j := i;
@@ -854,7 +854,7 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
         {
             flag := true;
 
-            v_break();
+            break;
         }
 
         if (v_type_is_reference(type))
@@ -870,14 +870,14 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
                 flag := true;
             }
 
-            v_break();
+            break;
         }
 
         if (v_type_is_array(type))
         {
             flag := true;
 
-            v_break();
+            break;
         }
 
         //- Fallthrough!
@@ -887,8 +887,10 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
         if (v_type_is_special(type, q_initialize))          //- Sic !!!
         block
         {
-            if (vtag == 0)      v_break();          //- !!!
-            if (vtag == value)  v_break();
+            if (vtag == 0)      break;          //- !!!
+            if (vtag == value)  break;
+
+            if (LLVMIsUndef(value)) break;      //- !!!
 
             vis = v_get_compiler();
 
@@ -907,7 +909,7 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
 
         v_set_result_type(type);
 
-        v_break();
+        break;
 
     default:        //- Adopt...
       {
@@ -916,9 +918,9 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
         if (to_type != type)
         block
         {
-            if (!v_type_is_generic(to_type))  v_break();
+            if (!v_type_is_generic(to_type))  break;
 
-            if (v_type_generic_get_cons(to_type) != voidc_incomplete_array_type_tag)  v_break();
+            if (v_type_generic_get_cons(to_type) != voidc_incomplete_array_type_tag)  break;
 
             to_type := type;
         }
@@ -937,8 +939,10 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
         if (v_type_is_special(to_type, q_initialize))          //- Sic!
         block
         {
-            if (vtag == 0)      v_break();          //- !!!
-            if (vtag == value)  v_break();
+            if (vtag == 0)      break;          //- !!!
+            if (vtag == value)  break;
+
+            if (LLVMIsUndef(value)) break;      //- !!!
 
             vis = v_get_compiler();
 
@@ -961,12 +965,12 @@ my_try_to_adopt: (aux: *void, type: *v_type_t, value: LLVMValueRef) ~> bool
 
     if (flag)       //- "Perform default treatment"
     {
-        v_return((aux: *local_objects_ctx_t)->try_to_adopt(type, value));
+        return  (aux: *local_objects_ctx_t)->try_to_adopt(type, value);
     }
 
     v_set_result_value(value);
 
-    v_return(true);
+    return  true;
 }
 
 //---------------------------------------------------------------------
@@ -982,7 +986,7 @@ my_try_to_convert: (aux: *void, t0: *v_type_t, v0: LLVMValueRef, t1: *v_type_t, 
     {
         v1 := v0;
 
-        v_return(true);
+        return  true;
     }
 
     if (v_type_is_reference(t0))
@@ -997,7 +1001,7 @@ my_try_to_convert: (aux: *void, t0: *v_type_t, v0: LLVMValueRef, t1: *v_type_t, 
 
                 v1 := v0;
 
-                v_return(true);
+                return  true;
             }
         }
     }
@@ -1014,14 +1018,14 @@ my_try_to_convert: (aux: *void, t0: *v_type_t, v0: LLVMValueRef, t1: *v_type_t, 
 
                 v1 := v0;
 
-                v_return(true);
+                return  true;
             }
         }
     }
 
     //- Default treatment...
 
-    v_return((aux: *local_objects_ctx_t)->try_to_convert(t0, v0, t1, v1));
+    return  (aux: *local_objects_ctx_t)->try_to_convert(t0, v0, t1, v1);
 }
 
 
@@ -1043,7 +1047,7 @@ my_return_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~>
         {
             (aux: *local_objects_ctx_t)->return(vis, self);
 
-            v_return();
+            return;
         }
 
         ret_value = v_get_variable_value_q(voidc_internal_return_value_q);
@@ -1088,16 +1092,16 @@ my_compile_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     block
     {
-        if (vr_temporary)   v_break();
+        if (vr_temporary)   break;
 
         //- Have some "anchor"
 
-        if (tr == INVIOLABLE_TAG)   v_break();
-        if (tr == UNREFERENCE_TAG)  v_break();
+        if (tr == INVIOLABLE_TAG)   break;
+        if (tr == UNREFERENCE_TAG)  break;
 
         //- tr - is a "real" type...
 
-        if (v_type_is_special(tr, q_initialize))  v_break();
+        if (v_type_is_special(tr, q_initialize))  break;
 
         vr_temporary := true;
     }
@@ -1252,7 +1256,7 @@ my_break_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     {
         ctx.break(vis, self);
 
-        v_return();
+        return;
     }
 
     stmt = v_make_object(v_ast_stmt_t);
@@ -1271,15 +1275,15 @@ check_parent: (v: LLVMValueRef) ~> bool
 {
     if (gv = LLVMIsAGlobalValue(v))
     {
-        if (LLVMGetGlobalParent(gv))  v_return(true);
+        if (LLVMGetGlobalParent(gv))  return  true;
     }
 
     for (n = LLVMGetNumOperands(v), i: &int := 0; i < n; ++i)
     {
-        if (check_parent(LLVMGetOperand(v, i)))  v_return(true);
+        if (check_parent(LLVMGetOperand(v, i)))  return  true;
     }
 
-    v_return(false);
+    return  false;
 }
 
 //---------------------------------------------------------------------
@@ -1295,15 +1299,15 @@ my_compile_expr_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     {
         (aux: *local_objects_ctx_t)->expr_block(vis, self);
 
-        v_return();
+        return;
     }
 
 
     llvm_ctx = v_target_get_llvm_ctx();
 
-    vr:      &LLVMValueRef := v_undef();
-    stack_v: &LLVMValueRef := v_undef();
-    anchor:  &LLVMValueRef := v_undef();
+    vr:      &LLVMValueRef := undef;
+    stack_v: &LLVMValueRef := undef;
+    anchor:  &LLVMValueRef := undef;
 
     top_level = (v_get_variable_value_q(voidc_internal_expr_block_enabled_q) == 0);
 
@@ -1408,7 +1412,7 @@ my_compile_expr_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
         {
             v = v_get_result_value();
 
-            if (LLVMIsConstant(v)  &&  !check_parent(v))  v_break();
+            if (LLVMIsConstant(v)  &&  !check_parent(v))  break;
 
             v_save_builder_ip();
 
@@ -1451,7 +1455,7 @@ my_compile_expr_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
                 v_set_result_value(v);
             }
 
-            lltyp: &LLVMTypeRef := v_undef();
+            lltyp: &LLVMTypeRef := undef;
 
             llvm_stackrestore_f   = v_obtain_function(voidc_llvm_stackrestore_name, &lltyp);
             llvm_stackrestore_ft_ = v_load(&lltyp);
@@ -1559,6 +1563,8 @@ my_internal_var_defn_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast
 
     is_special: &bool := v_type_is_special(t, q_initialize);
 
+    if (is_special  &&  LLVMIsUndef(v)) is_special := false;
+
     if (is_special)
     {
         stmt = v_make_object(v_ast_stmt_t);
@@ -1609,7 +1615,7 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
     tr: &*v_type_t := v_get_result_type();
 
 
-    {   ctx: &*void := v_undef();
+    {   ctx: &*void := undef;
 
         if (fun = v_util_lookup_overload(q_op_braces, tr, &ctx))
         {
@@ -1625,7 +1631,7 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
             fun(ctx, vis, self, arg_ptrs, (N: unsigned));
 
-            v_return();
+            return;
         }
     }
 
@@ -1634,7 +1640,7 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     is_reference = v_type_is_reference(tr);
 
-    addr_sp: &unsigned := v_undef();
+    addr_sp: &unsigned := undef;
 
     if (is_reference)
     {
@@ -1644,9 +1650,9 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     block
     {
-        if (!v_type_is_generic(tr))   v_break();
+        if (!v_type_is_generic(tr))   break;
 
-        if (v_type_generic_get_cons(tr) != voidc_incomplete_array_type_tag)   v_break();
+        if (v_type_generic_get_cons(tr) != voidc_incomplete_array_type_tag)   break;
 
         arg0 = v_type_generic_get_args(tr)[0];
 
@@ -1663,7 +1669,7 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
         (aux: *local_objects_ctx_t)->op_braces(vis, self);
 
-        v_return();
+        return;
     }
 
     vr: &LLVMValueRef := v_get_result_value();
@@ -1677,7 +1683,7 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 
     {   ets: &**v_type_t := 0;
 
-        et: &*v_type_t := v_undef();
+        et: &*v_type_t := undef;
 
         if (v_type_is_struct(tr)) ets := v_type_struct_get_element_types(tr);
         if (v_type_is_array(tr))  et  := v_type_array_get_element_type(tr);
@@ -1733,12 +1739,12 @@ my_compute_key_quark_type: (aux: *void,
 
     if (q == q_op_braces)
     {
-        v_return(v_type_function_get_return_type(ft));
+        return  v_type_function_get_return_type(ft);
     }
 
     ctx = *(aux: *my_compute_key_quark_type_t);
 
-    v_return(ctx.fun(ctx.aux, ft, q));
+    return  ctx.fun(ctx.aux, ft, q);
 }
 
 
@@ -1754,14 +1760,14 @@ my_op_postfix_index_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
     {
         q = q_op_postfix_index;
 
-        if (v_util_lookup_overload(q, agg_t, 0))  v_break();
+        if (v_util_lookup_overload(q, agg_t, 0))  break;
 
         agg_t := v_reference_type(agg_t, 0);            //- Sic !?!?!?!?!?!?!?!
     }
 
     ctx = *(aux: *op_postfix_index_helper_ctx_t);
 
-    v_return(ctx.fun(ctx.aux, vis, self, agg_t, agg_v, idx, count));
+    return  ctx.fun(ctx.aux, vis, self, agg_t, agg_v, idx, count);
 }
 
 
@@ -1847,7 +1853,7 @@ voidc_enable_local_objects_compiler: () ~> void
     voidc_visitor_set_method(vis, vis, expr_block_q, my_compile_expr_block, &ctx);
 
     //-----------------------------------------------------------------
-    {   aux: &*void := v_undef();
+    {   aux: &*void := undef;
 
         amp_q  = q("voidc.expression_helper_prefix_amp");
 

@@ -101,7 +101,7 @@ mk_stmt_while_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size
 
         loop
         {
-            if (i == cond_len)  v_break();
+            if (i == cond_len)  break;
 
             v_copy(stmp+i, v_list_get_item(cond, i));
 
@@ -133,8 +133,8 @@ v_internal_copy_variable_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_
     qname_dst = v_ast_expr_identifier_get_name_q(expr0);
     qname_src = v_ast_expr_identifier_get_name_q(expr1);
 
-    src_type:  &*v_type_t    := v_undef();
-    src_value: &LLVMValueRef := v_undef();
+    src_type:  &*v_type_t    := undef;
+    src_value: &LLVMValueRef := undef;
 
     v_get_variable_q(qname_src, &src_type, &src_value);
 
@@ -309,7 +309,7 @@ mk_stmt_for_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_t
 
         loop
         {
-            if (i == cond_len)  v_break();
+            if (i == cond_len)  break;
 
             v_copy(stmp+2+i, v_list_get_item(cond, i));
 
@@ -323,7 +323,7 @@ mk_stmt_for_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_t
 
         loop
         {
-            if (i == incr_len)  v_break();
+            if (i == incr_len)  break;
 
             v_copy(stmp_cond+1+i, v_list_get_item(incr, i));
 
@@ -345,7 +345,7 @@ mk_stmt_for_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_t
 
         loop
         {
-            if (i == init_len)  v_break();
+            if (i == init_len)  break;
 
             v_copy(stmp+i, v_list_get_item(init, i));
 
@@ -421,7 +421,7 @@ mk_stmt_if_then_else_2_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_an
 
         loop
         {
-            if (i == cond_len)  v_break();
+            if (i == cond_len)  break;
 
             v_copy(stmp+i, v_list_get_item(cond, i));
 
@@ -494,7 +494,7 @@ mk_stmt_switch_2_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, s
 
         loop
         {
-            if (i == estm_len)  v_break();
+            if (i == estm_len)  break;
 
             v_copy(stmp+i, v_list_get_item(estm, i));
 

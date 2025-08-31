@@ -79,7 +79,7 @@ a0: & vec(int, 2) := 7;
 
 s0: & *char := "Qwerty";
 
-t0: & int[5] := v_undef();
+t0: & int[5] := undef;
 
 z0: & vec(uint(64), 512)[6][5][4][3][2][1] := 0;
 

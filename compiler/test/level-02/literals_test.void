@@ -67,7 +67,7 @@
 
     loop
     {
-        if (i < 0)  v_return();
+        if (i < 0)  return;
 
         printf("%08X", p[i]);
 

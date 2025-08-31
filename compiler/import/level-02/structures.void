@@ -241,7 +241,7 @@ compile_expr_struct: (aux: *void, vis: *voidc_visitor_t,
 
     if (!v_empty(name))
     {
-        struct_name: &*const char := v_undef();
+        struct_name: &*const char := undef;
 
         tag = v_ast_base_get_tag((name: *v_ast_base_t));
 
@@ -312,7 +312,7 @@ compile_expr_struct: (aux: *void, vis: *voidc_visitor_t,
 
             field = v_ast_stmt_get_name(stmp);
 
-            if (!field  ||  !field[0])  v_continue();
+            if (!field  ||  !field[0])  continue;
 
             v_std_string_set(sstr+0, ".");
 
@@ -353,7 +353,7 @@ compile_expr_struct: (aux: *void, vis: *voidc_visitor_t,
     //-----------------------------------------------------------------
     stmt_list = voidc_definitions_context_get_stmt_list();
 
-    if (!stmt_list)  v_return();
+    if (!stmt_list)  return;
 
 
     expr = v_make_object(v_ast_expr_t, 3);
@@ -381,11 +381,11 @@ compile_expr_struct: (aux: *void, vis: *voidc_visitor_t,
     }
 
 
-    if (v_empty(body))  v_return();
+    if (v_empty(body))  return;
 
     N = v_list_get_size(body);
 
-    if (N == 0)  v_return();
+    if (N == 0)  return;
 
     tref = v_reference_type(type, 0);
 
@@ -413,7 +413,7 @@ compile_expr_struct: (aux: *void, vis: *voidc_visitor_t,
 
         field = v_ast_stmt_get_name(stmp);
 
-        if (!field  ||  !field[0])  v_continue();
+        if (!field  ||  !field[0])  continue;
 
         v_std_string_set(sstr, ".");
 

@@ -66,7 +66,7 @@ list_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
     is_reference = v_type_is_reference(tr);
 
-    addr_sp: &unsigned := v_undef();
+    addr_sp: &unsigned := undef;
 
     if (is_reference)
     {
@@ -226,7 +226,7 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
         a = v_list_get_item(&sp.impl, i);
         v_assert(a);
 
-        v_return(v_std_any_get_value(T, a));
+        return  v_std_any_get_value(T, a);
     }
 
     inlinehint

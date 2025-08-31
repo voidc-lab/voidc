@@ -69,10 +69,10 @@ aligned_alloc_ctx_t = struct                //- Linux            |  Windoze
 
 
 //=====================================================================
-op_prefix_new:          &v_ast_expr_t := v_undef();
-op_prefix_new_array:    &v_ast_expr_t := v_undef();
-op_prefix_delete:       &v_ast_expr_t := v_undef();
-op_prefix_delete_array: &v_ast_expr_t := v_undef();
+op_prefix_new:          &v_ast_expr_t := undef;
+op_prefix_new_array:    &v_ast_expr_t := undef;
+op_prefix_delete:       &v_ast_expr_t := undef;
+op_prefix_delete_array: &v_ast_expr_t := undef;
 
 //---------------------------------------------------------------------
 private
@@ -240,17 +240,17 @@ check_index: (arg: *v_ast_expr_t, agg: **v_ast_expr_t, idx: **v_ast_expr_list_t)
 {
     tag = v_ast_base_get_tag((arg: *v_ast_base_t));
 
-    if (tag != expr_call_q)  v_return(false);
+    if (tag != expr_call_q)  return false;
 
     etmp = v_ast_expr_call_get_fun_expr(arg);
 
     tag = v_ast_base_get_tag((etmp: *v_ast_base_t));
 
-    if (tag != expr_identifier_q)  v_return(false);
+    if (tag != expr_identifier_q)  return false;
 
     qname = v_ast_expr_identifier_get_name_q(etmp);
 
-    if (qname != q_op_postfix_index)  v_return(false);
+    if (qname != q_op_postfix_index)  return false;
 
     if (agg  ||  idx)
     {
@@ -270,7 +270,7 @@ check_index: (arg: *v_ast_expr_t, agg: **v_ast_expr_t, idx: **v_ast_expr_list_t)
         }
     }
 
-    v_return(true);
+    return  true;
 }
 
 //---------------------------------------------------------------------
@@ -383,13 +383,13 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
         }
     }
 
-    v: &LLVMValueRef := v_undef();
+    v: &LLVMValueRef := undef;
 
     quark: &v_quark_t := q_op_prefix_new;
 
     if (N > 0)  quark := q_op_prefix_new_array;
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(quark, root_t, &ctx))
     {
@@ -428,10 +428,10 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     {
         //- Default treatment...
 
-        align_v: &LLVMValueRef := v_undef();
-        size_v:  &LLVMValueRef := v_undef();
+        align_v: &LLVMValueRef := undef;
+        size_v:  &LLVMValueRef := undef;
 
-        alloc_t: &*v_type_t := v_undef();
+        alloc_t: &*v_type_t := undef;
 
 
         _void_ptr = v_pointer_type(v_find_type_q(void_q), 0);
@@ -551,7 +551,7 @@ op_prefix_new_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
         v_count: &unsigned := (v_list_get_size(v_args) : unsigned);
 
-        if (v_count == 0) v_break();
+        if (v_count == 0) break;
 
         if (N == 0)   v_count := 1;         //- NOT array?
 
@@ -616,7 +616,7 @@ op_prefix_delete_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
     quark = q_op_prefix_delete;
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(quark, root_t, &ctx))
     {
@@ -634,7 +634,7 @@ op_prefix_delete_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
         fun(ctx, vis, self, arg_ptr, 2);
 
-        v_return();
+        return;
     }
 
     //- Default treatment...
@@ -699,7 +699,7 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
 
     quark = q_op_prefix_delete_array;
 
-    ctx_: &*void := v_undef();
+    ctx_: &*void := undef;
 
     if (fun = v_util_lookup_overload(quark, root_t, &ctx_))
     {
@@ -717,12 +717,12 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
 
         fun(ctx_, vis, self, arg_ptr, 2);
 
-        v_return();
+        return;
     }
 
     //- Default treatment...
 
-    alloc_t: &*v_type_t := v_undef();
+    alloc_t: &*v_type_t := undef;
 
     _size_t = v_find_type_q(size_t_q);
 
@@ -736,7 +736,7 @@ op_prefix_delete_array_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_a
         alloc_t := v_struct_type(typ, 2, false);
     }
 
-    shift_v: &LLVMValueRef := v_undef();
+    shift_v: &LLVMValueRef := undef;
 
     size_t_ = v_type_get_llvm_type(_size_t);
 
@@ -818,8 +818,8 @@ compute_key_quark_type: (aux: *void,
 
         block
         {
-            if (q == q_op_prefix_new)       v_break();
-            if (q == q_op_prefix_new_array) v_break();
+            if (q == q_op_prefix_new)       break;
+            if (q == q_op_prefix_new_array) break;
 
             found := false;
         }
@@ -828,15 +828,15 @@ compute_key_quark_type: (aux: *void,
         {
             type = v_type_function_get_return_type(ft);
 
-            v_return(v_type_refptr_get_element_type(type));
+            return  v_type_refptr_get_element_type(type);
         }
 
         found := true;      //- Sic!
 
         block
         {
-            if (q == q_op_prefix_delete)        v_break();
-            if (q == q_op_prefix_delete_array)  v_break();
+            if (q == q_op_prefix_delete)        break;
+            if (q == q_op_prefix_delete_array)  break;
 
             found := false;
         }
@@ -845,13 +845,13 @@ compute_key_quark_type: (aux: *void,
         {
             type = v_type_function_get_param_types(ft)[0];
 
-            v_return(v_type_refptr_get_element_type(type));
+            return  v_type_refptr_get_element_type(type);
         }
     }
 
     ctx = *(aux: *compute_key_quark_type_t);
 
-    v_return(ctx.fun(ctx.aux, ft, q));
+    return  ctx.fun(ctx.aux, ft, q);
 }
 
 

@@ -252,7 +252,7 @@ int.qwerty = 777;
 
 namespace void[].zaq        //- ... qaz ?!?!?!?!?!?!?
 {
-    zxcvb: &int := v_undef();
+    zxcvb: &int := undef;
 }
 
 {

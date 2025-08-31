@@ -97,11 +97,11 @@ dict_find: (dict: &v_trp_dict_t, key: *void) ~> intptr_t
 {
     a = v_map_find(&dict.map, (key: intptr_t));
 
-    if (!a) v_return(-1);
+    if (!a) return -1;
 
     v = v_std_any_get_value(intptr_t, a);
 
-    v_return(v);
+    return v;
 }
 
 //---------------------------------------------------------------------
@@ -132,13 +132,13 @@ append_string_repr: (str: *v_std_string_t, s: *const char, l: size_t) ~> void
 
         switch((c: char32_t))
         {
-        case   0 :  v_std_string_append(str, "\\0");  v_break();    //- Sic!
-        case '\n':  v_std_string_append(str, "\\n");  v_break();
-        case '\r':  v_std_string_append(str, "\\r");  v_break();
-        case '\t':  v_std_string_append(str, "\\t");  v_break();
-        case '\'':  v_std_string_append(str, "\\\'"); v_break();
-        case '\"':  v_std_string_append(str, "\\\""); v_break();
-        case '\\':  v_std_string_append(str, "\\\\"); v_break();
+        case   0 :  v_std_string_append(str, "\\0");  break;    //- Sic!
+        case '\n':  v_std_string_append(str, "\\n");  break;
+        case '\r':  v_std_string_append(str, "\\r");  break;
+        case '\t':  v_std_string_append(str, "\\t");  break;
+        case '\'':  v_std_string_append(str, "\\\'"); break;
+        case '\"':  v_std_string_append(str, "\\\""); break;
+        case '\\':  v_std_string_append(str, "\\\\"); break;
 
         default:
 
@@ -146,7 +146,7 @@ append_string_repr: (str: *v_std_string_t, s: *const char, l: size_t) ~> void
 
            v_std_string_append(str, buf);
 
-           v_break();
+           break;
         }
     }
 
@@ -167,18 +167,18 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
     {
         v_std_string_append_number(str, idx);
 
-        v_return();
+        return;
     }
 
     flag: &bool := false;
 
     switch(v_kind(t))
     {
-    case v_type_kind_void:  v_std_string_append(str, "void");       v_break();
-    case v_type_kind_f16:   v_std_string_append(str, "float(16)");  v_break();
-    case v_type_kind_f32:   v_std_string_append(str, "float(32)");  v_break();
-    case v_type_kind_f64:   v_std_string_append(str, "float(64)");  v_break();
-    case v_type_kind_f128:  v_std_string_append(str, "float(128)"); v_break();
+    case v_type_kind_void:  v_std_string_append(str, "void");       break;
+    case v_type_kind_f16:   v_std_string_append(str, "float(16)");  break;
+    case v_type_kind_f32:   v_std_string_append(str, "float(32)");  break;
+    case v_type_kind_f64:   v_std_string_append(str, "float(64)");  break;
+    case v_type_kind_f128:  v_std_string_append(str, "float(128)"); break;
 
     case v_type_kind_int:
 
@@ -195,7 +195,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_kind_function:
 
@@ -224,7 +224,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_kind_pointer:
 
@@ -258,7 +258,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
             v_std_string_append(str, ")");
         }
 
-        v_break();
+        break;
 
     case v_type_kind_struct:
 
@@ -295,7 +295,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_kind_array:
 
@@ -309,7 +309,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
 
         v_std_string_append(str, "]");
 
-        v_break();
+        break;
 
     case v_type_kind_vector:
 
@@ -330,7 +330,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_kind_generic:
 
@@ -352,7 +352,7 @@ append_type: (str: *v_std_string_t, dict: &v_trp_dict_t, t: *v_type_t) ~> void
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
     }
 
     dict_insert(dict, t);
@@ -368,7 +368,7 @@ append_quark: (str: *v_std_string_t, dict: &v_trp_dict_t, q: v_quark_t) ~> void
     {
         v_std_string_append_number(str, idx);
 
-        v_return();
+        return;
     }
 
     append_string_repr(str, qstr, v_quark_to_string_size(q));
@@ -384,7 +384,7 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
     {
         v_std_string_append_number(str, idx);
 
-        v_return();
+        return;
     }
 
     switch(v_kind(a))
@@ -404,7 +404,7 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_generic_arg_kind_string:
 
@@ -416,7 +416,7 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_generic_arg_kind_quark:
 
@@ -426,7 +426,7 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_generic_arg_kind_type:
 
@@ -436,7 +436,7 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
 
     case v_type_generic_arg_kind_cons:
 
@@ -458,7 +458,7 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         v_std_string_append(str, ")");
 
-        v_break();
+        break;
     }
 
     dict_insert(dict, a);
@@ -482,7 +482,7 @@ encode_base62: (ctx: &v_myz_ctx_t) ~> bool
 
     b64: &uint64_t := 0;
 
-    str: &char[12] := v_undef();
+    str: &char[12] := undef;
 
     for (i: &int := 0; i < n; ++i)
     {
@@ -496,11 +496,11 @@ encode_base62: (ctx: &v_myz_ctx_t) ~> bool
 
             for (; j < 11; ++j)
             {
-                if (b64 == 0  &&  i == n-1)  v_break();
+                if (b64 == 0  &&  i == n-1)  break;
 
                 d = b64 % 62;
 
-                D: &char32_t := v_undef();
+                D: &char32_t := undef;
 
                 if (d < 10)       D := '0';
                 else if (d < 36)  D := 'A' - 10;
@@ -520,7 +520,7 @@ encode_base62: (ctx: &v_myz_ctx_t) ~> bool
     ctx.next_out  := buf;
     ctx.avail_out := OUTBUFSIZE;
 
-    v_return(true);
+    return true;
 }
 
 
@@ -528,7 +528,7 @@ encode_base62: (ctx: &v_myz_ctx_t) ~> bool
 export
 voidc_internal_std_string_append_type: (sstr: *v_std_string_t, t: *v_type_t) ~> void
 {
-    dict: &v_trp_dict_t := v_undef();
+    dict: &v_trp_dict_t := undef;
     dict_init(dict);
     defer dict_term(dict);
 
@@ -539,7 +539,7 @@ voidc_internal_std_string_append_type: (sstr: *v_std_string_t, t: *v_type_t) ~> 
 export
 voidc_internal_std_string_append_quark: (sstr: *v_std_string_t, q: v_quark_t) ~> void
 {
-    dict: &v_trp_dict_t := v_undef();
+    dict: &v_trp_dict_t := undef;
     dict_init(dict);
     defer dict_term(dict);
 
@@ -550,7 +550,7 @@ voidc_internal_std_string_append_quark: (sstr: *v_std_string_t, q: v_quark_t) ~>
 export
 voidc_internal_std_string_append_type_generic_arg: (sstr: *v_std_string_t, a: *v_type_generic_arg_t) ~> void
 {
-    dict: &v_trp_dict_t := v_undef();
+    dict: &v_trp_dict_t := undef;
     dict_init(dict);
     defer dict_term(dict);
 
@@ -566,7 +566,7 @@ voidc_internal_std_string_append_mangle: (dst: *v_std_string_t, src: *const v_st
     ctx.next_in  := (v_std_string_get(src) : *const uint(8));
     ctx.avail_in := v_std_string_get_size(src);
 
-    buf: &uint(8)[OUTBUFSIZE] := v_undef();
+    buf: &uint(8)[OUTBUFSIZE] := undef;
 
     ctx.next_out  := buf;
     ctx.avail_out := OUTBUFSIZE;
@@ -682,7 +682,7 @@ mk_spec_ident_postfix_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any
 
         v_std_any_set_pointer(ret, expr);
 
-        v_return();
+        return;
     }
 
     pay = (&obj[2] : *v_ast_generic_list_t);
@@ -846,17 +846,17 @@ type_is_initializable: (t: *v_type_t) ~> bool
     switch(v_kind(t))
     {
     case v_type_kind_array:
-        v_return(type_is_initializable(v_type_array_get_element_type(t)));
+        return  type_is_initializable(v_type_array_get_element_type(t));
 
     case v_type_kind_struct:
     case v_type_kind_generic:
-        v_break();
+        break;
 
     default:
-        v_return(false);        //- Sic!!!
+        return  false;          //- Sic!!!
     }
 
-    v_return(v_get_overload_q(q_initialize, t) != 0);
+    return  v_get_overload_q(q_initialize, t) != 0;
 }
 
 
@@ -915,28 +915,28 @@ register_special_function_name: (unit: bool, fn: *const char, q: v_quark_t, t: *
     //-------------------------------------------------------------
     block                               //- TODO !!!!!!!!!!!!!!!!!!
     {
-        if (q == q_initialize)  v_break();
-        if (q == q_terminate)   v_break();
-        if (q == q_copy)        v_break();
-        if (q == q_move)        v_break();
+        if (q == q_initialize)  break;
+        if (q == q_terminate)   break;
+        if (q == q_copy)        break;
+        if (q == q_move)        break;
 
-        rt: &*v_type_t := v_undef();
+        rt: &*v_type_t := undef;
 
         if (v_type_is_reference(t))
         {
             et = v_type_refptr_get_element_type(t);
 
-            if (v_type_is_struct(et)  &&  v_type_struct_is_opaque(et))  v_break();      //- !?!?!?!?!?!
+            if (v_type_is_struct(et)  &&  v_type_struct_is_opaque(et))  break;      //- !?!?!?!?!?!
 
-            if (type_is_initializable(et))  v_break();
+            if (type_is_initializable(et))  break;
 
-            if (v_get_overload_q(q, et))  v_break();
+            if (v_get_overload_q(q, et))  break;
 
             rt := et;
         }
         else
         {
-            if (!v_type_get_llvm_type(t))   v_break();      //- ???
+            if (!v_type_get_llvm_type(t))   break;      //- ???
 
             rt := v_reference_type(t, 0);           //- "const ..." ?!?!?!?
         }
@@ -983,8 +983,8 @@ compute_key_quark_type: (aux: *void,
 
     strcmp: (*const char, *const char) ~> int;
 
-    if (strcmp(str+ssz-6, ".right") == 0)   v_return(types[1]);
-    else                                    v_return(types[0]);
+    if (strcmp(str+ssz-6, ".right") == 0)   return types[1];
+    else                                    return types[0];
 }
 
 //---------------------------------------------------------------------

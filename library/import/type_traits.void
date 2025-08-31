@@ -84,12 +84,12 @@ build_hierarchy: (tag: *const char, table: *(*const char)[2]) ~> void
 
     for (i: &int := 0; table[i][0]; ++i)
     {
-        quark_0: &v_quark_t := v_undef();
-        type_0:  &*v_type_t := v_undef();
+        quark_0: &v_quark_t := undef;
+        type_0:  &*v_type_t := undef;
 
         for (j: &int := 0; j < 2; ++j)
         {
-            if (i == 0  &&  j == 1) v_continue();           //- Kinda, root...
+            if (i == 0  &&  j == 1) continue;           //- Kinda, root...
 
             v_std_string_set(&sstr, "v_static_");
 
@@ -560,13 +560,13 @@ static_string_string_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base
 private
 is_incomplete_array_predicate: (t: *v_type_t) ~> bool
 {
-    if (!v_type_is_generic(t))  v_return(false);
+    if (!v_type_is_generic(t))  return false;
 
     tag = v_quark_from_string("voidc.incomplete_array_type_tag");
 
-    if (v_type_generic_get_cons(t) != tag)  v_return(false);
+    if (v_type_generic_get_cons(t) != tag)  return false;
 
-    v_return(true);
+    return  true;
 }
 
 
@@ -635,7 +635,7 @@ v_internal_type_traits_effort: (*void) ~> void
         gctx = v_target_get_global_ctx();
         vctx = v_target_get_voidc_global_ctx();
 
-        if (gctx == vctx) v_break();
+        if (gctx == vctx) break;
 
         _int = v_find_type_q(int_q);
         int_ = v_type_get_llvm_type(_int);

@@ -90,7 +90,7 @@ alwaysinline
     r.x := v.x;         //- ?
     r.y := v.y;         //- ?
 
-    v_return(r);
+    return  r;
 }
 
 inlinehint

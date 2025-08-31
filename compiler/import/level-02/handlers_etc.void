@@ -273,7 +273,7 @@ v_make_handler_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~>
 
     //-----------------------------------------------------------------
     stmt_list = voidc_definitions_context_get_stmt_list();
-    if (!stmt_list)  v_return();
+    if (!stmt_list)  return;
 
     expr = v_make_object(v_ast_expr_t, 2);
 
@@ -309,7 +309,7 @@ v_get_handler_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
     aux_ptr_expr = v_list_get_item(args, 1);
 
-    void_tg_arg: &*void := v_undef();
+    void_tg_arg: &*void := undef;
 
     v_get_intrinsic_q(qhname, &void_tg_arg);
 
@@ -366,7 +366,7 @@ v_set_handler_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
     fun_expr = v_list_get_item(args, 1);
     aux_expr = v_list_get_item(args, 2);
 
-    void_tg_arg: &*void := v_undef();
+    void_tg_arg: &*void := undef;
 
     v_get_intrinsic_q(qhname, &void_tg_arg);
 

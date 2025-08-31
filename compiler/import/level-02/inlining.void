@@ -169,7 +169,7 @@ obtain_module_for_inlining: (void_mod: *void) ~> LLVMModuleRef
         mod := LLVMModuleCreateWithNameInContext("inline_function_module", v_target_get_llvm_ctx());
     }
 
-    v_return(mod);
+    return  mod;
 }
 
 //---------------------------------------------------------------------
@@ -195,12 +195,12 @@ compile_unit_inline_fun_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_b
         ctx.fun(ctx.aux, vis, self);
         //--------------------------
 
-        v_return();
+        return;
     }
 
     //- Do inlining! --------------------------------------------------
 
-    saved_obtain_module_ctx: &*void := v_undef();
+    saved_obtain_module_ctx: &*void := undef;
     saved_obtain_module_fun = v_get_obtain_module_hook(&saved_obtain_module_ctx);
 
     mod: &LLVMModuleRef := 0;
@@ -267,7 +267,7 @@ compile_unit_inline_fun_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_b
     v_set_obtain_module_hook(saved_obtain_module_fun, saved_obtain_module_ctx);
 
 
-    fun_name: &*const char := v_undef();
+    fun_name: &*const char := undef;
 
     {   stmt = v_list_get_item(stmt_list, v_list_get_size(stmt_list)-1);
 
@@ -319,7 +319,7 @@ compile_unit_inline_fun_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_b
     //-----------------------------------------------------------------
     stmt_list := saved_stmt_list;
 
-    if (!stmt_list)  v_return();
+    if (!stmt_list)  return;
 
     expr = v_make_object(v_ast_expr_t, 5);
     stmt = v_make_object(v_ast_stmt_t);
@@ -382,9 +382,9 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
         for (f: &LLVMValueRef := LLVMGetFirstFunction(module);  f;  f := LLVMGetNextFunction(f))
         {
-            if (LLVMCountBasicBlocks(f))  v_continue();
+            if (LLVMCountBasicBlocks(f))  continue;
 
-            sz: &size_t := v_undef();
+            sz: &size_t := undef;
 
             fun_name = LLVMGetValueName2(f, &sz);
 
@@ -398,7 +398,7 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
             {
                 data = *(void_data: *v_inline_function_data_t);
 
-                if (!(data.module  ||  data.membuf))  v_continue();         //- ???????
+                if (!(data.module  ||  data.membuf))  continue;         //- ???????
 
                 data.hack := hack;
 
@@ -408,7 +408,7 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
         //- Link collected functions into module ...
 
-        if (!hack)  v_break();      //- Nothing to do ...
+        if (!hack)  break;      //- Nothing to do ...
 
         for (; hack; hack := hack->hack)
         {

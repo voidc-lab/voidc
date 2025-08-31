@@ -124,7 +124,7 @@ struct some_t
 
     v_initialize(ret, fixed);
 
-    v_return(ret);
+    return  ret;
 }
 
 (delete _): (data: *some_t, fixed: size_t) ~> void
@@ -179,7 +179,7 @@ struct some_t
 
     v_initialize(ret, fixed*dynamic);
 
-    v_return(ret);
+    return  ret;
 }
 
 (delete[] _): (data: *some_t, fixed: size_t) ~> void

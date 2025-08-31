@@ -48,19 +48,19 @@ v_enable_level_01: () ~> void
         v_import("level-00");
         v_import("level-01");
 
-        return_aux: &*void := v_undef();
+        return_aux: &*void := undef;
         return_fun = v_get_intrinsic("v_return", &return_aux);
 
-        init_aux: &*void := v_undef();
+        init_aux: &*void := undef;
         init_fun = v_get_intrinsic("v_initialize", &init_aux);
 
-        term_aux: &*void := v_undef();
+        term_aux: &*void := undef;
         term_fun = v_get_intrinsic("v_terminate", &term_aux);
 
-        copy_aux: &*void := v_undef();
+        copy_aux: &*void := undef;
         copy_fun = v_get_intrinsic("v_copy", &copy_aux);
 
-        move_aux: &*void := v_undef();
+        move_aux: &*void := undef;
         move_fun = v_get_intrinsic("v_move", &move_aux);
 
         v_target_set_global_ctx(gctx);

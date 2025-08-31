@@ -62,10 +62,13 @@
     v_add_symbol("q_internal_var_defn", q_ref, q("v.internal.var_defn"));
     v_add_symbol("q_internal_val_defn", q_ref, q("v.internal.val_defn"));
 
-    v_add_symbol("q_cast",   q_ref, q("v_cast"));
-    v_add_symbol("q_alloca", q_ref, q("v_alloca"));
-    v_add_symbol("q_load",   q_ref, q("v_load"));
-    v_add_symbol("q_return", q_ref, q("v_return"));
+    v_add_symbol("q_cast",     q_ref, q("v_cast"));
+    v_add_symbol("q_alloca",   q_ref, q("v_alloca"));
+    v_add_symbol("q_load",     q_ref, q("v_load"));
+    v_add_symbol("q_return",   q_ref, q("v_return"));
+    v_add_symbol("q_break",    q_ref, q("v_break"));
+    v_add_symbol("q_continue", q_ref, q("v_continue"));
+    v_add_symbol("q_undef",    q_ref, q("v_undef"));
 
     v_add_symbol("LLVMGetNamedGlobal_q", q_ref, q("LLVMGetNamedGlobal"));
     v_add_symbol("LLVMGetInitializer_q", q_ref, q("LLVMGetInitializer"));
@@ -366,6 +369,11 @@
     v_make_global("v_op_infix_tildeto",   v_ast_expr_t);
     v_make_global("v_op_prefix_const",    v_ast_expr_t);
     v_make_global("v_op_prefix_volatile", v_ast_expr_t);
+    v_make_global("v_op_prefix_return",   v_ast_expr_t);
+    v_make_global("v_op_nonfix_return",   v_ast_expr_t);
+    v_make_global("v_op_nonfix_break",    v_ast_expr_t);
+    v_make_global("v_op_nonfix_continue", v_ast_expr_t);
+    v_make_global("v_op_nonfix_undef",    v_ast_expr_t);
 
     intptr_t_ = v_type_get_llvm_type(intptr_t);
 
@@ -397,6 +405,11 @@
     v_terminate(v_op_infix_tildeto);
     v_terminate(v_op_prefix_const);
     v_terminate(v_op_prefix_volatile);
+    v_terminate(v_op_prefix_return);
+    v_terminate(v_op_nonfix_return);
+    v_terminate(v_op_nonfix_break);
+    v_terminate(v_op_nonfix_continue);
+    v_terminate(v_op_nonfix_undef);
 }
 
 //---------------------------------------------------------------------
@@ -2084,6 +2097,73 @@
 
 
 //---------------------------------------------------------------------
+//- op_prefix_return - compiler intrinsic
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("compile_op_prefix_return", voidc_intrinsic_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "aux",     void_ptr);
+    v_add_parameter_name(f, 1, "visitor", voidc_visitor_ptr);
+    v_add_parameter_name(f, 2, "self",    v_ast_base_ptr);
+}
+{
+//printf("compile_op_prefix_return: start\n");
+//defer printf("compile_op_prefix_return: stop\n");
+
+    call = v_cast(self, v_ast_expr_ptr);
+
+    arg_list = v_ast_expr_call_get_arg_list(call);
+
+    expr = v_list_get_item(arg_list, 1);
+
+    elst = v_make_object(v_ast_expr_list_t);
+    etmp = v_make_object(v_ast_expr_t);
+
+    v_make_list(elst, expr, 1);
+
+    v_ast_make_expr_identifier_q(etmp, q_return);
+
+    v_ast_make_expr_call(etmp, etmp, elst);
+
+    v_ast_accept_visitor(v_cast(etmp, v_ast_base_ptr), visitor);
+}
+
+//---------------------------------------------------------------------
+//- op_nonfix_return_etc - compiler intrinsic
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("compile_op_nonfix_return_etc", voidc_intrinsic_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "aux",     void_ptr);
+    v_add_parameter_name(f, 1, "visitor", voidc_visitor_ptr);
+    v_add_parameter_name(f, 2, "self",    v_ast_base_ptr);
+}
+{
+//printf("compile_op_nonfix_return_etc: start\n");
+//defer printf("compile_op_nonfix_return_etc: stop\n");
+
+    quark = v_cast(v_cast(aux, intptr_t), v_quark_t);
+
+    elst = v_make_object(v_ast_expr_list_t);
+    etmp = v_make_object(v_ast_expr_t);
+
+    v_make_list_nil(elst);
+
+    v_ast_make_expr_identifier_q(etmp, quark);
+
+    v_ast_make_expr_call(etmp, etmp, elst);
+
+    v_ast_accept_visitor(v_cast(etmp, v_ast_base_ptr), visitor);
+}
+
+
+//---------------------------------------------------------------------
 //- op_infix_tildeto - compiler intrinsic (types only(!))
 //---------------------------------------------------------------------
 {
@@ -2341,12 +2421,17 @@
     v_add_intrinsic_q(q("v.op_infix_tildeto"),   compile_op_infix_tildeto,  0);
     v_add_intrinsic_q(q("v.op_prefix_const"),    compile_op_prefix_cv,      0);
     v_add_intrinsic_q(q("v.op_prefix_volatile"), compile_op_prefix_cv,      0);
+    v_add_intrinsic_q(q("v.op_prefix_return"),   compile_op_prefix_return,  0);
+    v_add_intrinsic_q(q("v.op_nonfix_return"),   compile_op_nonfix_return_etc, v_cast(v_cast(q_return,   intptr_t), *void));
+    v_add_intrinsic_q(q("v.op_nonfix_break"),    compile_op_nonfix_return_etc, v_cast(v_cast(q_break,    intptr_t), *void));
+    v_add_intrinsic_q(q("v.op_nonfix_continue"), compile_op_nonfix_return_etc, v_cast(v_cast(q_continue, intptr_t), *void));
+    v_add_intrinsic_q(q("v.op_nonfix_undef"),    compile_op_nonfix_return_etc, v_cast(v_cast(q_undef,    intptr_t), *void));
 
     v_add_intrinsic_q(q("v.internal.var_decl"), v_internal_var_decl_intrinsic, 0);
     v_add_intrinsic_q(q("v.internal.var_defn"), v_internal_var_defn_intrinsic, 0);
     v_add_intrinsic_q(q("v.internal.val_defn"), v_internal_val_defn_intrinsic, 0);
 
-    v_add_intrinsic_q(q("v_undef"), v_undef_intrinsic, 0);
+    v_add_intrinsic_q(q_undef, v_undef_intrinsic, 0);
 
     //-----------------------------------------------------------------
     add_definitions_context(&def_ctx);
@@ -2406,19 +2491,29 @@
     voidc_enable_expression();          //- Sic!
 
 
-    any = v_make_object(v_std_any_t, 6);
+    any = v_make_object(v_std_any_t, 11);
 
     any_tildeto  = any + 0;
     any_const    = any + 1;
     any_volatile = any + 2;
+    any_return   = any + 3;
+    any_return_n = any + 4;
+    any_break    = any + 5;
+    any_continue = any + 6;
+    any_undef    = any + 7;
 
     v_std_any_set_pointer(any_tildeto,  v_op_infix_tildeto);
     v_std_any_set_pointer(any_const,    v_op_prefix_const);
     v_std_any_set_pointer(any_volatile, v_op_prefix_volatile);
+    v_std_any_set_pointer(any_return,   v_op_prefix_return);
+    v_std_any_set_pointer(any_return_n, v_op_nonfix_return);
+    v_std_any_set_pointer(any_break,    v_op_nonfix_break);
+    v_std_any_set_pointer(any_continue, v_op_nonfix_continue);
+    v_std_any_set_pointer(any_undef,    v_op_nonfix_undef);
 
-    any_qf_none    = any + 3;
-    any_qf_export  = any + 4;
-    any_qf_private = any + 5;
+    any_qf_none    = any +  8;
+    any_qf_export  = any +  9;
+    any_qf_private = any + 10;
 
     v_std_any_set_value(any_qf_none,    qf_none);
     v_std_any_set_value(any_qf_export,  qf_export);
@@ -2431,6 +2526,11 @@
         op_infix_tildeto   = any_tildeto;
         op_prefix_const    = any_const;
         op_prefix_volatile = any_volatile;
+        op_prefix_return   = any_return;
+        op_nonfix_return   = any_return_n;
+        op_nonfix_break    = any_break;
+        op_nonfix_continue = any_continue;
+        op_nonfix_undef    = any_undef;
 
         qf_none    = any_qf_none;
         qf_export  = any_qf_export;
@@ -2454,8 +2554,15 @@
 
     parsers:
 
+        nonfix += "return"   !ident_cont  { op_nonfix_return }
+                / "break"    !ident_cont  { op_nonfix_break }
+                / "continue" !ident_cont  { op_nonfix_continue }
+                / "undef"    !ident_cont  { op_nonfix_undef }
+                ;
+
         prefix += "const"    !ident_cont  { op_prefix_const }
                 / "volatile" !ident_cont  { op_prefix_volatile }
+                / "return"   !ident_cont  { op_prefix_return   }
                 ;
 
 
@@ -2566,16 +2673,28 @@
     v_initialize(v_op_infix_tildeto);
     v_initialize(v_op_prefix_const);
     v_initialize(v_op_prefix_volatile);
+    v_initialize(v_op_prefix_return);
+    v_initialize(v_op_nonfix_return);
+    v_initialize(v_op_nonfix_break);
+    v_initialize(v_op_nonfix_continue);
+    v_initialize(v_op_nonfix_undef);
 
-    op_binary = v_ast_make_operator_binary;
-    op_unary  = v_ast_make_operator_unary;
+    op_binary  = v_ast_make_operator_binary;
+    op_unary   = v_ast_make_operator_unary;
+    op_nullary = v_ast_make_operator_nullary;
 
     q = v_quark_from_string;
 
-    op_binary(v_op_infix_tildeto, q("v.op_infix_tildeto"), 2000, 0, 0);     //- "Lowest" priority, right-assoc
+    op_binary(v_op_infix_tildeto, q("v.op_infix_tildeto"), 2000, 2000, 0);      //- "Lowest" priority, right-assoc
 
-    op_unary(v_op_prefix_const,    q("v.op_prefix_const"),    20000, 0);    //- "Prefix" priority
-    op_unary(v_op_prefix_volatile, q("v.op_prefix_volatile"), 20000, 0);    //- "Prefix" priority
+    op_unary(v_op_prefix_const,    q("v.op_prefix_const"),    20000, 0);        //- "Prefix" priority
+    op_unary(v_op_prefix_volatile, q("v.op_prefix_volatile"), 20000, 0);        //- "Prefix" priority
+    op_unary(v_op_prefix_return,   q("v.op_prefix_return"),       0, 0);        //- Minimal priority
+
+    op_nullary(v_op_nonfix_return,   q("v.op_nonfix_return"),   0);
+    op_nullary(v_op_nonfix_break,    q("v.op_nonfix_break"),    0);
+    op_nullary(v_op_nonfix_continue, q("v.op_nonfix_continue"), 0);
+    op_nullary(v_op_nonfix_undef,    q("v.op_nonfix_undef"),    0);
 
     v_add_cleaner(voidc_definitions_internal_globals_cleaner, 0);
 }
@@ -2586,6 +2705,11 @@
     v_make_export_symbol("v_op_infix_tildeto");
     v_make_export_symbol("v_op_prefix_const");
     v_make_export_symbol("v_op_prefix_volatile");
+    v_make_export_symbol("v_op_prefix_return");
+    v_make_export_symbol("v_op_nonfix_return");
+    v_make_export_symbol("v_op_nonfix_break");
+    v_make_export_symbol("v_op_nonfix_continue");
+    v_make_export_symbol("v_op_nonfix_undef");
 
     v_make_export_symbol("voidc_compile_unit_fun_defn_helper");
     v_make_export_symbol("voidc_internal_constants_module_helper");

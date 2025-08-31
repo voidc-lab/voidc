@@ -24,7 +24,7 @@
 //  while(c: char = *p++)    printf("[%c]\n", c);
 //  while(c = *p++)          printf("[%c]\n", c);
 
-//  c: &char := v_undef();
+//  c: &char := undef;
 //  while(c := *p++)         printf("[%c]\n", c);
 
     while(c = *p++)
@@ -33,14 +33,14 @@
         {
             printf(" ! \n");
 
-            v_break();
+            break;
         }
 
         if (c == ' ')
         {
             printf("   \n");
 
-            v_continue();
+            continue;
         }
 
         printf("[%c]\n", c);
@@ -52,7 +52,7 @@
 //---------------------------------------------------------------------
 //{ v_debug_print_module(1); }
 {
-    buf: &char[100] := v_undef();
+    buf: &char[100] := undef;
 
     src: &*char := "Hello world!";
     dst: &*char := &buf[0];
@@ -64,7 +64,7 @@
 
 //---------------------------------------------------------------------
 {
-    buf: &char[100] := v_undef();
+    buf: &char[100] := undef;
 
     src: &*char := "Hello world!";
     dst: &*char := &buf[0];
@@ -90,7 +90,7 @@
 
 //    for(i: &int := 0; ; ++i)
 //    {
-//        if (i >= 10) v_break();
+//        if (i >= 10) break;
 //
 //        printf("[%d]\n", i);
 //    }
@@ -102,14 +102,14 @@
 //        {
 //            printf(" ! \n");
 //
-//            v_break();
+//            break;
 //        }
 //
 //        if (i % 3 == 0)
 //        {
 //            printf(" %d \n", i);
 //
-//            v_continue();
+//            continue;
 //        }
 //
 //        printf("[%d]\n", i);
@@ -149,10 +149,10 @@
     {
         switch(f3: int = i%3==0, f5: int = i%5==0, ff = f3+(f5<<1))
         {
-        case 0: printf("%d\n", i);    v_break();
-        case 1: printf("Fizz\n");     v_break();
-        case 2: printf("Buzz\n");     v_break();
-        case 3: printf("FizzBuzz\n"); v_break();
+        case 0: printf("%d\n", i);    break;
+        case 1: printf("Fizz\n");     break;
+        case 2: printf("Buzz\n");     break;
+        case 3: printf("FizzBuzz\n"); break;
         }
     }
 
@@ -168,7 +168,7 @@
     {
         printf("i: %d\n", i);
 
-        if (++i >= 10)  v_break();
+        if (++i >= 10)  break;
     }
 }
 

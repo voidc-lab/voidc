@@ -77,6 +77,41 @@
 }
 
 //---------------------------------------------------------------------
+//- v_ast_make_expr_op_nullary - ...
+//---------------------------------------------------------------------
+{
+    typ0 = v_alloca(v_type_ptr, 2);
+    typ1 = v_getelementptr(typ0, 1);
+
+    v_store(v_ast_expr_ptr, typ0);
+    v_store(v_ast_expr_ptr, typ1);
+
+    ft = v_function_type(void, typ0, 2, false);
+
+    //-----------------------------------------------------------------
+    f = v_function_hack("v_ast_make_expr_op_nullary", ft);
+
+    v_add_parameter_name(f, 0, "ret",   v_ast_expr_ptr);
+    v_add_parameter_name(f, 1, "op",    v_ast_expr_ptr);
+}
+{
+    lst = v_alloca(v_ast_expr_list_t);
+    v_initialize(lst);
+
+    v_make_list(lst, op, 1);
+
+    void_obj = v_ast_generic_get_object(op);
+
+    obj = v_cast(void_obj, v_ast_operator_nullary_ptr);
+
+    quark = v_load(v_getelementptr(obj, 0, 0));
+
+    make_expr_op_helper(ret, quark, lst);
+
+    v_terminate(lst);
+}
+
+//---------------------------------------------------------------------
 //- v_ast_make_expr_op_unary - ...
 //---------------------------------------------------------------------
 {
@@ -192,7 +227,7 @@
     typ0 = v_alloca(v_type_ptr, 2);
     typ1 = v_getelementptr(typ0, 1);
 
-    v_store(int,                       typ0);       //- Precedence value
+    v_store(unsigned,                  typ0);       //- Precedence value
     v_store(precedence_stack_node_ptr, typ1);       //- Next node ...
 
     v_type_struct_set_body(precedence_stack_node_t, typ0, 2, 0);
@@ -221,7 +256,7 @@
     typ1 = v_getelementptr(typ0, 1);
 
     v_store(void_ptr, typ0);
-    v_store(int,      typ1);
+    v_store(unsigned, typ1);
 
     ft = v_function_type(void, typ0, 2, false);
 
@@ -231,7 +266,7 @@
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
     v_add_parameter_name(f, 0, "vpst", void_ptr);
-    v_add_parameter_name(f, 1, "prec", int);
+    v_add_parameter_name(f, 1, "prec", unsigned);
 }
 {
 //  printf("precedence_stack_push(%d)\n", prec);
@@ -257,7 +292,7 @@
 
     v_store(void_ptr, typ0);
 
-    ft = v_function_type(int, typ0, 1, false);
+    ft = v_function_type(unsigned, typ0, 1, false);
 
     //-----------------------------------------------------------------
     f = v_function_hack("precedence_stack_pop", ft);
@@ -293,7 +328,7 @@
 
     v_store(void_ptr, typ0);
 
-    ft = v_function_type(int, typ0, 1, false);
+    ft = v_function_type(unsigned, typ0, 1, false);
 
     //-----------------------------------------------------------------
     f = v_function_hack("precedence_stack_peek", ft);
@@ -330,7 +365,7 @@
     v_add_parameter_name(f, 3, "any_count", size_t);
 }
 {
-//  printf("expr_start_grammar_action\n");
+//  printf("expr_start_grammar_action %zu\n", v_peg_get_position());
 
     ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
 
@@ -354,7 +389,7 @@
     v_add_parameter_name(f, 3, "any_count", size_t);
 }
 {
-//  printf("expr_stop_grammar_action\n");
+//  printf("expr_stop_grammar_action %zu\n", v_peg_get_position());
 
     ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
 
@@ -378,7 +413,7 @@
     v_add_parameter_name(f, 3, "any_count", size_t);
 }
 {
-//  printf("expr_cleanup_grammar_action\n");
+//  printf("expr_cleanup_grammar_action %zu\n", v_peg_get_position());
 
     ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
 
@@ -415,15 +450,15 @@
 
     obj = v_cast(void_obj, v_ast_operator_binary_ptr);
 
-    prec = v_load(v_getelementptr(obj, 0, 1));
-    left = v_load(v_getelementptr(obj, 0, 2));
+    prec_l = v_load(v_getelementptr(obj, 0, 1));
+    prec_r = v_load(v_getelementptr(obj, 0, 2));
 
 
-    if (v_icmp(LLVMIntULT, prec, min_prec)) v_return();     //- NOK
+    if (v_icmp(LLVMIntULT, prec_l, min_prec)) v_return();       //- NOK
 
-    precedence_stack_push(ppst, v_binop(LLVMAdd, prec, left));
+    precedence_stack_push(ppst, prec_r);
 
-    v_std_any_set_value(ret, 1);                            //- OK
+    v_std_any_set_value(ret, 1);                                //- OK
 }
 
 
@@ -609,6 +644,36 @@
 
 
 //---------------------------------------------------------------------
+//- expr_nonfix - grammar action
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("expr_nonfix_grammar_action", v_peg_grammar_action_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "ret",       v_std_any_ptr);
+    v_add_parameter_name(f, 1, "aux",       void_ptr);
+    v_add_parameter_name(f, 2, "any0",      v_std_any_ptr);
+    v_add_parameter_name(f, 3, "any_count", size_t);
+}
+{
+//  printf("expr_nonfix_grammar_action\n");
+
+    op = v_std_any_get_pointer(v_ast_expr_t, any0);
+
+    expr = v_alloca(v_ast_expr_t);
+    v_initialize(expr);
+
+    v_ast_make_expr_op_nullary(expr, op);
+
+    v_std_any_set_pointer(ret, expr);
+
+    v_terminate(expr);
+}
+
+
+//---------------------------------------------------------------------
 //- mk_bracketed - grammar action
 //---------------------------------------------------------------------
 {
@@ -628,12 +693,12 @@
     any1 = v_getelementptr(any0, 1);
 
     op  = v_std_any_get_pointer(v_ast_expr_t, any0);
-    rhs = v_std_any_get_pointer(v_ast_expr_t, any1);
+    arg = v_std_any_get_pointer(v_ast_expr_t, any1);
 
     expr = v_alloca(v_ast_expr_t);
     v_initialize(expr);
 
-    v_ast_make_expr_op_unary(expr, op, rhs);
+    v_ast_make_expr_op_unary(expr, op, arg);
 
     v_std_any_set_pointer(ret, expr);
 
@@ -775,6 +840,7 @@
         expr_make_postfix = expr_make_postfix_grammar_action, ppst;
         expr_push_prefix  = expr_push_prefix_grammar_action,  ppst;
         expr_prefix       = expr_prefix_grammar_action,       ppst;
+        expr_nonfix       = expr_nonfix_grammar_action,       ppst;
 
         mk_bracketed = mk_bracketed_grammar_action;
 
@@ -782,23 +848,19 @@
 
     parsers:
 
-        expr = { expr_start() }  e:expr_ck  { expr_stop(e) };
+        expr = { expr_start() }  e:(expr_lr / { expr_cleanup() })  { expr_stop(e) };
 
-        expr_ck = expr_lr / { expr_cleanup() };
-
-        expr_lr = l:expr_lr _ op:infix _ { expr_check_infix(op) }  r:expr_ck  { expr_infix(op, l, r) }
+        expr_lr = l:expr_lr _ op:infix _ { expr_check_infix(op) }  r:(expr_lr / { expr_cleanup() })  { expr_infix(op, l, r) }
 
                 / l:expr_lr _ op:postfix { expr_make_postfix(l, op) }
 
-                / op:prefix _ { expr_push_prefix(op) }  r:expr_ck  { expr_prefix(op, r) }
+                / op:prefix _ { expr_push_prefix(op) }  r:(expr_lr / { expr_cleanup() })  { expr_prefix(op, r) }
+
+                / op:nonfix  { expr_nonfix(op) }
 
                 / prim;
 
         expr_lr is left-recursive;
-
-
-        prim += bracketed
-              ;
 
         infix = "+="        { op_infix_add_assign }
               / '+' !'+'    { op_infix_add }
@@ -848,6 +910,11 @@
                / '~'        { op_prefix_tilde }
                ;
 
+        nonfix = (/);
+
+
+        prim += bracketed;
+
         bracketed = '(' _ e:expr _ ')'      { mk_bracketed(op_parentheses, e) }     //- TODO...
                   ;
     }
@@ -863,16 +930,20 @@
 
 //---------------------------------------------------------------------
 {
-    v_export_type("v_ast_operator_unary_t",    v_ast_operator_unary_t);         //- From "expr_util.void"
-    v_export_type("v_ast_operator_unary_ptr",  v_ast_operator_unary_ptr);       //- From "expr_util.void"
-    v_export_type("v_ast_operator_binary_t",   v_ast_operator_binary_t);        //- From "expr_util.void"
-    v_export_type("v_ast_operator_binary_ptr", v_ast_operator_binary_ptr);      //- From "expr_util.void"
+    v_export_type("v_ast_operator_nullary_t",   v_ast_operator_nullary_t);      //- From "expr_util.void"
+    v_export_type("v_ast_operator_nullary_ptr", v_ast_operator_nullary_ptr);    //- From "expr_util.void"
+    v_export_type("v_ast_operator_unary_t",     v_ast_operator_unary_t);        //- From "expr_util.void"
+    v_export_type("v_ast_operator_unary_ptr",   v_ast_operator_unary_ptr);      //- From "expr_util.void"
+    v_export_type("v_ast_operator_binary_t",    v_ast_operator_binary_t);       //- From "expr_util.void"
+    v_export_type("v_ast_operator_binary_ptr",  v_ast_operator_binary_ptr);     //- From "expr_util.void"
 
     v_make_export_symbol("v_ast_make_operator_binary");                         //- From "expr_util.void"
     v_make_export_symbol("v_ast_make_operator_unary");                          //- From "expr_util.void"
+    v_make_export_symbol("v_ast_make_operator_nullary");                        //- From "expr_util.void"
 
     v_make_export_symbol("v_ast_make_expr_op_binary");
     v_make_export_symbol("v_ast_make_expr_op_unary");
+    v_make_export_symbol("v_ast_make_expr_op_nullary");
 
     v_make_export_symbol("voidc_enable_expression_compiler");
     v_make_export_symbol("voidc_enable_expression");

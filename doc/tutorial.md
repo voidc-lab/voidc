@@ -483,7 +483,7 @@ sieve: &bool[S] := 0;           // Mutable array of bool, zero initialized
 
     for (i: &int := 3; i < R; i += 2)
     {
-        if (!sieve[i])  v_continue();
+        if (!sieve[i])  continue;
 
         for (k: &int := i*i, i2 = 2*i; k < S; k += i2)
         {
@@ -530,7 +530,7 @@ Now let's see what's interesting in the second unit:
 - C-style flow control constructs:
 
     - `for` loop with some C++ style tricks. Quite familiar `if`...
-    - `v_continue()` looks a little unusual, but is quite recognizable.
+    - `continue` ...
     - More details on flow control below...
 
 

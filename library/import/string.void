@@ -184,8 +184,8 @@ inlinehint
 {
     s = (&s)->impl;
 
-    if (s.is_long)  v_return(s[2].capacity);
-    else            v_return(15);
+    if (s.is_long)  return s[2].capacity;
+    else            return 15;
 }
 
 
@@ -368,21 +368,21 @@ try_to_adopt_to_string: (aux: *void, t0: *v_type_t, v0: LLVMValueRef) ~> bool
     {
         t1 = v_get_result_type();
 
-        if (t1 == INVIOLABLE_TAG)  v_break();
-        if (t1 == UNREFERENCE_TAG) v_break();
+        if (t1 == INVIOLABLE_TAG)  break;
+        if (t1 == UNREFERENCE_TAG) break;
 
         check: &bool := true;
 
         block
         {
-            if (t1 == string_type)  v_break();
+            if (t1 == string_type)  break;
 
-            if (v_type_is_reference(t1)  &&  v_type_refptr_get_element_type(t1) == string_type)  v_break();
+            if (v_type_is_reference(t1)  &&  v_type_refptr_get_element_type(t1) == string_type)  break;
 
             check := false;
         }
 
-        if (!check)  v_break();
+        if (!check)  break;
 
         block
         {
@@ -390,14 +390,14 @@ try_to_adopt_to_string: (aux: *void, t0: *v_type_t, v0: LLVMValueRef) ~> bool
 
             if (v_type_is_reference(t0))  tt := v_type_refptr_get_element_type(t0);
 
-            if (v_type_is_pointer(tt)  &&  v_type_refptr_get_element_type(tt) == char_type)  v_break();
+            if (v_type_is_pointer(tt)  &&  v_type_refptr_get_element_type(tt) == char_type)  break;
 
-            if (v_type_is_array(tt)  &&  v_type_array_get_element_type(tt) == char_type)  v_break();
+            if (v_type_is_array(tt)  &&  v_type_array_get_element_type(tt) == char_type)  break;
 
             check := false;
         }
 
-        if (!check)  v_break();
+        if (!check)  break;
 
         //- Got it...
 
@@ -414,12 +414,12 @@ try_to_adopt_to_string: (aux: *void, t0: *v_type_t, v0: LLVMValueRef) ~> bool
 
         v_ast_accept_visitor(&expr, v_get_compiler());
 
-        v_return(true);
+        return  true;
     }
 
     //- Default treatment...
 
-    v_return(ctx.fun(ctx.aux, t0, v0));
+    return  ctx.fun(ctx.aux, t0, v0);
 }
 
 //---------------------------------------------------------------------

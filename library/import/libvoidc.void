@@ -134,7 +134,7 @@ voidc_emit_module: (filename: *const char) ~> void
     //----------------------------------------------------------
     triple = LLVMGetDefaultTargetTriple();
 
-    tr: &LLVMTargetRef := v_undef();
+    tr: &LLVMTargetRef := undef;
 
     LLVMGetTargetFromTriple(triple, &tr, 0);
 

@@ -146,11 +146,11 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
         v_adopt_result(tr, vr);
 
-        v_return();
+        return;
     }
 
 
-    item_t: &*v_type_t := v_undef();
+    item_t: &*v_type_t := undef;
 
     if (is_generic)
     {
@@ -166,7 +166,7 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     }
 
 
-    lltyp: &LLVMTypeRef :=  v_undef();
+    lltyp: &LLVMTypeRef :=  undef;
 
     llvm_stacksave_f = v_obtain_function(voidc_llvm_stacksave_name, &lltyp);
 
@@ -270,42 +270,42 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 {
     v_copy(&p, &v);
 
-    v_return(p);
+    return p;
 }
 
 (_:=_): (p: &v_ast_expr_list_t, v: v_ast_expr_list_t) ~> &v_ast_expr_list_t
 {
     v_copy(&p, &v);
 
-    v_return(p);
+    return  p;
 }
 
 (_:=_): (p: &v_ast_stmt_t, v: v_ast_stmt_t) ~> &v_ast_stmt_t
 {
     v_copy(&p, &v);
 
-    v_return(p);
+    return  p;
 }
 
 (_:=_): (p: &v_ast_stmt_list_t, v: v_ast_stmt_list_t) ~> &v_ast_stmt_list_t
 {
     v_copy(&p, &v);
 
-    v_return(p);
+    return  p;
 }
 
 (_:=_): (p: &v_ast_base_t, v: v_ast_base_t) ~> &v_ast_base_t
 {
     v_copy(&p, &v);
 
-    v_return(p);
+    return  p;
 }
 
 (_:=_): (p: &v_ast_generic_list_t, v: v_ast_generic_list_t) ~> &v_ast_generic_list_t
 {
     v_copy(&p, &v);
 
-    v_return(p);
+    return  p;
 }
 
 //---------------------------------------------------------------------
@@ -313,21 +313,21 @@ mk_ast_list_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 {
     v_list_append(&l, &l, &e);
 
-    v_return(l);
+    return  l;
 }
 
 (_+=_): (l: &v_ast_stmt_list_t, s: v_ast_stmt_t) ~> &v_ast_stmt_list_t
 {
     v_list_append(&l, &l, &s);
 
-    v_return(l);
+    return  l;
 }
 
 (_+=_): (l: &v_ast_generic_list_t, s: v_ast_base_t) ~> &v_ast_generic_list_t
 {
     v_list_append(&l, &l, &s);
 
-    v_return(l);
+    return  l;
 }
 
 

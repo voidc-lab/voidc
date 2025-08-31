@@ -79,12 +79,32 @@
 
 
     //-----------------------------------------------------------------
+    //- ast_operator_nullary_t ...
+    //-----------------------------------------------------------------
+    ast_operator_nullary_t = v_struct_type_named("struct.v_ast_operator_nullary");
+
+    v_store(v_quark_t,    typ0);        //- Quark
+    v_store(v_ast_base_t, typ1);        //- Payload
+
+    v_type_struct_set_body(ast_operator_nullary_t, typ0, 2, false);
+
+    ast_operator_nullary_ptr = v_pointer_type(ast_operator_nullary_t, 0);
+
+    v_export_type("v_ast_operator_nullary_t",   ast_operator_nullary_t);
+    v_export_type("v_ast_operator_nullary_ptr", ast_operator_nullary_ptr);
+
+    size_v = LLVMSizeOf(v_type_get_llvm_type(ast_operator_nullary_t));
+
+    v_add_constant("ast_operator_nullary_t_size", size_t, size_v);
+
+
+    //-----------------------------------------------------------------
     //- ast_operator_unary_t ...
     //-----------------------------------------------------------------
     ast_operator_unary_t = v_struct_type_named("struct.v_ast_operator_unary");
 
     v_store(v_quark_t,    typ0);        //- Quark
-    v_store(int,          typ1);        //- Priority
+    v_store(unsigned,     typ1);        //- Priority
     v_store(v_ast_base_t, typ2);        //- Payload
 
     v_type_struct_set_body(ast_operator_unary_t, typ0, 3, false);
@@ -105,8 +125,8 @@
     ast_operator_binary_t = v_struct_type_named("struct.v_ast_operator_binary");
 
     v_store(v_quark_t,    typ0);        //- Quark
-    v_store(int,          typ1);        //- Priority
-    v_store(int,          typ2);        //- Associativity: 0/1 - right/left
+    v_store(unsigned,     typ1);        //- Priority (left)
+    v_store(unsigned,     typ2);        //- Priority (right)
     v_store(v_ast_base_t, typ3);        //- Payload
 
     v_type_struct_set_body(ast_operator_binary_t, typ0, 4, false);
@@ -138,6 +158,125 @@
 
 //=====================================================================
 {   voidc_unit_begin_module("voidc_operator_list_module"); }
+
+
+//---------------------------------------------------------------------
+//- operator_nullary init ...
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("voidc_ast_operator_nullary_init", v_ast_generic_init_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "void_obj", void_ptr);
+}
+{
+    obj = v_cast(void_obj, v_ast_operator_nullary_ptr);
+
+    payload = v_getelementptr(obj, 0, 1);
+
+    v_initialize(payload);
+}
+
+//---------------------------------------------------------------------
+//- operator_nullary term ...
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("voidc_ast_operator_nullary_term", v_ast_generic_term_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "void_obj", void_ptr);
+}
+{
+    obj = v_cast(void_obj, v_ast_operator_nullary_ptr);
+
+    payload = v_getelementptr(obj, 0, 1);
+
+    v_terminate(payload);
+}
+
+//-----------------------------------------------------------------------
+//- operator_nullary vtable ...
+//-------------------------------------------------------------------
+{
+    module = v_get_module();
+
+    val0 = v_alloca(LLVMValueRef, 3);
+    val1 = v_getelementptr(val0, 1);
+    val2 = v_getelementptr(val0, 2);
+
+    init_f = v_obtain_function("voidc_ast_operator_nullary_init", 0);
+    term_f = v_obtain_function("voidc_ast_operator_nullary_term", 0);
+
+    v_quark_t_ = v_type_get_llvm_type(v_quark_t);
+
+    quark_u  = LLVMGetUndef(v_quark_t_);
+
+    v_store(init_f,  val0);
+    v_store(term_f,  val1);
+    v_store(quark_u, val2);         //- Undef!
+
+    v_ast_generic_vtable_ = v_type_get_llvm_type(v_ast_generic_vtable);
+
+    vtable_v = LLVMConstNamedStruct(v_ast_generic_vtable_, val0, 2);
+
+    vtable_g = LLVMAddGlobal(module, v_ast_generic_vtable_, "voidc_ast_operator_nullary_vtable");
+
+    LLVMSetLinkage(vtable_g, LLVMPrivateLinkage);
+
+    LLVMSetInitializer(vtable_g, vtable_v);
+
+    //-----------------------------------------------------------------
+    voidc_clear_unit_buffer();
+}
+
+{   v_add_symbol("voidc_ast_operator_nullary_vtable", v_ast_generic_vtable, 0);
+}
+
+//---------------------------------------------------------------------
+//- v_ast_make_operator_nullary - ...
+//---------------------------------------------------------------------
+{   typ0 = v_alloca(v_type_ptr, 3);
+    typ1 = v_getelementptr(typ0, 1);
+    typ2 = v_getelementptr(typ0, 2);
+
+    v_store(v_ast_expr_ptr, typ0);      //- Result (out)
+    v_store(v_quark_t,      typ1);      //- Quark
+    v_store(v_ast_base_ptr, typ2);      //- Payload
+
+    ft = v_function_type(void, typ0, 3, false);
+
+    //-----------------------------------------------------------------
+    f = v_function_hack("v_ast_make_operator_nullary", ft);
+
+    v_add_parameter_name(f, 0, "ret",   v_ast_expr_ptr);
+    v_add_parameter_name(f, 1, "quark", v_quark_t);
+    v_add_parameter_name(f, 2, "pay",   v_ast_base_ptr);
+}
+{
+    etmp = v_alloca(v_ast_expr_t);
+    v_initialize(etmp);
+
+    v_ast_make_generic(etmp, voidc_ast_operator_nullary_vtable, ast_operator_nullary_t_size);
+
+    void_obj = v_ast_generic_get_object(etmp);
+
+    obj = v_cast(void_obj, v_ast_operator_nullary_ptr);
+
+    obj_quark = v_getelementptr(obj, 0, 0);
+    obj_pay   = v_getelementptr(obj, 0, 1);
+
+    v_store(quark, obj_quark);
+
+    if (pay)  v_copy(obj_pay, pay);
+
+    v_copy(ret, etmp);
+
+    v_terminate(etmp);
+}
 
 
 //---------------------------------------------------------------------
@@ -226,7 +365,7 @@
 
     v_store(v_ast_expr_ptr, typ0);      //- Result (out)
     v_store(v_quark_t,      typ1);      //- Quark
-    v_store(int,            typ2);      //- Priority
+    v_store(unsigned,       typ2);      //- Priority
     v_store(v_ast_base_ptr, typ3);      //- Payload
 
     ft = v_function_type(void, typ0, 4, false);
@@ -236,7 +375,7 @@
 
     v_add_parameter_name(f, 0, "ret",   v_ast_expr_ptr);
     v_add_parameter_name(f, 1, "quark", v_quark_t);
-    v_add_parameter_name(f, 2, "prec",  int);
+    v_add_parameter_name(f, 2, "prec",  unsigned);
     v_add_parameter_name(f, 3, "pay",   v_ast_base_ptr);
 }
 {
@@ -351,8 +490,8 @@
 
     v_store(v_ast_expr_ptr, typ0);      //- Result (out)
     v_store(v_quark_t,      typ1);      //- Quark
-    v_store(int,            typ2);      //- Priority
-    v_store(int,            typ3);      //- Associativity
+    v_store(unsigned,       typ2);      //- Priority (left)
+    v_store(unsigned,       typ3);      //- Priority (right)
     v_store(v_ast_base_ptr, typ4);      //- Payload
 
     ft = v_function_type(void, typ0, 5, false);
@@ -360,11 +499,11 @@
     //-----------------------------------------------------------------
     f = v_function_hack("v_ast_make_operator_binary", ft);
 
-    v_add_parameter_name(f, 0, "ret",   v_ast_expr_ptr);
-    v_add_parameter_name(f, 1, "quark", v_quark_t);
-    v_add_parameter_name(f, 2, "prec",  int);
-    v_add_parameter_name(f, 3, "left",  int);
-    v_add_parameter_name(f, 4, "pay",   v_ast_base_ptr);
+    v_add_parameter_name(f, 0, "ret",    v_ast_expr_ptr);
+    v_add_parameter_name(f, 1, "quark",  v_quark_t);
+    v_add_parameter_name(f, 2, "prec_l", unsigned);
+    v_add_parameter_name(f, 3, "prec_r", unsigned);
+    v_add_parameter_name(f, 4, "pay",    v_ast_base_ptr);
 }
 {
     etmp = v_alloca(v_ast_expr_t);
@@ -376,14 +515,14 @@
 
     obj = v_cast(void_obj, v_ast_operator_binary_ptr);
 
-    obj_quark = v_getelementptr(obj, 0, 0);
-    obj_prec  = v_getelementptr(obj, 0, 1);
-    obj_left  = v_getelementptr(obj, 0, 2);
-    obj_pay   = v_getelementptr(obj, 0, 3);
+    obj_quark  = v_getelementptr(obj, 0, 0);
+    obj_prec_l = v_getelementptr(obj, 0, 1);
+    obj_prec_r = v_getelementptr(obj, 0, 2);
+    obj_pay    = v_getelementptr(obj, 0, 3);
 
-    v_store(quark, obj_quark);
-    v_store(prec,  obj_prec);
-    v_store(left,  obj_left);
+    v_store(quark,  obj_quark);
+    v_store(prec_l, obj_prec_l);
+    v_store(prec_r, obj_prec_r);
 
     if (pay)  v_copy(obj_pay, pay);
 
@@ -417,11 +556,38 @@
 //---------------------------------------------------------------------
 //- ...
 //---------------------------------------------------------------------
+{   typ0 = v_alloca(v_type_ptr);
+
+    v_store(char_ptr, typ0);
+
+    ft = v_function_type(void, typ0, 1, false);
+
+    //-----------------------------------------------------------------
+    f = v_function_hack("add_op_nullary", ft);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "name", char_ptr);
+}
+{
+    op = v_alloca(v_ast_expr_t);
+    v_initialize(op);
+
+    v_ast_make_operator_nullary(op, v_quark_from_string(name), 0);
+
+    v_list_append(expr_oplist, expr_oplist, op);
+
+    v_terminate(op);
+}
+
+//---------------------------------------------------------------------
+//- ...
+//---------------------------------------------------------------------
 {   typ0 = v_alloca(v_type_ptr, 2);
     typ1 = v_getelementptr(typ0, 1);
 
     v_store(char_ptr, typ0);
-    v_store(int,      typ1);
+    v_store(unsigned, typ1);
 
     ft = v_function_type(void, typ0, 2, false);
 
@@ -431,7 +597,7 @@
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
     v_add_parameter_name(f, 0, "name", char_ptr);
-    v_add_parameter_name(f, 1, "prec", int);
+    v_add_parameter_name(f, 1, "prec", unsigned);
 }
 {
     op = v_alloca(v_ast_expr_t);
@@ -450,8 +616,8 @@
     typ2 = v_getelementptr(typ0, 2);
 
     v_store(char_ptr, typ0);
-    v_store(int,      typ1);
-    v_store(int,      typ2);
+    v_store(unsigned, typ1);
+    v_store(unsigned, typ2);
 
     ft = v_function_type(void, typ0, 3, false);
 
@@ -460,15 +626,15 @@
 
     LLVMSetLinkage(f, LLVMPrivateLinkage);
 
-    v_add_parameter_name(f, 0, "name", char_ptr);
-    v_add_parameter_name(f, 1, "prec", int);
-    v_add_parameter_name(f, 2, "left", int);
+    v_add_parameter_name(f, 0, "name",   char_ptr);
+    v_add_parameter_name(f, 1, "prec_l", unsigned);
+    v_add_parameter_name(f, 2, "prec_r", unsigned);
 }
 {
     op = v_alloca(v_ast_expr_t);
     v_initialize(op);
 
-    v_ast_make_operator_binary(op, v_quark_from_string(name), prec, left, 0);
+    v_ast_make_operator_binary(op, v_quark_from_string(name), prec_l, prec_r, 0);
 
     v_list_append(expr_oplist, expr_oplist, op);
 
@@ -493,39 +659,39 @@
     v_make_list_nil(expr_oplist);
 
     //-------------------------------------------------------------
-    add_op_binary("v.op_infix_assign",      1000, 0);   //- right
-    add_op_binary("v.op_infix_add_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_sub_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_mul_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_div_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_rem_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_shl_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_shr_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_and_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_xor_assign",  1000, 0);   //- right
-    add_op_binary("v.op_infix_or_assign",   1000, 0);   //- right
+    add_op_binary("v.op_infix_assign",      1000,  1000);   //- right
+    add_op_binary("v.op_infix_add_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_sub_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_mul_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_div_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_rem_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_shl_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_shr_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_and_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_xor_assign",  1000,  1000);   //- right
+    add_op_binary("v.op_infix_or_assign",   1000,  1000);   //- right
 
-    add_op_binary("v.op_infix_logical_or",  3000, 1);   //- left
-    add_op_binary("v.op_infix_logical_and", 4000, 1);   //- left
-    add_op_binary("v.op_infix_or",          5000, 1);   //- left
-    add_op_binary("v.op_infix_xor",         6000, 1);   //- left
-    add_op_binary("v.op_infix_and",         7000, 1);   //- left
+    add_op_binary("v.op_infix_logical_or",  3000,  3001);   //- left
+    add_op_binary("v.op_infix_logical_and", 4000,  4001);   //- left
+    add_op_binary("v.op_infix_or",          5000,  5001);   //- left
+    add_op_binary("v.op_infix_xor",         6000,  6001);   //- left
+    add_op_binary("v.op_infix_and",         7000,  7001);   //- left
 
-    add_op_binary("v.op_infix_lt",          8000, 1);   //- left
-    add_op_binary("v.op_infix_le",          8000, 1);   //- left
-    add_op_binary("v.op_infix_gt",          8000, 1);   //- left
-    add_op_binary("v.op_infix_ge",          8000, 1);   //- left
-    add_op_binary("v.op_infix_eq",          8000, 1);   //- left
-    add_op_binary("v.op_infix_ne",          8000, 1);   //- left
+    add_op_binary("v.op_infix_lt",          8000,  8001);   //- left
+    add_op_binary("v.op_infix_le",          8000,  8001);   //- left
+    add_op_binary("v.op_infix_gt",          8000,  8001);   //- left
+    add_op_binary("v.op_infix_ge",          8000,  8001);   //- left
+    add_op_binary("v.op_infix_eq",          8000,  8001);   //- left
+    add_op_binary("v.op_infix_ne",          8000,  8001);   //- left
 
-    add_op_binary("v.op_infix_shl",         9000, 1);   //- left
-    add_op_binary("v.op_infix_shr",         9000, 1);   //- left
+    add_op_binary("v.op_infix_shl",         9000,  9001);   //- left
+    add_op_binary("v.op_infix_shr",         9000,  9001);   //- left
 
-    add_op_binary("v.op_infix_add",        10000, 1);   //- left
-    add_op_binary("v.op_infix_sub",        10000, 1);   //- left
-    add_op_binary("v.op_infix_mul",        11000, 1);   //- left
-    add_op_binary("v.op_infix_div",        11000, 1);   //- left
-    add_op_binary("v.op_infix_rem",        11000, 1);   //- left
+    add_op_binary("v.op_infix_add",        10000, 10001);   //- left
+    add_op_binary("v.op_infix_sub",        10000, 10001);   //- left
+    add_op_binary("v.op_infix_mul",        11000, 11001);   //- left
+    add_op_binary("v.op_infix_div",        11000, 11001);   //- left
+    add_op_binary("v.op_infix_rem",        11000, 11001);   //- left
 
     //-------------------------------------------------------------
     add_op_unary("v.op_prefix_inc",        20000);
@@ -544,7 +710,7 @@
     add_op_unary("v.op_postfix_index",     30000);
 
     //-------------------------------------------------------------
-    add_op_unary("v.op_parentheses",           0);      //- Sic!
+    add_op_unary("v.op_parentheses",           0);      //- Sic!        ?????????????????????????????????????
 
 
     //-------------------------------------------------------------
@@ -558,8 +724,9 @@
     //-------------------------------------------------------------
     q = v_quark_from_string;
 
-    v_store(q("operator_unary"),  v_getelementptr(voidc_ast_operator_unary_vtable,  0, 2));
-    v_store(q("operator_binary"), v_getelementptr(voidc_ast_operator_binary_vtable, 0, 2));
+    v_store(q("operator_nullary"),  v_getelementptr(voidc_ast_operator_nullary_vtable,  0, 2));
+    v_store(q("operator_unary"),    v_getelementptr(voidc_ast_operator_unary_vtable,    0, 2));
+    v_store(q("operator_binary"),   v_getelementptr(voidc_ast_operator_binary_vtable,   0, 2));
 }
 
 //---------------------------------------------------------------------
@@ -4680,6 +4847,7 @@
 //- ...
 //---------------------------------------------------------------------
 {
+    v_make_export_symbol("v_ast_make_operator_nullary");
     v_make_export_symbol("v_ast_make_operator_unary");
     v_make_export_symbol("v_ast_make_operator_binary");
 

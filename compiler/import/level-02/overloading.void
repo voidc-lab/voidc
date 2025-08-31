@@ -233,7 +233,7 @@ llvm_build_call_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     {
         LLVMBuildCall2(builder, ft_, fv, values, arg_count, "");
 
-        v_return();
+        return;
     }
 
     vr = LLVMBuildCall2(builder, ft_, fv, values, arg_count, "");
@@ -254,8 +254,8 @@ my_overloaded_intrinsic_default: (aux: *void, vis: *voidc_visitor_t, self: *v_as
 {
     qname = (aux: v_quark_t);
 
-    ft: &*v_type_t    := v_undef();
-    fv: &LLVMValueRef := v_undef();
+    ft: &*v_type_t    := undef;
+    fv: &LLVMValueRef := undef;
 
     if (!v_obtain_identifier_q(qname, &ft, &fv))
     {
@@ -281,20 +281,20 @@ my_lookup_overload: (*void, quark: v_quark_t, type: *v_type_t, paux: **void
                     ) ~> overloaded_intrinsic_t
 {
     qname = v_get_overload_q(quark, type);
-    if (!qname) v_return(0);
+    if (!qname) return 0;
 
-    paux_: &*void := v_undef();
+    paux_: &*void := undef;
 
     if (void_fun = v_get_intrinsic_q(qname, &paux_))
     {
         if (paux)   *paux := paux_;
 
-        v_return((void_fun: overloaded_intrinsic_t));
+        return (void_fun: overloaded_intrinsic_t);
     }
 
     if (paux) *paux := (qname: *void);
 
-    v_return(my_overloaded_intrinsic_default);
+    return  my_overloaded_intrinsic_default;
 }
 
 
@@ -308,7 +308,7 @@ op_assign_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     v_ast_make_expr_compiled(elhs, t0, v0);
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(q, t0, &ctx))
     {
@@ -322,7 +322,7 @@ op_assign_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         fun(ctx, vis, self, arg_ptrs, 2);
 
-        v_return();
+        return;
     }
 
     //- Default treatment...
@@ -330,7 +330,7 @@ op_assign_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     ast0 = elhs;                //- "Place", compiled
     ast1 = rhs;                 //- "Value"
 
-    compile: &*void := v_undef();
+    compile: &*void := undef;
 
     helper = v_get_intrinsic_q(qh, &compile);
     helper = (helper: *((*voidc_visitor_t, *v_ast_expr_t, *v_ast_expr_t, *void) ~> void));
@@ -387,7 +387,7 @@ op_binary_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     v_ast_make_expr_compiled(elhs, t0, v0);
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(q0, t0, &ctx))
     {
@@ -401,7 +401,7 @@ op_binary_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         fun(ctx, vis, self, arg_ptrs, 2);
 
-        v_return();
+        return;
     }
 
     //- Second argument
@@ -433,14 +433,14 @@ op_binary_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         fun(ctx, vis, self, arg_ptrs, 2);
 
-        v_return();
+        return;
     }
 
     //- Default treatment...
 
     v_pop_result();
 
-    compile: &*void := v_undef();
+    compile: &*void := undef;
 
     helper = v_get_intrinsic_q(qh, &compile);
     helper = (helper: *((*voidc_visitor_t, *v_ast_expr_t, *v_ast_expr_t, *void) ~> void));
@@ -503,7 +503,7 @@ op_relation_helper: (*void, vis: *voidc_visitor_t,
 
     expr = v_make_object(v_ast_expr_t);
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(q0, t0, &ctx))
     {
@@ -566,7 +566,7 @@ op_relation_helper: (*void, vis: *voidc_visitor_t,
     {
         //- Default treatment...
 
-        compile: &*void := v_undef();
+        compile: &*void := undef;
 
         helper = v_get_intrinsic_q(qh, &compile);
         helper = (helper: *((*voidc_visitor_t, *void, *v_type_t, LLVMValueRef,
@@ -578,7 +578,7 @@ op_relation_helper: (*void, vis: *voidc_visitor_t,
         r := helper(vis, compile, t0, v0, expr, typ, val);
     }
 
-    v_return(r);
+    return r;
 }
 
 //---------------------------------------------------------------------
@@ -590,33 +590,33 @@ check_relation: (arg: *v_ast_expr_t, lhs: **v_ast_expr_t, rhs: **v_ast_expr_t) ~
 {
     get_tag = v_ast_base_get_tag;
 
-    if (get_tag((arg: *v_ast_base_t)) != expr_call_q)  v_return(0);
+    if (get_tag((arg: *v_ast_base_t)) != expr_call_q)  return 0;
 
     etmp = v_ast_expr_call_get_fun_expr(arg);
 
-    if (get_tag((etmp: *v_ast_base_t)) != expr_identifier_q)  v_return(0);
+    if (get_tag((etmp: *v_ast_base_t)) != expr_identifier_q)  return 0;
 
     qname = v_ast_expr_identifier_get_name_q(etmp);
 
-    rk: &int := v_undef();
+    rk: &int := undef;
 
     block
     {
-        if (qname == q_op_infix_eq)  { rk := id_infix_eq; v_break(); }
-        if (qname == q_op_infix_ne)  { rk := id_infix_ne; v_break(); }
-        if (qname == q_op_infix_lt)  { rk := id_infix_lt; v_break(); }
-        if (qname == q_op_infix_le)  { rk := id_infix_le; v_break(); }
-        if (qname == q_op_infix_gt)  { rk := id_infix_gt; v_break(); }
-        if (qname == q_op_infix_ge)  { rk := id_infix_ge; v_break(); }
+        if (qname == q_op_infix_eq)  { rk := id_infix_eq; break; }
+        if (qname == q_op_infix_ne)  { rk := id_infix_ne; break; }
+        if (qname == q_op_infix_lt)  { rk := id_infix_lt; break; }
+        if (qname == q_op_infix_le)  { rk := id_infix_le; break; }
+        if (qname == q_op_infix_gt)  { rk := id_infix_gt; break; }
+        if (qname == q_op_infix_ge)  { rk := id_infix_ge; break; }
 
-        v_return(0);
+        return 0;
     }
 
     if (lhs) ;
     else if (rhs) ;
     else
     {
-        v_return(rk);
+        return rk;
     }
 
     lst = v_ast_expr_call_get_arg_list(arg);
@@ -624,7 +624,7 @@ check_relation: (arg: *v_ast_expr_t, lhs: **v_ast_expr_t, rhs: **v_ast_expr_t) ~
     if (lhs)  *lhs := v_list_get_item(lst, 1);
     if (rhs)  *rhs := v_list_get_item(lst, 2);
 
-    v_return(rk);
+    return rk;
 }
 
 //---------------------------------------------------------------------
@@ -679,14 +679,14 @@ op_relation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
 
     cur_b = LLVMGetInsertBlock(builder);
 
-    cur_f: &LLVMValueRef := v_undef();
+    cur_f: &LLVMValueRef := undef;
 
     if (cur_b)  cur_f := LLVMGetBasicBlockParent(cur_b);
     else        cur_f := 0;
 
     cmp_result_v: &LLVMValueRef := 0;
 
-    branch_if_false_b: &LLVMBasicBlockRef := v_undef();
+    branch_if_false_b: &LLVMBasicBlockRef := undef;
 
     _bool = v_find_type_q(bool_q);
 
@@ -701,12 +701,12 @@ op_relation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     typ: &*v_type_t    := v_get_result_type();
     val: &LLVMValueRef := v_get_result_value();
 
-    t0: &*v_type_t    := v_undef();
-    v0: &LLVMValueRef := v_undef();
-    t1: &*v_type_t    := v_undef();
-    v1: &LLVMValueRef := v_undef();
+    t0: &*v_type_t    := undef;
+    v0: &LLVMValueRef := undef;
+    t1: &*v_type_t    := undef;
+    v1: &LLVMValueRef := undef;
 
-    r: &LLVMValueRef := v_undef();
+    r: &LLVMValueRef := undef;
 
     for (i: &int := 0; i < Nm1; ++i)
     {
@@ -738,8 +738,8 @@ op_relation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
             {
                 f = LLVMConstIntGetZExtValue(r);
 
-                if (f)  v_continue();
-                else    v_break();          //- Sic!!!
+                if (f)  continue;
+                else    break;          //- Sic!!!
             }
 
             if (N != 2)
@@ -813,7 +813,7 @@ op_unary_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     v_ast_make_expr_compiled(expr, t0, v0);
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(q, t0, &ctx))
     {
@@ -823,12 +823,12 @@ op_unary_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         fun(ctx, vis, self, &arg_ptr, 1);
 
-        v_return();
+        return;
     }
 
     //- Default treatment...
 
-    compile: &*void := v_undef();
+    compile: &*void := undef;
 
     helper = v_get_intrinsic_q(qh, &compile);
     helper = (helper: *((*voidc_visitor_t, *v_ast_expr_t, *void) ~> void));
@@ -923,7 +923,7 @@ compile_expr_call_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     q = q_op_postfix_call;
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     fun: &overloaded_intrinsic_t := v_util_lookup_overload(q, t, &ctx);
 
@@ -951,14 +951,14 @@ compile_expr_call_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     n = (v_list_get_size(args) : unsigned);
 
-    arg_ptrs: &**v_ast_expr_t := v_undef();
+    arg_ptrs: &**v_ast_expr_t := undef;
 
     if (fun)  arg_ptrs := v_malloc(*v_ast_expr_t, 1+n);
     else      arg_ptrs := v_malloc(*v_ast_expr_t, n);
 
     defer v_free(arg_ptrs);
 
-    {   p: &**v_ast_expr_t := v_undef();
+    {   p: &**v_ast_expr_t := undef;
 
         if (fun)  p := arg_ptrs + 1;
         else      p := arg_ptrs;
@@ -1000,7 +1000,7 @@ compile_expr_call: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     fexpr = v_ast_expr_call_get_fun_expr((self: *v_ast_expr_t));
 
     void_fun: &*void := 0;
-    void_aux: &*void := v_undef();
+    void_aux: &*void := undef;
 
     if (v_ast_base_get_tag((fexpr: *v_ast_base_t)) == v_ast_expr_identifier_tag)
     {
@@ -1013,7 +1013,7 @@ compile_expr_call: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     {
         fun(void_aux, vis, self);
 
-        v_return();
+        return;
     }
 
     //- Function call (kinda...)
@@ -1044,7 +1044,7 @@ op_postfix_index_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 {
     q = q_op_postfix_index_pack;            //- First try for pack...
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(q, agg_t, &ctx))
     {
@@ -1066,7 +1066,7 @@ op_postfix_index_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         fun(ctx, vis, self, (pack_ptrs: **v_ast_expr_t), 1+count);
 
-        v_return(true);         //- Sic !!!
+        return  true;           //- Sic !!!
     }
 
     v_push_result();
@@ -1113,7 +1113,7 @@ op_postfix_index_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     v_pop_result();
 
-    v_return(false);
+    return  false;
 }
 
 //---------------------------------------------------------------------
@@ -1125,17 +1125,17 @@ check_index: (arg: *v_ast_expr_t, agg: **v_ast_expr_t, idx: **v_ast_expr_list_t)
 {
     tag = v_ast_base_get_tag((arg: *v_ast_base_t));
 
-    if (tag != expr_call_q)  v_return(false);
+    if (tag != expr_call_q)  return false;
 
     etmp = v_ast_expr_call_get_fun_expr(arg);
 
     tag = v_ast_base_get_tag((etmp: *v_ast_base_t));
 
-    if (tag != expr_identifier_q)  v_return(false);
+    if (tag != expr_identifier_q)  return false;
 
     qname = v_ast_expr_identifier_get_name_q(etmp);
 
-    if (qname != q_op_postfix_index)  v_return(false);
+    if (qname != q_op_postfix_index)  return false;
 
     if (agg  ||  idx)
     {
@@ -1155,7 +1155,7 @@ check_index: (arg: *v_ast_expr_t, agg: **v_ast_expr_t, idx: **v_ast_expr_list_t)
         }
     }
 
-    v_return(true);
+    return true;
 }
 
 //---------------------------------------------------------------------
@@ -1206,7 +1206,7 @@ op_postfix_index_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
     {
         fin = v_compile_op_postfix_index(vis, self, agg_t, agg_v, idx+i, N-i);
 
-        if (fin)  v_return();       //- Sic!
+        if (fin)  return;       //- Sic!
     }
 
     v_adopt_result(agg_t, agg_v);
@@ -1286,13 +1286,13 @@ voidc_enable_overloading_compiler: () ~> void
 
         switch(op_table[id][1])
         {
-        case opk_assign:    void_fun := op_assign_intrinsic;    v_break();
-        case opk_relation:  void_fun := op_relation_intrinsic;  v_break();
-        case opk_binary:    void_fun := op_binary_intrinsic;    v_break();
-        case opk_unary:     void_fun := op_unary_intrinsic;     v_break();
+        case opk_assign:    void_fun := op_assign_intrinsic;    break;
+        case opk_relation:  void_fun := op_relation_intrinsic;  break;
+        case opk_binary:    void_fun := op_binary_intrinsic;    break;
+        case opk_unary:     void_fun := op_unary_intrinsic;     break;
         }
 
-        if (!void_fun)  v_continue();
+        if (!void_fun)  continue;
 
         v_add_intrinsic_q(op_table[id][2], void_fun, (id: *void));
     }

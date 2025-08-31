@@ -55,8 +55,8 @@
 
 
 //---------------------------------------------------------------------
-op_postfix_dot: &v_ast_expr_t := v_undef();
-op_postfix_to:  &v_ast_expr_t := v_undef();
+op_postfix_dot: &v_ast_expr_t := undef;
+op_postfix_to:  &v_ast_expr_t := undef;
 
 voidc_projections_internal_globals_cleaner: (*void) ~> void
 {
@@ -120,12 +120,12 @@ op_postfix_dot_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     spc_flag: &bool := false;
 
-    quark: &v_quark_t := v_undef();
+    quark: &v_quark_t := undef;
 
     if (alst)   quark := q1;        //- with ()
     else        quark := q0;        //- without ()
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     fun: &overloaded_intrinsic_t := v_util_lookup_overload(quark, t0, &ctx);
 
@@ -155,7 +155,7 @@ op_postfix_dot_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
         fun(ctx, vis, self, &arg_ptr, 1);               //- ?!?!?!?!?!?!?
 
-        v_return();
+        return;
     }
 
     //- Overloading only!
@@ -188,7 +188,7 @@ op_postfix_dot_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
         fun(ctx, vis, self, arg_ptrs, arg_count);
     }
 
-    if (!spc_flag)  v_return();
+    if (!spc_flag)  return;
 
     tr = v_get_result_type();
     vr = v_get_result_value();
@@ -228,8 +228,8 @@ op_postfix_dot_agent: (vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     if (got_args)  alst := (v_list_get_item(pay, 1) : *v_ast_expr_list_t);
 
-    q0: &v_quark_t := v_undef();
-    q1: &v_quark_t := v_undef();
+    q0: &v_quark_t := undef;
+    q1: &v_quark_t := undef;
 
     {   sstr = v_make_object(v_std_string_t);
 
@@ -288,7 +288,7 @@ op_postfix_to_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
     q = q_op_postfix_to;
 
-    ctx: &*void := v_undef();
+    ctx: &*void := undef;
 
     if (fun = v_util_lookup_overload(q, t0, &ctx))
     {
@@ -367,13 +367,13 @@ some_static_type_projection_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:
 
     q = *(aux: *v_quark_t);
 
-    v: &LLVMValueRef := v_undef();
+    v: &LLVMValueRef := undef;
 
     _size_t = v_find_type_q(size_t_q);
 
     if (dl = v_target_get_data_layout())
     {
-        u: &size_t := v_undef();
+        u: &size_t := undef;
 
         if (q == q_static_type_sizeof)
         {
@@ -388,7 +388,7 @@ some_static_type_projection_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:
     }
     else
     {
-        f: &*((LLVMTypeRef) ~> LLVMValueRef) := v_undef();
+        f: &*((LLVMTypeRef) ~> LLVMValueRef) := undef;
 
         if      (q == q_static_type_sizeof)   f := LLVMSizeOf;
         else if (q == q_static_type_alignof)  f := LLVMAlignOf;

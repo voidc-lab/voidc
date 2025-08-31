@@ -149,11 +149,11 @@ struct va_list { (*void)[va_list_size]; };
 
     ft = v_function_type(_void, typ, 1, false);
 
-    llvm_va_start: &*const char := v_undef();
-    llvm_va_end:   &*const char := v_undef();
-    llvm_va_copy:  &*const char := v_undef();
+    llvm_va_start: &*const char := undef;
+    llvm_va_end:   &*const char := undef;
+    llvm_va_copy:  &*const char := undef;
 
-    {   ver: &unsigned[3] := v_undef();
+    {   ver: &unsigned[3] := undef;
 
         LLVMGetVersion(ver+0, ver+1, ver+2);
 

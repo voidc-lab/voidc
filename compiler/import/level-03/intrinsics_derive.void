@@ -81,7 +81,7 @@ quarks_compare: (void_lhs: *const void, void_rhs: *const void) ~> int
     lhs = *(void_lhs: *voidc_intrinsic_quarks_item_t);
     rhs = *(void_rhs: *voidc_intrinsic_quarks_item_t);
 
-    v_return((*lhs.quark: int) - (*rhs.quark: int));
+    return  (*lhs.quark: int) - (*rhs.quark: int);
 }
 
 //---------------------------------------------------------------------
@@ -161,12 +161,12 @@ compute_key_quark_type: (aux: *void,
     {
         type = v_type_function_get_param_types(ft)[0];
 
-        v_return(v_type_refptr_get_element_type(type));
+        return  v_type_refptr_get_element_type(type);
     }
 
     ctx = *(aux: *compute_key_quark_type_t);
 
-    v_return(ctx.fun(ctx.aux, ft, q));
+    return  ctx.fun(ctx.aux, ft, q);
 }
 
 //---------------------------------------------------------------------
@@ -203,14 +203,14 @@ mk_unit_spec_fun_derive_grammar_action: (ret: *v_std_any_t, aux: *void, any: *v_
         if (quark == v_ast_expr_identifier_tag  &&
             v_ast_expr_identifier_get_name_q(expr) == derive_q)
         {
-            v_break();
+            break;
         }
 
         ctx = (aux: *spec_fun_derive_ctx_t);
 
         ctx->fun(ret, ctx->aux, any, sz);
 
-        v_return();
+        return;
     }
 
     head = v_std_any_get_pointer(v_ast_generic_list_t, any+0);
@@ -369,7 +369,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
         loop
         {
-            if (!v_type_is_array(et))   v_break();
+            if (!v_type_is_array(et))   break;
 
             length *= v_type_array_get_length(et);
 
@@ -380,7 +380,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
             et := v_type_array_get_element_type(et);
         }
 
-        if (length == 0)  v_continue();     //- WTF?
+        if (length == 0)  continue;     //- WTF?
 
         v_ast_make_expr_identifier_q(expr+2, q_getelementptr);
 
@@ -405,7 +405,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
         }
         else
         {
-            if (!is_copy)  v_continue();
+            if (!is_copy)  continue;
 
             v_ast_make_expr_call(expr+1, expr+2, expr_list+2);
             v_ast_make_expr_call(expr+0, expr+2, expr_list+3);
@@ -483,10 +483,10 @@ voidc_enable_intrinsics_derive_compiler: () ~> void
 
         if (gctx != vctx)
         {
-            binop_aux: &*void := v_undef();
+            binop_aux: &*void := undef;
             binop_fun = v_get_intrinsic("v_binop", &binop_aux);
 
-            icmp_aux: &*void := v_undef();
+            icmp_aux: &*void := undef;
             icmp_fun = v_get_intrinsic("v_icmp", &icmp_aux);
 
             v_target_set_global_ctx(gctx);

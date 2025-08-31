@@ -92,7 +92,7 @@ myz_get_byte: (ctx: &v_myz_ctx_t) ~> byte
 
     ctx.avail_in--;
 
-    v_return(*ctx.next_in++);
+    return  *ctx.next_in++;
 }
 
 //---------------------------------------------------------------------
@@ -115,7 +115,7 @@ myz_get_bit: (ctx: &v_myz_ctx_t) ~> bool
 
     ctx.remain_in -= 1;
 
-    v_return((r: bool));
+    return (r: bool);
 }
 
 //---------------------------------------------------------------------
@@ -133,7 +133,7 @@ myz_read_bits: (ctx: &v_myz_ctx_t, bits: int) ~> unsigned
         code |= (b: unsigned) << i;
     }
 
-    v_return(code);
+    return code;
 }
 
 //---------------------------------------------------------------------
@@ -142,13 +142,13 @@ myz_read_bits: (ctx: &v_myz_ctx_t, bits: int) ~> unsigned
 private
 myz_check_eod: (ctx: &v_myz_ctx_t) ~> bool
 {
-    if (ctx.avail_in != 0)  v_return(false);
+    if (ctx.avail_in != 0)  return false;
 
-    if (ctx.check_in  &&  ctx.check_in(ctx))  v_return(false);
+    if (ctx.check_in  &&  ctx.check_in(ctx))  return false;
 
     v_assert(ctx.avail_in == 0);
 
-    v_return(ctx.buffer_in == 1);
+    return  ctx.buffer_in == 1;
 }
 
 
@@ -267,7 +267,7 @@ dict_enc_expand: (dict: &v_myz_dict_enc_t) ~> &v_myz_enc_t
 
     *obj := 0;
 
-    v_return(*obj);
+    return  *obj;
 }
 
 //---------------------------------------------------------------------
@@ -278,7 +278,7 @@ dict_enc_at: (dict: &v_myz_dict_enc_t, i: int) ~> &v_myz_enc_t
 
     obj = (void_obj: *v_myz_enc_t);
 
-    v_return(*obj);
+    return  *obj;
 }
 
 //---------------------------------------------------------------------
@@ -304,7 +304,7 @@ v_myz_encode: (ctx: &v_myz_ctx_t) ~> void
     next_shift: &unsigned := 512;
 
 
-    dict: &v_myz_dict_enc_t := v_undef();
+    dict: &v_myz_dict_enc_t := undef;
     dict_enc_init(dict);
     defer dict_enc_term(dict);
 
@@ -321,7 +321,7 @@ v_myz_encode: (ctx: &v_myz_ctx_t) ~> void
         {
             code := next;
 
-            v_continue();
+            continue;
         }
         else
         {
@@ -398,7 +398,7 @@ dict_dec_expand: (dict: &v_myz_dict_dec_t) ~> &v_myz_dec_t
 
     *obj := 0;
 
-    v_return(*obj);
+    return  *obj;
 }
 
 //---------------------------------------------------------------------
@@ -409,7 +409,7 @@ dict_dec_at: (dict: &v_myz_dict_dec_t, i: int) ~> &v_myz_dec_t
 
     obj = (void_obj: *v_myz_dec_t);
 
-    v_return(*obj);
+    return  *obj;
 }
 
 //---------------------------------------------------------------------
@@ -435,7 +435,7 @@ v_myz_decode: (ctx: &v_myz_ctx_t) ~> void
     next_shift: &unsigned := 512;
 
 
-    dict: &v_myz_dict_dec_t := v_undef();
+    dict: &v_myz_dict_dec_t := undef;
     dict_dec_init(dict);
     defer dict_dec_term(dict);
 
