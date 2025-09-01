@@ -351,6 +351,121 @@
 
 
 //---------------------------------------------------------------------
+//- prec_push - grammar action
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("prec_push_grammar_action", v_peg_grammar_action_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "ret",       v_std_any_ptr);
+    v_add_parameter_name(f, 1, "aux",       void_ptr);
+    v_add_parameter_name(f, 2, "any0",      v_std_any_ptr);
+    v_add_parameter_name(f, 3, "any_count", size_t);
+}
+{
+    prec = v_std_any_get_value(intptr_t, any0);
+    prec = v_cast(prec, unsigned);
+
+    ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
+
+    precedence_stack_push(ppst, prec);
+
+    v_std_any_set_value(ret, 1);
+}
+
+//---------------------------------------------------------------------
+//- prec_check - grammar action
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("prec_check_grammar_action", v_peg_grammar_action_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "ret",       v_std_any_ptr);
+    v_add_parameter_name(f, 1, "aux",       void_ptr);
+    v_add_parameter_name(f, 2, "any0",      v_std_any_ptr);
+    v_add_parameter_name(f, 3, "any_count", size_t);
+}
+{
+    prec = v_std_any_get_value(intptr_t, any0);
+    prec = v_cast(prec, unsigned);
+
+    ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
+
+    min_prec = precedence_stack_peek(ppst);
+
+    if (v_icmp(LLVMIntULT, prec, min_prec))
+    {
+        v_return();                                         //- NOK
+    }
+
+    v_std_any_set_value(ret, 1);                            //- OK
+}
+
+//---------------------------------------------------------------------
+//- prec_check_push - grammar action
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("prec_check_push_grammar_action", v_peg_grammar_action_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "ret",       v_std_any_ptr);
+    v_add_parameter_name(f, 1, "aux",       void_ptr);
+    v_add_parameter_name(f, 2, "any0",      v_std_any_ptr);
+    v_add_parameter_name(f, 3, "any_count", size_t);
+}
+{
+    any1 = v_getelementptr(any0, 1);
+
+    prec_l = v_std_any_get_value(intptr_t, any0);
+    prec_l = v_cast(prec_l, unsigned);
+
+    prec_r = v_std_any_get_value(intptr_t, any1);
+    prec_r = v_cast(prec_r, unsigned);
+
+    ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
+
+    min_prec = precedence_stack_peek(ppst);
+
+    if (v_icmp(LLVMIntULT, prec_l, min_prec))
+    {
+        v_return();                                         //- NOK
+    }
+
+    precedence_stack_push(ppst, prec_r);
+
+    v_std_any_set_value(ret, 1);                            //- OK
+}
+
+//---------------------------------------------------------------------
+//- prec_pop - grammar action
+//---------------------------------------------------------------------
+{
+    //-----------------------------------------------------------------
+    f = v_function_hack("prec_pop_grammar_action", v_peg_grammar_action_fun_t);
+
+    LLVMSetLinkage(f, LLVMPrivateLinkage);
+
+    v_add_parameter_name(f, 0, "ret",       v_std_any_ptr);
+    v_add_parameter_name(f, 1, "aux",       void_ptr);
+    v_add_parameter_name(f, 2, "any0",      v_std_any_ptr);
+    v_add_parameter_name(f, 3, "any_count", size_t);
+}
+{
+    ppst = v_cast(aux, precedence_stack_node_ptr_ptr);
+
+    precedence_stack_pop(ppst);
+
+    v_std_any_set_value(ret, 1);
+}
+
+
+//---------------------------------------------------------------------
 //- expr_start - grammar action
 //---------------------------------------------------------------------
 {
@@ -832,6 +947,10 @@
     grammar gr0
     {
     actions:
+        prec_push         = prec_push_grammar_action,         ppst;
+        prec_check        = prec_check_grammar_action,        ppst;
+        prec_check_push   = prec_check_push_grammar_action,   ppst;
+        prec_pop          = prec_pop_grammar_action,          ppst;
         expr_start        = expr_start_grammar_action,        ppst;
         expr_stop         = expr_stop_grammar_action,         ppst;
         expr_cleanup      = expr_cleanup_grammar_action,      ppst;
@@ -848,19 +967,23 @@
 
     parsers:
 
-        expr = { expr_start() }  e:(expr_lr / { expr_cleanup() })  { expr_stop(e) };
+        expr = {expr_start()}  e:expr_ck  {expr_stop(e)};
 
-        expr_lr = l:expr_lr _ op:infix _ { expr_check_infix(op) }  r:(expr_lr / { expr_cleanup() })  { expr_infix(op, l, r) }
+        expr_ck = expr_lr / {expr_cleanup()};
 
-                / l:expr_lr _ op:postfix { expr_make_postfix(l, op) }
+        expr_lr = l:expr_lr _ op:infix _ {expr_check_infix(op)}  r:expr_ck  {expr_infix(op, l, r)}
 
-                / op:prefix _ { expr_push_prefix(op) }  r:(expr_lr / { expr_cleanup() })  { expr_prefix(op, r) }
+                / l:expr_lr _ op:postfix {expr_make_postfix(l, op)}
 
-                / op:nonfix  { expr_nonfix(op) }
-
-                / prim;
+                / expr_nr;
 
         expr_lr is left-recursive;
+
+        expr_nr = op:prefix _ {expr_push_prefix(op)}  r:expr_ck  {expr_prefix(op, r)}
+
+                / op:nonfix  {expr_nonfix(op)}
+
+                / prim;
 
         infix = "+="        { op_infix_add_assign }
               / '+' !'+'    { op_infix_add }
