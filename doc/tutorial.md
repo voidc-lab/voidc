@@ -574,8 +574,8 @@ Syntax - `<name> : <type> := <value> ;`:
 - `<type>` is an expression that must denote a *reference* type.
 - `<value>` is an expression that specifies the initial value. Special (universal) cases:
 
+    - `undef` - the initial value is undefined.
     - `0` - zero initialization.
-    - `v_undef()` - the initial value is undefined.
 
 Example:
 
@@ -604,7 +604,7 @@ Example:
 ```
 multiply: (a: int, b: int) ~> int           // By value
 {
-    v_return(a * b);                        // ...
+    return  a * b;                          // ...
 }
 ```
 
@@ -637,7 +637,7 @@ union IntRep
     r: byte[int.sizeof];
 };
 
-{   ir: &IntRep := v_undef();
+{   ir: &IntRep := undef;
 
     ir.i := 0xDEADBEEF;
 
@@ -674,7 +674,7 @@ compare: (a: *const void, b: *const void) ~> int
     a = *(a: *const int);
     b = *(b: *const int);
 
-    v_return(a - b);
+    return  a - b;
 }
 
 {   ints: &int[] := { 0, 4, 2, 3, 1 };

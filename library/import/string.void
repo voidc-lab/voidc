@@ -9,7 +9,7 @@
 {   gctx = v_target_get_global_ctx();
     vctx = v_target_get_voidc_global_ctx();
 
-//    is_voidc_v: &LLVMValueRef := v_undef();
+//    is_voidc_v: &LLVMValueRef := undef;
 //
 //    if (gctx == vctx)   is_voidc_v := v_find_constant_value("true");
 //    else                is_voidc_v := v_find_constant_value("false");
@@ -223,7 +223,7 @@ inlinehint
 (_.append_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
 block
 {
-    if (len == 0) v_break(str);
+    if (len == 0) break str;
 
     str_impl = str.impl;
 
@@ -257,7 +257,7 @@ block
 
     str_impl._size := sz_len;
 
-    v_break(str);
+    break  str;
 };
 
 inlinehint
@@ -271,7 +271,7 @@ alwaysinline
 inlinehint
 (_.append_char32()): (str: &v_string_t, c: char32_t) ~> &v_string_t  =
 {
-    r: &int := v_undef();
+    r: &int := undef;
 
     if (c <= 0x7FF)
     {
@@ -312,7 +312,7 @@ inlinehint
 inlinehint
 (_.append_number()): (str: &v_string_t, n: intptr_t) ~> &v_string_t  =
 {
-    buf: &char[24] := v_undef();
+    buf: &char[24] := undef;
 
     sprintf: (*char, *const char, ...) ~> int;
 
