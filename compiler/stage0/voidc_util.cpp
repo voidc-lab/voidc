@@ -543,6 +543,11 @@ void v_std_string_append(std::string *ptr, const char *str)
     ptr->append(str);
 }
 
+void v_std_string_append_data(std::string *ptr, const char *str, size_t len)
+{
+    ptr->append(str, len);
+}
+
 void v_std_string_append_char(std::string *ptr, char32_t c)
 {
     char d[5] = { 0, 0, 0, 0, 0 };

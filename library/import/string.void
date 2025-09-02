@@ -5,18 +5,25 @@
 { voidc_import("libvoidc.void"); }
 { voidc_make_header("string"); }
 //---------------------------------------------------------------------
+{
+    v_import("cstdarg.void");
+}
 
+
+//---------------------------------------------------------------------
 {   gctx = v_target_get_global_ctx();
     vctx = v_target_get_voidc_global_ctx();
 
-//    is_voidc_v: &LLVMValueRef := undef;
-//
-//    if (gctx == vctx)   is_voidc_v := v_find_constant_value("true");
-//    else                is_voidc_v := v_find_constant_value("false");
+    bool_type  = v_uint_type(1);
+    bool_type_ = v_type_get_llvm_type(bool_type);
 
-    is_voidc_v = v_find_constant_value("false");
+    ull = uint(long_long.sizeof * 8);         //- ?
 
-    v_add_constant("IS_VOIDC", v_uint_type(1), is_voidc_v);
+    .LLVMConstInt: (LLVMTypeRef, ull, int) ~> LLVMValueRef;
+
+    is_voidc_v = .LLVMConstInt(bool_type_, gctx == vctx, 0);
+
+    v_add_constant("IS_VOIDC", bool_type, is_voidc_v);
 
     v_target_set_global_ctx(vctx);
 
@@ -30,26 +37,42 @@
 //- Implementation in GCC style...
 //---------------------------------------------------------------------
 private
-v_string_impl_t = struct
-{
-    _data: *char;
-    _size: size_t;
+USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
 
-    union
-    {
-        local: char[16];
+#if (USE_STRING_IMPL)
 
-        capacity: size_t;
-    };
-};
+  private
+  v_string_impl_t = struct
+  {
+      _data: *char;
+      _size: size_t;
+
+      union
+      {
+          local: char[16];
+
+          capacity: size_t;
+      };
+  };
+
+#endif
 
 //---------------------------------------------------------------------
 #if (IS_VOIDC)
 
-  v_string_t = v_std_string_t;          //- ???
+  v_string_t = v_std_string_t;          //- ?!?
 
-  private
-  #define (_.impl): (s: &v_string_t) ~> &v_string_impl_t  =  *(&s : *v_string_impl_t);
+  #if (v_defined(BOOTSTRAP))
+
+    private
+    #define (_.impl): (s: &v_string_t) ~> &v_string_impl_t  =  *(&s : *v_string_impl_t);
+
+  #else
+
+    private
+    #define (_.impl): (s: &v_string_t) ~> &v_std_string_t  =  s;
+
+  #endif
 
 #else
 
@@ -62,17 +85,12 @@ v_string_impl_t = struct
 
 
 //---------------------------------------------------------------------
-private
-#define (_.is_long): (s: &v_string_impl_t) ~> bool  =  s._data != s[2].local;
+#if (USE_STRING_IMPL)
 
+  private
+  #define (_.is_long): (s: &v_string_impl_t) ~> bool  =  s._data != s[2].local;
 
-//---------------------------------------------------------------------
-strlen: (*const char) ~> size_t;
-
-memcpy: (*void, *const void, size_t) ~> *void;
-memset: (*void, int, size_t) ~> *void;
-
-realloc: (*void, size_t) ~> *void;
+#endif
 
 
 //---------------------------------------------------------------------
@@ -105,6 +123,8 @@ realloc: (*void, size_t) ~> *void;
   inlinehint
   (v_copy(_)): (dst: *v_string_t, src: *const v_string_t, count: size_t) ~> void
   {
+      .memcpy: (*void, *const void, size_t) ~> *void;
+
       for (i: &size_t := 0; i < count; ++i)
       {
           di = dst[i].impl;
@@ -131,13 +151,15 @@ realloc: (*void, size_t) ~> *void;
               di._data := di[2].local;
           }
 
-          memcpy(di._data, si._data, sz1);
+          .memcpy(di._data, si._data, sz1);
       }
   }
 
   inlinehint
   (v_move(_)): (dst: *v_string_t, src: *v_string_t, count: size_t) ~> void
   {
+      .memcpy: (*void, *const void, size_t) ~> *void;
+
       for (i: &size_t := 0; i < count; ++i)
       {
           di = dst[i].impl;
@@ -161,7 +183,7 @@ realloc: (*void, size_t) ~> *void;
           {
               di._data := di[2].local;
 
-              memcpy(di._data, si._data, sz+1);
+              .memcpy(di._data, si._data, sz+1);
           }
 
           si._size := 0;
@@ -173,95 +195,150 @@ realloc: (*void, size_t) ~> *void;
 
 
 //---------------------------------------------------------------------
-alwaysinline
-(_.data): (s: v_string_t) ~> *char  =  (&s)->impl._data;
+#if (USE_STRING_IMPL)
 
-alwaysinline
-(_.size): (s: v_string_t) ~> size_t  =  (&s)->impl._size;
+  alwaysinline
+  (_.data): (s: v_string_t) ~> *char  =  (&s)->impl._data;
 
-inlinehint
-(_.capacity): (s: v_string_t) ~> size_t
-{
-    s = (&s)->impl;
+  alwaysinline
+  (_.size): (s: v_string_t) ~> size_t  =  (&s)->impl._size;
 
-    if (s.is_long)  return s[2].capacity;
-    else            return 15;
-}
+  inlinehint
+  (_.capacity): (s: v_string_t) ~> size_t
+  {
+      s = (&s)->impl;
 
+      if (s.is_long)  return s[2].capacity;
+      else            return 15;
+  }
 
-//---------------------------------------------------------------------
-inlinehint
-(_.set_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
-{
-    str_impl = str.impl;
+#else
 
-    if (len > str.capacity)
-    {
-        if (str_impl.is_long) v_free(str.data);
+  alwaysinline
+  (_.data): (s: v_string_t) ~> *char  =  v_std_string_get(&s);
 
-        csz = (len + (1+15)) & ~15;
+  alwaysinline
+  (_.size): (s: v_string_t) ~> size_t  =  v_std_string_get_size(&s);
 
-        str_impl._data := v_malloc(char, csz);
-        str_impl[2].capacity := csz - 1;
-    }
-
-    memcpy(str_impl._data, s, len);
-
-    str_impl._data[len] := 0;
-
-    str_impl._size := len;
-
-    str
-};
-
-inlinehint
-(_.set()): (str: &v_string_t, s: *const char) ~> &v_string_t  =  str.set_data(s, strlen(s));
+#endif
 
 
 //---------------------------------------------------------------------
+#if (USE_STRING_IMPL)
+
+  inlinehint
+  (_.set_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
+  {
+      str_impl = str.impl;
+
+      if (len > str.capacity)
+      {
+          if (str_impl.is_long) v_free(str.data);
+
+          csz = (len + (1+15)) & ~15;
+
+          str_impl._data := v_malloc(char, csz);
+          str_impl[2].capacity := csz - 1;
+      }
+
+      .memcpy: (*void, *const void, size_t) ~> *void;
+
+      .memcpy(str_impl._data, s, len);
+
+      str_impl._data[len] := 0;
+
+      str_impl._size := len;
+
+      str
+  };
+
+#else
+
+  alwaysinline
+  (_.set_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
+  {
+      v_std_string_set_data(&str, s, len);
+
+      str
+  };
+
+#endif
+
 inlinehint
-(_.append_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
-block
+(_.set()): (str: &v_string_t, s: *const char) ~> &v_string_t  =
 {
-    if (len == 0) break str;
+    .strlen: (*const char) ~> size_t;
 
-    str_impl = str.impl;
-
-    sz = str.size;
-
-    sz_len = sz + len;
-
-    if (sz_len > str.capacity)
-    {
-        csz = (sz_len + (1+15)) & ~15;
-
-        if (str_impl.is_long)
-        {
-            str_impl._data := (realloc(str_impl._data, csz) : *char);
-        }
-        else
-        {
-            d = v_malloc(char, csz);
-
-            memcpy(d, str_impl._data, sz);
-
-            str_impl._data := d;
-        }
-
-        str_impl[2].capacity := csz - 1;
-    }
-
-    memcpy(str_impl._data+sz, s, len);
-
-    str_impl._data[sz_len] := 0;
-
-    str_impl._size := sz_len;
-
-    break  str;
+    str.set_data(s, .strlen(s))
 };
 
+
+//---------------------------------------------------------------------
+#if (USE_STRING_IMPL)
+
+  inlinehint
+  (_.append_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
+  block
+  {
+      .memcpy: (*void, *const void, size_t) ~> *void;
+      .realloc: (*void, size_t) ~> *void;
+
+      if (len == 0) break str;      //- !
+
+      str_impl = str.impl;
+
+      sz = str.size;
+
+      sz_len = sz + len;
+
+      if (sz_len > str.capacity)
+      {
+          csz = (sz_len + (1+15)) & ~15;
+
+          if (str_impl.is_long)
+          {
+              str_impl._data := (.realloc(str_impl._data, csz) : *char);
+          }
+          else
+          {
+              d = v_malloc(char, csz);
+
+              .memcpy(d, str_impl._data, sz);
+
+              str_impl._data := d;
+          }
+
+          str_impl[2].capacity := csz - 1;
+      }
+
+      .memcpy(str_impl._data+sz, s, len);
+
+      str_impl._data[sz_len] := 0;
+
+      str_impl._size := sz_len;
+
+      break  str;
+  };
+
+#else
+
+  alwaysinline
+  (_.append_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
+  {
+      v_std_string_append_data(&str, s, len);
+
+      str
+  };
+
+#endif
+
 inlinehint
-(_.append()): (str: &v_string_t, s: *const char) ~> &v_string_t  =  str.append_data(s, strlen(s));
+(_.append()): (str: &v_string_t, s: *const char) ~> &v_string_t  =
+{
+    .strlen: (*const char) ~> size_t;
+
+    str.append_data(s, .strlen(s))
+};
 
 
 //---------------------------------------------------------------------
@@ -271,7 +348,8 @@ alwaysinline
 inlinehint
 (_.append_char32()): (str: &v_string_t, c: char32_t) ~> &v_string_t  =
 {
-    r: &int := undef;
+    r: &int     := undef;
+    d: &char[4] := undef;
 
     if (c <= 0x7FF)
     {
@@ -283,8 +361,6 @@ inlinehint
         if (c <= 0xFFFF)  r := 2;
         else              r := 3;
     }
-
-    d = v_alloca(char, r+1);
 
     if (r == 0)
     {
@@ -314,12 +390,62 @@ inlinehint
 {
     buf: &char[24] := undef;
 
-    sprintf: (*char, *const char, ...) ~> int;
+    .sprintf: (*char, *const char, ...) ~> int;
 
-    len = sprintf(buf, "%zd", n);
+    len = .sprintf(buf, "%zd", n);
 
     str.append_data(buf, len)
 };
+
+//---------------------------------------------------------------------
+inlinehint
+(_.appendf()): (str: &v_string_t, fmt: *const char, ...) ~> &v_string_t  =
+{
+    .vsnprintf: (*char, size_t, *const char, va_list_ref) ~> int;
+
+    ap:  &va_list := undef;
+    apc: &va_list := undef;
+
+    va_start(ap);
+
+    va_copy(apc, ap);
+    len = .vsnprintf(0, 0, fmt, ap);
+    va_end(ap);
+
+    bsz = len + 1;
+
+    buf = v_malloc(char, bsz);
+    defer v_free(buf);
+
+    .vsnprintf(buf, bsz, fmt, apc);
+    va_end(apc);
+
+    str.append_data(buf, len)
+};
+
+
+//---------------------------------------------------------------------
+alwaysinline
+(_:=_): (str: &v_string_t, val: v_string_t) ~> &v_string_t  =
+{
+    v_copy(&str, &val);
+
+    str
+};
+
+//---------------------------------------------------------------------
+alwaysinline
+(_+_): (a: v_string_t, b: v_string_t) ~> v_string_t
+{
+    ret = v_get_return_value();
+
+    ret := a;
+
+    ret.append_data(b.data, b.size);
+}
+
+alwaysinline
+(_+__): (a: v_string_t, b: v_string_t) ~> v_string_t  =  a + b;
 
 
 //---------------------------------------------------------------------

@@ -157,6 +157,7 @@
 
     ft = v_function_type(void, typ0, 3, false);
     v_export_symbol_type("v_std_string_set_data", ft);
+    v_export_symbol_type("v_std_string_append_data", ft);
 
 //  v_store(v_std_string_ptr, typ0);
     v_store(char32_t,         typ1);
