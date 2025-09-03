@@ -8,6 +8,9 @@ C stdarg                                                       │cstdarg.void
                                                                │
 C stdio                                                        │cstdio.void
                                                                │
+C string                                                       │cstring.void
+                                                               │
+                                                               │
 Type traits                                                    │type_traits.void
                                                                │
 ---------------------------------------------------------------│

@@ -7,6 +7,8 @@
 //---------------------------------------------------------------------
 {
     v_import("cstdarg.void");
+    v_import("cstdio.void");
+    v_import("cstring.void");
 }
 
 
@@ -123,8 +125,6 @@ USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
   inlinehint
   (v_copy(_)): (dst: *v_string_t, src: *const v_string_t, count: size_t) ~> void
   {
-      .memcpy: (*void, *const void, size_t) ~> *void;
-
       for (i: &size_t := 0; i < count; ++i)
       {
           di = dst[i].impl;
@@ -151,15 +151,13 @@ USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
               di._data := di[2].local;
           }
 
-          .memcpy(di._data, si._data, sz1);
+          memcpy(di._data, si._data, sz1);
       }
   }
 
   inlinehint
   (v_move(_)): (dst: *v_string_t, src: *v_string_t, count: size_t) ~> void
   {
-      .memcpy: (*void, *const void, size_t) ~> *void;
-
       for (i: &size_t := 0; i < count; ++i)
       {
           di = dst[i].impl;
@@ -183,7 +181,7 @@ USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
           {
               di._data := di[2].local;
 
-              .memcpy(di._data, si._data, sz+1);
+              memcpy(di._data, si._data, sz+1);
           }
 
           si._size := 0;
@@ -241,9 +239,7 @@ USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
           str_impl[2].capacity := csz - 1;
       }
 
-      .memcpy: (*void, *const void, size_t) ~> *void;
-
-      .memcpy(str_impl._data, s, len);
+      memcpy(str_impl._data, s, len);
 
       str_impl._data[len] := 0;
 
@@ -265,12 +261,7 @@ USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
 #endif
 
 inlinehint
-(_.set()): (str: &v_string_t, s: *const char) ~> &v_string_t  =
-{
-    .strlen: (*const char) ~> size_t;
-
-    str.set_data(s, .strlen(s))
-};
+(_.set()): (str: &v_string_t, s: *const char) ~> &v_string_t  =  str.set_data(s, strlen(s));
 
 
 //---------------------------------------------------------------------
@@ -280,9 +271,6 @@ inlinehint
   (_.append_data()): (str: &v_string_t, s: *const char, len: size_t) ~> &v_string_t  =
   block
   {
-      .memcpy: (*void, *const void, size_t) ~> *void;
-      .realloc: (*void, size_t) ~> *void;
-
       if (len == 0) break str;      //- !
 
       str_impl = str.impl;
@@ -297,13 +285,15 @@ inlinehint
 
           if (str_impl.is_long)
           {
+              .realloc: (*void, size_t) ~> *void;
+
               str_impl._data := (.realloc(str_impl._data, csz) : *char);
           }
           else
           {
               d = v_malloc(char, csz);
 
-              .memcpy(d, str_impl._data, sz);
+              memcpy(d, str_impl._data, sz);
 
               str_impl._data := d;
           }
@@ -311,7 +301,7 @@ inlinehint
           str_impl[2].capacity := csz - 1;
       }
 
-      .memcpy(str_impl._data+sz, s, len);
+      memcpy(str_impl._data+sz, s, len);
 
       str_impl._data[sz_len] := 0;
 
@@ -333,12 +323,7 @@ inlinehint
 #endif
 
 inlinehint
-(_.append()): (str: &v_string_t, s: *const char) ~> &v_string_t  =
-{
-    .strlen: (*const char) ~> size_t;
-
-    str.append_data(s, .strlen(s))
-};
+(_.append()): (str: &v_string_t, s: *const char) ~> &v_string_t  =  str.append_data(s, strlen(s));
 
 
 //---------------------------------------------------------------------
@@ -390,9 +375,7 @@ inlinehint
 {
     buf: &char[24] := undef;
 
-    .sprintf: (*char, *const char, ...) ~> int;
-
-    len = .sprintf(buf, "%zd", n);
+    len = sprintf(buf, "%zd", n);
 
     str.append_data(buf, len)
 };
@@ -401,15 +384,13 @@ inlinehint
 inlinehint
 (_.appendf()): (str: &v_string_t, fmt: *const char, ...) ~> &v_string_t  =
 {
-    .vsnprintf: (*char, size_t, *const char, va_list_ref) ~> int;
-
     ap:  &va_list := undef;
     apc: &va_list := undef;
 
     va_start(ap);
 
     va_copy(apc, ap);
-    len = .vsnprintf(0, 0, fmt, ap);
+    len = vsnprintf(0, 0, fmt, ap);
     va_end(ap);
 
     bsz = len + 1;
@@ -417,7 +398,7 @@ inlinehint
     buf = v_malloc(char, bsz);
     defer v_free(buf);
 
-    .vsnprintf(buf, bsz, fmt, apc);
+    vsnprintf(buf, bsz, fmt, apc);
     va_end(apc);
 
     str.append_data(buf, len)

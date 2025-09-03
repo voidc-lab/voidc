@@ -1,0 +1,37 @@
+//---------------------------------------------------------------------
+//- Copyright (C) 2020-2025 Dmitry Borodkin <borodkin.dn@gmail.com>
+//- SDPX-License-Identifier: LGPL-3.0-or-later
+//---------------------------------------------------------------------
+{ voidc_import("libvoidc.void"); }
+{ voidc_make_header("cstring"); }
+//---------------------------------------------------------------------
+
+memcpy:  (s1: *void, s2: *const void, n: size_t) ~> *void;
+memccpy: (s1: *void, s2: *const void, c: int, n: size_t) ~> *void;
+memmove: (s1: *void, s2: *const void, n: size_t) ~> *void;
+strcpy:  (s1: *char, s2: *const char) ~> *char;
+strncpy: (s1: *char, s2: *const char, n: size_t) ~> *char;
+strdup:  (s: *const char) ~> *char;
+strndup: (s: *const char, n: size_t) ~> *char;
+strcat:  (s1: *char, s2: *const char) ~> *char;
+strncat: (s1: *char, s2: *const char, n: size_t) ~> *char;
+memcmp:  (s1: *const void, s2: *const void, n: size_t) ~> int;
+strcmp:  (s1: *const char, s2: *const char) ~> int;
+strcoll: (s1: *const char, s2: *const char) ~> int;
+strncmp: (s1: *const char, s2: *const char, n: size_t) ~> int;
+strxfrm: (s1: *char, s2: *const char, n: size_t) ~> size_t;
+memchr:  (s: *const void, c: int, n: size_t) ~> *void;
+strchr:  (s: *const char, c: int) ~> *char;
+strcspn: (s1: *const char, s2: *const char) ~> size_t;
+strpbrk: (s1: *const char, s2: *const char) ~> *char;
+strrchr: (s: *const char, c: int) ~> *char;
+strspn:  (s1: *const char, s2: *const char) ~> size_t;
+strstr:  (s1: *const char, s2: *const char) ~> *char;
+strtok:  (s1: *char, s2: *const char) ~> *char;
+memset:  (s: *void, c: int, n: size_t) ~> *void;
+memset_explicit: (s: *void, c: int, n: size_t) ~> *void;
+strerror: (errnum: int) ~> *char;
+strlen:  (s: *const char) ~> size_t;
+strnlen: (s: *const char, n : size_t) ~> size_t;
+
+
