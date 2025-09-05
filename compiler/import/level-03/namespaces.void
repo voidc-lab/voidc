@@ -54,6 +54,8 @@ NAMESPACE_SEPARATOR: char32_t = 0x1F;       //- "Unit Separator"...
 
     v_add_symbol("q_op_postfix_dot", q_ref, q("v.op_postfix_dot"));
 
+    v_add_symbol("proj_q", q_ref, q("projection_payload"));
+
     v_add_symbol("q_current_namespace_list",  q_ref, q("v.current_namespace_list"));
     v_add_symbol("q_current_namespace_stack", q_ref, q("v.current_namespace_stack"));
     v_add_symbol("q_current_namespace_used",  q_ref, q("v.current_namespace_used"));
@@ -505,6 +507,40 @@ mk_stmt_expr_var_decl_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any
 
 
 //---------------------------------------------------------------------
+//- Some utility ...
+//---------------------------------------------------------------------
+export
+v_lookup_identifier_q: (qname: v_quark_t, type: **v_type_t, value: *LLVMValueRef) ~> bool
+{
+    if (v_get_variable_q(qname, type, value))    return true;
+
+    raw_name = v_lookup_alias_q(qname);
+
+    if (v_find_constant_q(raw_name, type, value))   return true;
+
+    if (t = v_find_symbol_type_q(raw_name))
+    {
+        if (type)   *type := t;
+
+        return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------------------------
+export
+v_lookup_identifier: (name: *const char, type: **v_type_t, value: *LLVMValueRef) ~> bool
+{
+    qname = v_quark_try_string(name);
+
+    if (!qname) return false;
+
+    return  v_lookup_identifier_q(qname, type, value);
+}
+
+
+//---------------------------------------------------------------------
 //- Compile methods ...
 //---------------------------------------------------------------------
 
@@ -654,44 +690,113 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     static_namespace_t = v_find_type_q(q_static_namespace_t);
 
-    for (i: &int := 0; i <= N; ++i)
-    {
-        qsi = qs[i];
+    {   is_namespace: &bool := true;
 
-        quark: &v_quark_t := qsi.qname;
+        t: &*v_type_t    := undef;
+        v: &LLVMValueRef := undef;
 
-        if (qsi.args)
+        for (i: &int := 0; i <= N; ++i)
         {
+            qsi = qs[i];
+
+            quark: &v_quark_t := qsi.qname;
+
             v_reset_result();
 
-            v_set_result_type(static_namespace_t);
-
-            if (qsi.qname != 0)             //- ...
+            if (is_namespace)
             {
+                if (qsi.args)
+                {
+                    if (qsi.qname != 0)             //- ...
+                    {
+                        expr: &v_ast_expr_t := {};
+
+                        v_ast_make_expr_identifier_q(&expr, qsi.qname);
+
+                        v_ast_make_expr_call(&expr, &expr, qsi.args);
+
+                        v_ast_accept_visitor(&expr, vis);
+                    }
+                    else                            //- Hack...
+                    {
+                        v_ast_accept_visitor(qsi.args, vis);
+                    }
+                }
+                else    //- !qsi.args
+                {
+                    v_assert(qsi.qname);
+
+                    if (v_lookup_identifier_q(qsi.qname, 0, 0))
+                    {
+                        expr: &v_ast_expr_t := {};
+
+                        v_ast_make_expr_identifier_q(&expr, qsi.qname);
+
+                        v_ast_accept_visitor(&expr, vis);
+                    }
+                }
+            }
+            else    //- !is_namespace
+            {
+                v_assert(qsi.qname);
+
+                id: &v_ast_expr_t := {};
+
+                v_ast_make_expr_identifier_q(&id, qsi.qname);
+
+                pay: &v_ast_generic_list_t := {};
+
+                v_make_list(&pay, proj_q, &id, 1);
+
+                if (qsi.args) v_list_append(&pay, &pay, qsi.args);
+
+                op: &v_ast_expr_t := {};
+
+                v_ast_make_operator_unary(&op, q_op_postfix_dot, 30000, &pay);          //- ???
+
                 expr: &v_ast_expr_t := {};
 
-                v_ast_make_expr_identifier_q(&expr, qsi.qname);
+                v_ast_make_expr_compiled(&expr, t, v);
 
-                v_ast_make_expr_call(&expr, &expr, qsi.args);
+                v_ast_make_expr_op_unary(&expr, &op, &expr);
 
                 v_ast_accept_visitor(&expr, vis);
             }
-            else                            //- Hack...
+
+            if (t := v_get_result_type())
             {
-                v_ast_accept_visitor(qsi.args, vis);
+                v := v_get_result_value();
+
+                if (t == static_namespace_t  ||  v_try_to_convert(t, v, static_namespace_t, v))
+                {
+                    quark := (v: *v_namespace_t)->name;
+
+                    qsi.qname := quark;             //- Sic !!!
+
+                    is_namespace := true;
+                }
+                else
+                {
+                    is_namespace := false;
+                }
             }
 
-            quark := (v_get_result_value() : *v_namespace_t)->name;
+            if (!is_namespace)
+            {
+                qsi.qname := 0;                 //- Sic !!!
 
-            qsi.qname := quark;             //- Sic !!!
+                continue;
+            }
+
+            q = (quark : *void);
+
+            if (i == N  &&  private)  check_private_thing((q: intptr_t));
+
+            if (export) v_export_effort(voidc_unit_namespace_open_item_effort, q);
+            else        v_add_effort(voidc_unit_namespace_open_item_effort, q);
         }
 
-        q = (quark : *void);
-
-        if (i == N  &&  private)  check_private_thing((q: intptr_t));
-
-        if (export) v_export_effort(voidc_unit_namespace_open_item_effort, q);
-        else        v_add_effort(voidc_unit_namespace_open_item_effort, q);
+        v_assert(is_namespace);             //- Sic!
     }
 
     v_set_hidden_flag(hidden);
@@ -720,7 +825,11 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     for (i: &int := 0; i <= N; ++i)
     {
-        v_ast_make_expr_integer(expr+1, qs[i].qname);
+        qname = qs[i].qname;
+
+        if (!qname) continue;
+
+        v_ast_make_expr_integer(expr+1, qname);
 
         v_make_list(&elst, expr+1);
 

@@ -816,7 +816,9 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
             mod_const := LLVMModuleCreateWithNameInContext("voidc_module_for_constants", c_);
         }
 
-        v_ = LLVMAddGlobal(mod_const, t_, name);
+        raw_name = v_lookup_alias(name);
+
+        v_ = LLVMAddGlobal(mod_const, t_, raw_name);
 
         LLVMSetInitializer(v_, v);
 
@@ -825,7 +827,9 @@ my_compile_unit_val_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
 
         v_make_list(&elst, &expr[2], 1);
 
-        v_list_append(&elst, &elst, &expr[0], 1);           //- Sic!
+        v_ast_make_expr_string(expr+2, raw_name);
+
+        v_list_append(&elst, &elst, expr+2, 1);           //- Sic!
 
         v_ast_make_expr_identifier_q(&expr[2], LLVMGetNamedGlobal_q);
 
