@@ -399,6 +399,8 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
     {
     case 'n':       //- Number
 
+        v_push_result();
+
         v_set_result_type(v_uint_type(64));
 
         v_ast_accept_visitor(v_list_get_item(args, 0), vis);
@@ -407,13 +409,15 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
 
         n = LLVMConstIntGetZExtValue(n);
 
-        v_push_result();
+        v_pop_result();
 
         return  v_type_generic_number_arg(n);
 
     case 's':       //- String
 
-        v_set_result_type(INVIOLABLE_TAG);          //- ?
+        v_push_result();
+
+//      v_set_result_type(INVIOLABLE_TAG);          //- ?
 
         v_ast_accept_visitor(v_list_get_item(args, 0), vis);
 
@@ -424,6 +428,8 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
         {   sstr: &v_std_string_t := {};
 
             v_std_string_set_data(&sstr, s, l-1);       //- ?
+
+            v_pop_result();
 
             return  v_type_generic_string_arg(&sstr);
         }
@@ -447,11 +453,15 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
 
     case 't':       //- Type
 
+        v_push_result();
+
         v_set_result_type(v_find_type_q(q_static_type_t));
 
         v_ast_accept_visitor(v_list_get_item(args, 0), vis);
 
         t = (v_get_result_value() : *v_type_t);
+
+        v_pop_result();
 
         return  v_type_generic_type_arg(t);
 

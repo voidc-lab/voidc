@@ -195,13 +195,11 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
     inlinehint
     (v_initialize(_)): (sp: *list(T), N: size_t) ~> void
     {
+        v_initialize(&sp->impl, N);
+
         for (i: &int := 0; i < N; ++i)
         {
-            lst = &sp[i].impl;
-
-            v_initialize(lst);
-
-            v_make_list_nil(lst);
+            v_make_list_nil(&sp[i].impl);
         }
     }
 

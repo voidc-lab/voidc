@@ -6,7 +6,6 @@
 
     v_import("level-00");
     v_import("level-01");
-    v_import("level-02");
 
     v_export_import("intrinsics_derive.void");
     v_export_import("local_objects.void");
@@ -20,7 +19,6 @@
 }
 
 {   v_enable_level_01();
-    v_enable_level_02();
 }
 
 
