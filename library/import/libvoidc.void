@@ -4,22 +4,85 @@
 //---------------------------------------------------------------------
 {   voidc_guard_target("libvoidc.void  must be imported into the voidc target only!");
 
-    v_import("mainline.void");
+    v_import("level-00");
+    v_import("level-01");
+    v_import("level-02");
 
     v_import("llvm-c/Core.void");
     v_import("llvm-c/TargetMachine.void");
     v_import("llvm-c/Transform/PassBuilder.void");
 }
 
-{   v_enable_mainline();
+{   v_enable_level_01();
+    v_enable_level_02();
 
     //-------------------------------------------------------------
     voidc_clear_unit_buffer();
 }
 
 
+//---------------------------------------------------------------------
+export LIBVOIDC_LIMIT_LEVEL_01 = (0x01 : LLVMValueRef);
+export LIBVOIDC_LIMIT_LEVEL_02 = (0x02 : LLVMValueRef);
+export LIBVOIDC_LIMIT_LEVEL_03 = (0x03 : LLVMValueRef);
+
+
+//---------------------------------------------------------------------
+{   q_ref = v_reference_type(v_quark_t, 0);
+
+    q = v_quark_ptr_from_string;
+
+    v_add_symbol("level_limit_q", q_ref, q("libvoidc.level_limit"));
+
+    v_add_symbol("enable_03_q", q_ref, q("v_enable_level_03"));
+}
+
+
 //=====================================================================
 {   voidc_unit_begin_module("libvoidc_module"); }
+
+
+//---------------------------------------------------------------------
+export
+voidc_set_level_limit: (level: LLVMValueRef) ~> void
+{
+    v_add_constant_q(level_limit_q, v_void_type(), level);
+}
+
+//---------------------------------------------------------------------
+private
+my_import_mainline: () ~> void
+{
+    level = v_find_constant_value_q(level_limit_q);
+
+    v_import("level-00");
+    v_import("level-01");   if (level == LIBVOIDC_LIMIT_LEVEL_01) return;
+    v_import("level-02");   if (level == LIBVOIDC_LIMIT_LEVEL_02) return;
+    v_import("level-03");
+}
+
+//---------------------------------------------------------------------
+private
+my_enable_mainline: () ~> void
+{
+    level = v_find_constant_value_q(level_limit_q);
+
+    v_enable_level_01();    if (level == LIBVOIDC_LIMIT_LEVEL_01) return;
+    v_enable_level_02();    if (level == LIBVOIDC_LIMIT_LEVEL_02) return;
+
+    f_03: &*(() ~> void) := undef;
+
+    gctx = v_target_get_global_ctx();
+    vctx = v_target_get_voidc_global_ctx();
+
+    if (gctx != vctx) v_target_set_global_ctx(vctx);
+
+    f_03 := (v_find_symbol_value_q(enable_03_q) : *(() ~> void));
+
+    if (gctx != vctx) v_target_set_global_ctx(gctx);
+
+    if (f_03) f_03();  else  return;
+}
 
 
 //---------------------------------------------------------------------
@@ -40,11 +103,14 @@ voidc_make_header: (name: *const char) ~> void
 
     if (gctx != vctx)
     {
+        level = v_find_constant_value_q(level_limit_q);
+
         v_target_set_global_ctx(vctx);
 
-        v_import("mainline.void");
+        if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
 
-        v_enable_mainline();
+        my_import_mainline();
+        my_enable_mainline();
 
         filename = v_target_local_ctx_get_filename(v_target_get_voidc_local_ctx());
 
@@ -60,13 +126,15 @@ voidc_make_header: (name: *const char) ~> void
             v_add_constant("_WIN32", v_void_type(), 0);
 
         #endif
+
+        if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
     }
-    else
+    else    //- e.g.  gctx == vctx
     {
-        v_import("mainline.void");
+        my_import_mainline();
     }
 
-    v_enable_mainline();
+    my_enable_mainline();
 
     v_set_export_flag(true);
 }
@@ -78,9 +146,8 @@ voidc_make_module: (modname: *const char) ~> void
 {
     voidc_guard_target("voidc_make_module  must be called from the voidc target only!");
 
-    v_import("mainline.void");
-
-    v_enable_mainline();
+    my_import_mainline();
+    my_enable_mainline();
 
     //----------------------------------------------------------
     filename = v_target_local_ctx_get_filename(v_target_get_voidc_local_ctx());
@@ -91,6 +158,8 @@ voidc_make_module: (modname: *const char) ~> void
     suf_q = v_quark_from_string("voidc.import_bin_filename_suffix");
 
     v_target_global_ctx_add_constant_value(gctx, suf_q, ("c-aot": LLVMValueRef));       //- ?
+
+    level = v_find_constant_value_q(level_limit_q);
 
     v_target_set_global_ctx(gctx);
 
@@ -106,8 +175,10 @@ voidc_make_module: (modname: *const char) ~> void
 
     #endif
 
+    if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
+
     //----------------------------------------------------------
-    v_enable_mainline();
+    my_enable_mainline();
 
     //----------------------------------------------------------
     module = LLVMModuleCreateWithNameInContext(modname, v_target_get_llvm_ctx());

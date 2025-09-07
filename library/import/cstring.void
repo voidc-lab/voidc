@@ -3,7 +3,11 @@
 //- SDPX-License-Identifier: LGPL-3.0-or-later
 //---------------------------------------------------------------------
 { voidc_import("libvoidc.void"); }
-{ voidc_make_header("cstring"); }
+{
+    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_01);
+
+    voidc_make_header("cstring");
+}
 //---------------------------------------------------------------------
 
 memcpy:  (s1: *void, s2: *const void, n: size_t) ~> *void;

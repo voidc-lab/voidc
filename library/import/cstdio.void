@@ -3,7 +3,11 @@
 //- SDPX-License-Identifier: LGPL-3.0-or-later
 //---------------------------------------------------------------------
 { voidc_import("libvoidc.void"); }
-{ voidc_make_header("cstdio"); }
+{
+    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_02);
+
+    voidc_make_header("cstdio");
+}
 //---------------------------------------------------------------------
 
 {   gctx = v_target_get_global_ctx();
