@@ -1266,10 +1266,10 @@
 
     v_add_type("convert_to_common_type_ft", ft);
 
-    //-----------------------------------------------------------------
-    f = v_function_hack("convert_to_common_type", ft);
+    v_add_alias("convert_to_common_type", "voidc_internal_convert_to_common_type");
 
-    LLVMSetLinkage(f, LLVMPrivateLinkage);
+    //-----------------------------------------------------------------
+    f = v_function_hack("voidc_internal_convert_to_common_type", ft);
 
     v_add_parameter_name(f, 0, "typ0", type_ref);
     v_add_parameter_name(f, 1, "val0", value_ref);
@@ -4850,6 +4850,8 @@
     v_make_export_symbol("v_ast_make_operator_nullary");
     v_make_export_symbol("v_ast_make_operator_unary");
     v_make_export_symbol("v_ast_make_operator_binary");
+
+    v_make_export_symbol("voidc_internal_convert_to_common_type");
 
     v_make_export_symbol("voidc_ast_add_operator_methods");
 }

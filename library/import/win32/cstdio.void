@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------
 { voidc_import("libvoidc.void"); }
 {
-    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_02);
+    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_03);
 
     voidc_make_header("win32_cstdio");
 }
