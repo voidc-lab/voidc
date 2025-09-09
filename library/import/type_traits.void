@@ -963,3 +963,303 @@ v_internal_type_traits_effort: (*void) ~> void
 #define (_!=_): (a: v_static_type_t, b: v_static_type_t) ~> bool  =  !(a == b);
 
 
+//=====================================================================
+
+//---------------------------------------------------------------------
+#define (_.is_signed): (t: v_static_type_t) ~> bool  =
+{
+    #if (t.is_integer)  tt = t.as_integer;
+    #else
+        #error ("???")
+    #endif
+
+    tt.is_signed
+};
+
+//---------------------------------------------------------------------
+#define (_.is_var_arg): (t: v_static_type_t) ~> bool  =
+{
+    #if (t.is_function) tt = t.as_function;
+    #else
+        #error ("???")
+    #endif
+
+    tt.is_var_arg
+};
+
+//---------------------------------------------------------------------
+#define (_.is_opaque): (t: v_static_type_t) ~> bool  =
+{
+    #if (t.is_struct) tt = t.as_struct;
+    #else
+        #error ("???")
+    #endif
+
+    tt.is_opaque
+};
+
+//---------------------------------------------------------------------
+#define (_.is_packed): (t: v_static_type_t) ~> bool  =
+{
+    #if (t.is_struct) tt = t.as_struct;
+    #else
+        #error ("???")
+    #endif
+
+    tt.is_packed
+};
+
+//---------------------------------------------------------------------
+#define (_.is_scalable): (t: v_static_type_t) ~> bool  =
+{
+    #if (t.is_vector) tt = t.as_vector;
+    #else
+        #error ("???")
+    #endif
+
+    tt.is_scalable
+};
+
+
+//---------------------------------------------------------------------
+#define (_.width): (t: v_static_type_t) ~> unsigned  =
+{
+    #if   (t.is_integer)            tt = t.as_integer;
+    #elif (t.is_floating_point)     tt = t.as_floating_point;
+    #else
+        #error ("???")
+    #endif
+
+    tt.width
+};
+
+//---------------------------------------------------------------------
+#define (_.param_count): (t: v_static_type_t) ~> unsigned  =
+{
+    #if (t.is_function)   tt = t.as_function;
+    #else
+        #error ("???")
+    #endif
+
+    tt.param_count
+};
+
+//---------------------------------------------------------------------
+#define (_.address_space): (t: v_static_type_t) ~> unsigned  =
+{
+    #if (t.is_refptr)   tt = t.as_refptr;
+    #else
+        #error ("???")
+    #endif
+
+    tt.address_space
+};
+
+//---------------------------------------------------------------------
+#define (_.size): (t: v_static_type_t) ~> unsigned  =
+{
+    #if (t.is_vector)   tt = t.as_vector_base;
+    #else
+        #error ("???")
+    #endif
+
+    tt.size
+};
+
+//---------------------------------------------------------------------
+#define (_.element_count): (t: v_static_type_t) ~> unsigned  =
+{
+    #if (t.is_struct)   tt = t.as_struct;
+    #else
+        #error ("???")
+    #endif
+
+    tt.element_count
+};
+
+//---------------------------------------------------------------------
+#define (_.arg_count): (t: v_static_type_t) ~> unsigned  =
+{
+    #if (t.is_generic)  tt = t.as_generic;
+    #else
+        #error ("???")
+    #endif
+
+    tt.arg_count
+};
+
+
+//---------------------------------------------------------------------
+#define (_.return_type): (t: v_static_type_t) ~> v_static_type_t  =
+{
+    #if (t.is_function) tt = t.as_function;
+    #else
+        #error ("???")
+    #endif
+
+    tt.return_type
+};
+
+//---------------------------------------------------------------------
+#define (_.element_type): (t: v_static_type_t) ~> v_static_type_t  =
+{
+    #if   (t.is_refptr)             tt = t.as_refptr;
+    #elif (t.is_array)              tt = t.as_array;
+    #elif (t.is_vector)             tt = t.as_vector_base;
+    #elif (t.is_incomplete_array)   tt = t.as_incomplete_array;
+    #else
+        #error ("???")
+    #endif
+
+    tt.element_type
+};
+
+
+//---------------------------------------------------------------------
+#define (_.param_types): (t: v_static_type_t) ~> v_static_array_of_types_t  =
+{
+    #if (t.is_function) tt = t.as_function;
+    #else
+        #error ("???")
+    #endif
+
+    tt.param_types
+};
+
+//---------------------------------------------------------------------
+#define (_.element_types): (t: v_static_type_t) ~> v_static_array_of_types_t  =
+{
+    #if (t.is_struct) tt = t.as_struct;
+    #else
+        #error ("???")
+    #endif
+
+    tt.element_types
+};
+
+
+//---------------------------------------------------------------------
+#define (_.length): (t: v_static_type_t) ~> uint(64)  =
+{
+    #if (t.is_array)   tt = t.as_array;
+    #else
+        #error ("???")
+    #endif
+
+    tt.length
+};
+
+
+//---------------------------------------------------------------------
+#define (_.name): (t: v_static_type_t) ~> v_static_quark_t  =
+{
+    #if (t.is_struct) tt = t.as_struct;
+    #else
+        #error ("???")
+    #endif
+
+    tt.name
+};
+
+//---------------------------------------------------------------------
+#define (_.cons): (t: v_static_type_t) ~> v_static_quark_t  =
+{
+    #if (t.is_generic) tt = t.as_generic;
+    #else
+        #error ("???")
+    #endif
+
+    tt.cons
+};
+
+
+//---------------------------------------------------------------------
+#define (_.args): (t: v_static_type_t) ~> v_static_array_of_generic_args_t  =
+{
+    #if (t.is_generic) tt = t.as_generic;
+    #else
+        #error ("???")
+    #endif
+
+    tt.args
+};
+
+
+//---------------------------------------------------------------------
+#define (_.number): (a: v_static_generic_arg_t) ~> uint(64)  =
+{
+    #if (a.is_number) aa = a.as_number;
+    #else
+        #error ("???")
+    #endif
+
+    aa.number
+};
+
+//---------------------------------------------------------------------
+#define (_.string): (a: v_static_generic_arg_t) ~> v_static_string_t  =
+{
+    #if (a.is_string) aa = a.as_string;
+    #else
+        #error ("???")
+    #endif
+
+    aa.string
+};
+
+//---------------------------------------------------------------------
+#define (_.quark): (a: v_static_generic_arg_t) ~> v_static_quark_t  =
+{
+    #if (a.is_quark) aa = a.as_quark;
+    #else
+        #error ("???")
+    #endif
+
+    aa.quark
+};
+
+//---------------------------------------------------------------------
+#define (_.type): (a: v_static_generic_arg_t) ~> v_static_type_t  =
+{
+    #if (a.is_type) aa = a.as_type;
+    #else
+        #error ("???")
+    #endif
+
+    aa.type
+};
+
+//---------------------------------------------------------------------
+#define (_.cons): (a: v_static_generic_arg_t) ~> v_static_quark_t  =
+{
+    #if (a.is_cons) aa = a.as_cons;
+    #else
+        #error ("???")
+    #endif
+
+    aa.cons
+};
+
+//---------------------------------------------------------------------
+#define (_.arg_count): (a: v_static_generic_arg_t) ~> unsigned  =
+{
+    #if (a.is_cons) aa = a.as_cons;
+    #else
+        #error ("???")
+    #endif
+
+    aa.arg_count
+};
+
+//---------------------------------------------------------------------
+#define (_.args): (a: v_static_generic_arg_t) ~> v_static_array_of_generic_args_t  =
+{
+    #if (a.is_cons) aa = t.as_cons;
+    #else
+        #error ("???")
+    #endif
+
+    aa.args
+};
+
+
