@@ -17,6 +17,10 @@ Type traits                                                    │type_traits.vo
 v_string_t                                                     │string.void
                                                                │
                                                                │
+---------------------------------------------------------------│
+Stack trace                                                    │stack_trace.void
+                                                               │
+                                                               │
 ───────────────────────────────────────────────────────────────│
 llvm-c                                                         │llvm-c/micros.dir
                                                                │

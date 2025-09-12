@@ -1,0 +1,333 @@
+//---------------------------------------------------------------------
+//- Copyright (C) 2020-2025 Dmitry Borodkin <borodkin.dn@gmail.com>
+//- SDPX-License-Identifier: LGPL-3.0-or-later
+//---------------------------------------------------------------------
+{ voidc_import("libvoidc.void"); }
+{
+    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_03);
+
+    voidc_make_header("stack_trace");
+}
+//---------------------------------------------------------------------
+{   #if (v_defined(NDEBUG)  ||  v_defined(_WIN32))
+
+        #if (v_defined(NDEBUG)) #warning ("Need debug mode...") #endif
+        #if (v_defined(_WIN32)) #warning ("Not implemented...") #endif
+
+        gr0 = v_peg_get_grammar();
+
+        v_assert(gr0);
+
+        grammar gr0 { parsers: unit = { mk_EOF() }; }           //- Sic !!!
+
+    #endif
+
+    //-----------------------------------------------------------------
+    voidc_clear_unit_buffer();
+}
+
+
+//---------------------------------------------------------------------
+{   gctx = v_target_get_global_ctx();
+    vctx = v_target_get_voidc_global_ctx();
+
+    v_target_set_global_ctx(vctx);
+
+    v_add_symbol("cur_gctx", v_target_global_ctx_t, gctx);
+
+    q_ref = v_reference_type(v_quark_t, 0);
+
+    q = v_quark_ptr_from_string;
+
+    v_add_symbol("pos_start_q", q_ref, q("pos_start"));
+    v_add_symbol("pos_end_q",   q_ref, q("pos_end"));
+
+    v_add_symbol("expr_call_q",       q_ref, q("expr_call"));
+    v_add_symbol("expr_identifier_q", q_ref, q("expr_identifier"));
+
+    //-----------------------------------------------------------------
+    v_set_hidden_flag(true);        //- Sic !!!
+}
+
+
+//=====================================================================
+{ voidc_unit_begin_module("stack_trace_module"); }
+
+
+//---------------------------------------------------------------------
+//- Trace parsing ...
+//---------------------------------------------------------------------
+my_trace_grammar_ctx_t = struct
+{
+    fun: *((*void, *v_std_any_t, *v_peg_grammar_t, v_quark_t, *v_peg_context_t) ~> void);
+    aux: *void;
+};
+
+//---------------------------------------------------------------------
+struct gr_trace_item_t
+{
+    path: v_util_list_t;
+
+    pos:  size_t;
+};
+
+(v_initialize(_)): (p: *gr_trace_item_t, n: size_t) ~> void
+{
+    for (i: &int := 0; i < n; ++i)
+    {
+        v_initialize(&p[i].path);
+
+        v_make_list_nil(&p[i].path);
+
+        p[i].pos := 0;
+    }
+}
+
+(v_terminate(_)):  (*gr_trace_item_t, size_t) ~> void  =  derive;
+(v_copy(_)):       (*gr_trace_item_t, *const gr_trace_item_t, size_t) ~> void  =  derive;
+
+grti_current: &gr_trace_item_t := {};
+grti_best:    &gr_trace_item_t := {};
+
+parsing_ok: &bool := false;
+
+//---------------------------------------------------------------------
+my_trace_grammar: (aux: *void, ret: *v_std_any_t, grm: *v_peg_grammar_t, q: v_quark_t, ctx: *v_peg_context_t) ~> void
+{
+    grti_saved: &gr_trace_item_t := {};
+
+    v_copy(&grti_saved, &grti_current);
+
+    ps = v_peg_get_position();
+
+    a: &v_std_any_t := {};
+
+    v: &struct { v_quark_t; size_t; } := { q, ps };
+
+    v_std_any_set_pointer(&a, (&v : *intptr_t[2]));
+
+    v_list_append(&grti_current.path, &grti_current.path, &a);
+
+    grti_current.pos := ps;
+
+    my_ctx = *(aux: *my_trace_grammar_ctx_t);
+
+    my_ctx.fun(my_ctx.aux, ret, grm, q, ctx);
+
+    parsing_ok := !v_empty(ret);
+
+    if (!parsing_ok)        //- Fail
+    {
+        if (grti_best.pos <= ps) v_copy(&grti_best, &grti_current);
+    }
+
+    v_copy(&grti_current, &grti_saved);
+}
+
+
+//---------------------------------------------------------------------
+//- Trace compilation ...
+//---------------------------------------------------------------------
+struct my_trace_visitor_item_t
+{
+    ast: *v_ast_base_t;
+
+    nxt: *my_trace_visitor_item_t;
+};
+
+my_trace_visitor_item_root: &*my_trace_visitor_item_t := 0;
+
+//---------------------------------------------------------------------
+my_trace_visitor_ctx_t = struct
+{
+    fun: *((*void, *voidc_visitor_t, *v_ast_base_t) ~> void);
+    aux: *void;
+};
+
+//---------------------------------------------------------------------
+my_trace_visitor: (aux: *void, vis: *voidc_visitor_t, ast: *v_ast_base_t) ~> void
+{
+    ctx = *(aux: *my_trace_visitor_ctx_t);
+
+    this: &my_trace_visitor_item_t := { ast, my_trace_visitor_item_root };
+
+    my_trace_visitor_item_root := &this;
+
+    ctx.fun(ctx.aux, vis, ast);
+
+    my_trace_visitor_item_root := this.nxt;
+}
+
+
+//---------------------------------------------------------------------
+//- Print ...
+//---------------------------------------------------------------------
+print_trace: () ~> void
+{
+    printf: (*const char, ...) ~> int;
+
+    item: &*my_trace_visitor_item_t := my_trace_visitor_item_root;
+
+    if (item)
+    {
+        printf("\nVisitor trace:\n");
+
+        filename = v_target_local_ctx_get_filename(v_target_get_local_ctx());
+
+        printf("%s\n", filename);
+
+        for (i: &int := 1; item; item := item->nxt, ++i)
+        {
+            qtag = v_ast_base_get_tag(item->ast);
+            stag = v_quark_to_string(qtag);
+
+            printf("  #%d: %s", i, stag);
+
+            pps = v_std_any_get_pointer(size_t, v_ast_get_property(item->ast, pos_start_q));
+            ppe = v_std_any_get_pointer(size_t, v_ast_get_property(item->ast, pos_end_q));
+
+            line:   &size_t := v_undef();
+            column: &size_t := v_undef();
+
+            if (pps)
+            {
+                line := v_peg_get_line_column(*pps, &column);
+
+                printf(": %zd:%zd", line, column);
+            }
+
+            if (ppe)
+            {
+                line := v_peg_get_line_column(*ppe, &column);
+
+                printf(" - %zd:%zd", line, column);
+            }
+
+            if (qtag == expr_call_q)
+            {
+                f = v_ast_expr_call_get_fun_expr((item->ast: *v_ast_expr_t));
+
+                if (v_ast_base_get_tag(f) == expr_identifier_q)
+                {
+                    s = v_ast_expr_identifier_get_name(f);
+
+                    printf(", %s", s);
+                }
+            }
+            else if (qtag == expr_identifier_q)
+            {
+                s = v_ast_expr_identifier_get_name((item->ast: *v_ast_expr_t));
+
+                printf(", %s", s);
+            }
+
+            printf("\n");
+        }
+
+        printf("\n");
+    }
+
+    if (!parsing_ok)
+    {
+        printf("\nParsing trace:\n");
+
+        filename = v_target_local_ctx_get_filename(v_target_get_local_ctx());
+
+        printf("%s\n", filename);
+
+        list = &grti_best.path;
+
+        s = v_list_get_size(list);
+
+        for (i: &int := 1; i <= s; ++i)
+        {
+            a = v_list_get_item(list, s-i);
+
+            item = *(v_std_any_get_pointer(intptr_t[2], a) : *struct { v_quark_t; size_t; });
+
+            tag = v_quark_to_string(item[0]);
+
+            printf("  #%d: %s", i, tag);
+
+            column: &size_t := v_undef();
+
+            line = v_peg_get_line_column(item[1], &column);
+
+            printf(": %zd:%zd\n", line, column);
+        }
+
+        printf("\n");
+    }
+}
+
+
+//---------------------------------------------------------------------
+ctx_g: &my_trace_grammar_ctx_t := v_undef();
+ctx_v: &my_trace_visitor_ctx_t := v_undef();
+
+enabled: &bool := false;
+
+//---------------------------------------------------------------------
+{ v_set_hidden_flag(false); }
+
+//---------------------------------------------------------------------
+//- Enable stack trace ...
+//---------------------------------------------------------------------
+voidc_enable_stack_trace: () ~> void
+{
+    if (enabled)  return;
+
+    enabled := true;
+
+    __sanitizer_set_death_callback: (*(() ~> void)) ~> void;
+
+    __sanitizer_set_death_callback(print_trace);
+
+
+    grm = v_peg_get_grammar();
+
+    ctx_g.fun := v_peg_grammar_get_parse_hook(grm, &ctx_g.aux);
+
+    v_peg_grammar_set_parse_hook(grm, grm, my_trace_grammar, &ctx_g);
+
+
+    vis = v_get_compiler();
+
+    ctx_v.fun := voidc_visitor_get_visit_hook(vis, &ctx_v.aux);
+
+    voidc_visitor_set_visit_hook(vis, vis, my_trace_visitor, &ctx_v);
+}
+
+//---------------------------------------------------------------------
+v_internal_enable_stack_trace_effort: (*void) ~> void
+{
+    gctx = v_target_get_global_ctx();
+    vctx = v_target_get_voidc_global_ctx();
+
+    v_target_set_global_ctx(vctx);
+
+    t = v_function_type(v_void_type(), 0, 0, false);
+
+    v_add_symbol("voidc_enable_stack_trace", t, 0);
+
+    v_target_set_global_ctx(gctx);
+}
+
+//---------------------------------------------------------------------
+{   if (v_find_symbol_value("v_internal_enable_stack_trace_effort"))
+    {
+        voidc_skip_object_file_load(1);
+    }
+}
+
+//=====================================================================
+{ voidc_unit_end_module(); }
+
+
+//---------------------------------------------------------------------
+{   v_target_set_global_ctx(cur_gctx);
+
+    v_export_effort(v_internal_enable_stack_trace_effort, 0);
+}
+
+
