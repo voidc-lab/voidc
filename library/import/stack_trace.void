@@ -39,6 +39,8 @@
 
     q = v_quark_ptr_from_string;
 
+    v_add_symbol("enabled_q", q_ref, q("voidc.internal.stack_trace_enabled"));
+
     v_add_symbol("pos_start_q", q_ref, q("pos_start"));
     v_add_symbol("pos_end_q",   q_ref, q("pos_end"));
 
@@ -275,27 +277,31 @@ enabled: &bool := false;
 //---------------------------------------------------------------------
 voidc_enable_stack_trace: () ~> void
 {
-    if (enabled)  return;
+    if (!enabled)
+    {
+        enabled := true;
 
-    enabled := true;
+        __sanitizer_set_death_callback: (*(() ~> void)) ~> void;
 
-    __sanitizer_set_death_callback: (*(() ~> void)) ~> void;
+        __sanitizer_set_death_callback(print_trace);
+    }
 
-    __sanitizer_set_death_callback(print_trace);
+    v_return_if(v_find_constant_q(enabled_q, 0, 0));
 
+    v_add_constant_q(enabled_q, v_void_type(), 0);
 
-    grm = v_peg_get_grammar();
+    if (grm = v_peg_get_grammar())          //- Sic !!!
+    {
+        ctx_g.fun := v_peg_grammar_get_parse_hook(grm, &ctx_g.aux);
 
-    ctx_g.fun := v_peg_grammar_get_parse_hook(grm, &ctx_g.aux);
+        v_peg_grammar_set_parse_hook(grm, grm, my_trace_grammar, &ctx_g);
 
-    v_peg_grammar_set_parse_hook(grm, grm, my_trace_grammar, &ctx_g);
+        vis = v_get_compiler();
 
+        ctx_v.fun := voidc_visitor_get_visit_hook(vis, &ctx_v.aux);
 
-    vis = v_get_compiler();
-
-    ctx_v.fun := voidc_visitor_get_visit_hook(vis, &ctx_v.aux);
-
-    voidc_visitor_set_visit_hook(vis, vis, my_trace_visitor, &ctx_v);
+        voidc_visitor_set_visit_hook(vis, vis, my_trace_visitor, &ctx_v);
+    }
 }
 
 //---------------------------------------------------------------------
