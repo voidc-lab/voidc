@@ -1254,7 +1254,7 @@ v_internal_type_traits_effort: (*void) ~> void
 //---------------------------------------------------------------------
 #define (_.args): (a: v_static_generic_arg_t) ~> v_static_array_of_generic_args_t  =
 {
-    #if (a.is_cons) aa = t.as_cons;
+    #if (a.is_cons) aa = a.as_cons;
     #else
         #error ("???")
     #endif
