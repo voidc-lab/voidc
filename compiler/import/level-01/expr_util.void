@@ -1101,6 +1101,13 @@
 
         if (t0_reference)
         {
+            if (v_icmp(LLVMIntEQ, et0, to_type))
+            {
+                //- &T -> T
+
+                v_break();          //- To default treatment...
+            }
+
             if (v_type_is_vector(et0))
             {
                 //- &V(T) ->> ...
@@ -1174,6 +1181,16 @@
         }
         else    //- type is NOT reference
         {
+            if (t1_reference)
+            {
+                if (v_icmp(LLVMIntEQ, type, et1))
+                {
+                    //- T -> &T
+
+                    v_break();          //- To default treatment...
+                }
+            }
+
             if (v_type_is_vector(type))
             {
                 if (t1_reference) ;
