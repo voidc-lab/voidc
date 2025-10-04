@@ -484,6 +484,7 @@
     //-------------------------------------------------------------
     ft = v_function_type(void, 0, 0, false);
     v_export_symbol_type("voidc_finish_unit_action", ft);
+    v_export_symbol_type("voidc_run_unit_action", ft);
     v_export_symbol_type("voidc_flush_unit_symbols", ft);
     v_export_symbol_type("v_clear_variables", ft);
     v_export_symbol_type("v_save_variables", ft);

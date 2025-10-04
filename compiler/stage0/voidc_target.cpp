@@ -2673,6 +2673,16 @@ voidc_finish_unit_action(void)
 
 //---------------------------------------------------------------------
 void
+voidc_run_unit_action(void)
+{
+    auto &gctx = *voidc_global_ctx_t::voidc;
+    auto &lctx = static_cast<voidc_local_ctx_t &>(*gctx.local_ctx);
+
+    lctx.run_unit_action();
+}
+
+//---------------------------------------------------------------------
+void
 voidc_set_unit_buffer(LLVMMemoryBufferRef membuf)
 {
     auto &gctx = *voidc_global_ctx_t::voidc;
