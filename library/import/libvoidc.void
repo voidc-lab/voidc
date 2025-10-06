@@ -121,11 +121,8 @@ voidc_make_header: (name: *const char) ~> void
         v_target_set_global_ctx(gctx);
 
         //----------------------------------------------------------
-        #if (v_defined(_WIN32))
-
-            v_add_constant("_WIN32", v_void_type(), 0);
-
-        #endif
+        #if (v_defined(NDEBUG))   v_add_constant("NDEBUG", v_void_type(), 0);   #endif
+        #if (v_defined(_WIN32))   v_add_constant("_WIN32", v_void_type(), 0);   #endif
 
         if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
     }
@@ -169,11 +166,8 @@ voidc_make_module: (modname: *const char) ~> void
     v_target_set_data_layout(dl);
 
     //----------------------------------------------------------
-    #if (v_defined(_WIN32))
-
-        v_add_constant("_WIN32", v_void_type(), 0);
-
-    #endif
+    #if (v_defined(NDEBUG))   v_add_constant("NDEBUG", v_void_type(), 0);   #endif
+    #if (v_defined(_WIN32))   v_add_constant("_WIN32", v_void_type(), 0);   #endif
 
     if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
 

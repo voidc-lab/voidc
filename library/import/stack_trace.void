@@ -9,22 +9,12 @@
     voidc_make_header("stack_trace");
 }
 //---------------------------------------------------------------------
-{   #if (v_defined(NDEBUG)  ||  v_defined(_WIN32))
+#if (v_defined(NDEBUG)  ||  v_defined(_WIN32))
 
-        #if (v_defined(NDEBUG)) #warning ("Need debug mode...") #endif
-        #if (v_defined(_WIN32)) #warning ("Not implemented...") #endif
+    #if (v_defined(NDEBUG)) #warning ("Need debug mode...") #endif
+    #if (v_defined(_WIN32)) #warning ("Not implemented...") #endif
 
-        gr0 = v_peg_get_grammar();
-
-        v_assert(gr0);
-
-        grammar gr0 { parsers: unit = { mk_EOF() }; }           //- Sic !!!
-
-    #endif
-
-    //-----------------------------------------------------------------
-    voidc_clear_unit_buffer();
-}
+#endif
 
 
 //---------------------------------------------------------------------
@@ -34,6 +24,8 @@
     v_target_set_global_ctx(vctx);
 
     v_add_symbol("cur_gctx", v_target_global_ctx_t, gctx);
+
+#if (!(v_defined(NDEBUG)  ||  v_defined(_WIN32)))
 
     q_ref = v_reference_type(v_quark_t, 0);
 
@@ -47,6 +39,8 @@
     v_add_symbol("expr_call_q",       q_ref, q("expr_call"));
     v_add_symbol("expr_identifier_q", q_ref, q("expr_identifier"));
 
+#endif
+
     //-----------------------------------------------------------------
     v_set_hidden_flag(true);        //- Sic !!!
 }
@@ -54,6 +48,9 @@
 
 //=====================================================================
 { voidc_unit_begin_module("stack_trace_module"); }
+
+//---------------------------------------------------------------------
+#if (!(v_defined(NDEBUG)  ||  v_defined(_WIN32)))
 
 
 //---------------------------------------------------------------------
@@ -270,6 +267,10 @@ ctx_v: &my_trace_visitor_ctx_t := v_undef();
 enabled: &bool := false;
 
 //---------------------------------------------------------------------
+#endif  //- #if (!(v_defined(NDEBUG)  ||  v_defined(_WIN32)))
+
+
+//---------------------------------------------------------------------
 { v_set_hidden_flag(false); }
 
 //---------------------------------------------------------------------
@@ -277,6 +278,8 @@ enabled: &bool := false;
 //---------------------------------------------------------------------
 voidc_enable_stack_trace: () ~> void
 {
+#if (!(v_defined(NDEBUG)  ||  v_defined(_WIN32)))
+
     if (!enabled)
     {
         enabled := true;
@@ -302,6 +305,8 @@ voidc_enable_stack_trace: () ~> void
 
         voidc_visitor_set_visit_hook(vis, vis, my_trace_visitor, &ctx_v);
     }
+
+#endif
 }
 
 //---------------------------------------------------------------------
