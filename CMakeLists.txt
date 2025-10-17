@@ -31,6 +31,10 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 
 
 #----------------------------------------------------------------------
+find_package(Immer REQUIRED CONFIG)
+
+
+#----------------------------------------------------------------------
 add_executable(voidc
     compiler/stage0/voidc_ast.cpp
     compiler/stage0/voidc_types.cpp
@@ -84,7 +88,7 @@ if (MINGW)
 
     endif()
 
-    target_compile_options(voidc PRIVATE ${MYFLAGS} -fcxx-exceptions -IC:/Tools/include -frtti)
+    target_compile_options(voidc PRIVATE ${MYFLAGS} -fcxx-exceptions -frtti)
 
 endif (MINGW)
 
