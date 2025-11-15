@@ -155,6 +155,11 @@ find_file_for_import(const fs::path &parent, const fs::path &filename)
 
                 if (fs::exists(p))
                 {
+                    if (fs::is_directory(p))
+                    {
+                        if (!fs::exists(p / "__import__.void")) continue;
+                    }
+
                     ret = p;
 
                     break;
