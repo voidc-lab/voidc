@@ -317,7 +317,7 @@ voidc_enable_literals: () ~> void
 
         big_integer = <[-+]? big_number> <integer_suffix?> !ident_cont  { mk_numeric_literal($1, $2, q_literal_integer) };
 
-        big_number = '0' ([xX] hex_digits / [bB] bin_digits / oct_digits)?
+        big_number = '0' ([xX] hex_digits / [bB] bin_digits / ('\''? [0-7])+)?
                    / nzdec_digits
                    ;
 
@@ -332,10 +332,6 @@ voidc_enable_literals: () ~> void
 
         bin_digit = [01];
 
-        oct_digits = oct_digit ('\''? oct_digit)*;
-
-        oct_digit = [0-7];
-
 
         integer_suffix = [iIuU] ([1-9] dec_digit*)?;
 
@@ -349,6 +345,7 @@ voidc_enable_literals: () ~> void
         real_number = dec_digits? '.' dec_digits dec_exponent?
                     / dec_digits  '.' dec_exponent?
                     / dec_digits dec_exponent
+                    / dec_digits &real_suffix
                     / '0' [xX] (hex_digits? '.' hex_digits / hex_digits '.'?) hex_exponent
                     ;
 
@@ -356,7 +353,7 @@ voidc_enable_literals: () ~> void
 
         hex_exponent = [pP] [-+]? dec_digits;
 
-        real_suffix = [fF] dec_digit*;
+        real_suffix = [fF] ([1-9] dec_digit*)?;
 
         prim += real_literal;
     }
