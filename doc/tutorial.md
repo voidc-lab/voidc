@@ -118,10 +118,10 @@ Then the language is *developed*, and this development is organized into so-call
 
 For the moment (Nov 2023) there are four levels:
 
-  - [Level 0.0](../compiler/import/level-00/README.md) - "Starter Language" and compiler API.
-  - [Level 0.1](../compiler/import/level-01/README.md) - Control flow, grammars, expressions and declarations/definitions.
-  - [Level 0.2](../compiler/import/level-02/README.md) - "C on steroids"...
-  - [Level 0.3](../compiler/import/level-03/README.md) - "C++ for poors"...
+  - [Level 0.0](../compiler/import/level-00) - "Starter Language" and compiler API.
+  - [Level 0.1](../compiler/import/level-01) - Control flow, grammars, expressions and declarations/definitions.
+  - [Level 0.2](../compiler/import/level-02) - "C on steroids"...
+  - [Level 0.3](../compiler/import/level-03) - "C++ for poors"...
 
 All these levels together form the so-called "Mainline Language".
 
