@@ -58,6 +58,6 @@ Subsystems in some logical order...
 
 ---
 
-See also: [../../stage0](../../stage0) ...
+See also: [../../stage0](../../stage0)
 
 

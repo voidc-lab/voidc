@@ -88,24 +88,26 @@
 
 //---------------------------------------------------------------------
 #define (_*_): (s: v_std_string_t, n) ~> v_std_string_t  =
-block
 {
-    ret = v_get_break_value();
+    tmp: &v_std_string_t := {};
 
     str = v_std_string_get(&s);
 
     for (i: &int := 0; i < n; ++i)
     {
-        v_std_string_append(&ret, str);
+        v_std_string_append(&tmp, str);
     }
+
+    tmp
 };
 
 #define (_.str): (s: *const char) ~> v_std_string_t  =
-block
 {
-    ret = v_get_break_value();
+    tmp: &v_std_string_t := {};
 
-    v_std_string_set(&ret, s);
+    v_std_string_set(&tmp, s);
+
+    tmp
 };
 
 
@@ -200,17 +202,17 @@ block
 #define instantiate_list_plus: (T)
 {'unit_defn_list'
 
-    (_+_): (a: my.list(T), b: my.list(T)) ~> my.list(T)
+    (_+_): (a: my.list(T), b: my.list(T)) ~> my.list(T)  =
     {
-        r = v_get_return_value();
-
-        v_copy(&r, &a);         //- ... aliasing?
+        tmp: &my.list(T) := a;
 
         for (i: &int := 0, n = b.size; i < n; ++i)
         {
-            r << b[i];
+            tmp << b[i];
         }
-    }
+
+        tmp
+    };
 
 'unit_defn_list'}
 
