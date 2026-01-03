@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------
-//- Copyright (C) 2020-2025 Dmitry Borodkin <borodkin.dn@gmail.com>
+//- Copyright (C) 2020-2026 Dmitry Borodkin <borodkin.dn@gmail.com>
 //- SDPX-License-Identifier: LGPL-3.0-or-later
 //---------------------------------------------------------------------
 {   voidc_guard_target("grammar.void  must be imported into the voidc target only!");
