@@ -1,6 +1,6 @@
-*.h linguist-language=C++
+*.h linguist-language=C++ gitlab-language=C++
 
-*.void linguist-language=C
+*.void linguist-language=C gitlab-language=C
 
-micros.dir linguist-documentation
+micros.dir linguist-documentation gitlab-language=text
 
