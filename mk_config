@@ -1,4 +1,4 @@
 #!/bin/sh
 
-cmake -S . -B build -G Ninja -Wno-dev $@
+cmake -S . -B build -Wno-dev $@
 
