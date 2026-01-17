@@ -21,8 +21,8 @@ shebang test                                                   │try_shebang.vo
 ───────────────────────────────────────────────────────────────│
 CMakeLists.txt                                                 │CMakeLists.txt
                                                                │
-    config  debug                                              │mk_config -G Ninja -DCMAKE_BUILD_TYPE=Debug
-    config  release                                            │mk_config -G Ninja -DCMAKE_BUILD_TYPE=Release
+    config  debug                                              │mk_config -DCMAKE_BUILD_TYPE=Debug
+    config  release                                            │mk_config -DCMAKE_BUILD_TYPE=Release
                                                                │
     build                                                      │mk_build
                                                                │
