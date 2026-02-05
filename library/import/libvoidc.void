@@ -9,6 +9,7 @@
     v_import("level-02");
 
     v_import("llvm-c/Core.void");
+    v_import("llvm-c/BitReader.void");
     v_import("llvm-c/TargetMachine.void");
     v_import("llvm-c/Transform/PassBuilder.void");
 }
@@ -35,6 +36,11 @@ export LIBVOIDC_LIMIT_LEVEL_03 = (0x03 : LLVMValueRef);
     v_add_symbol("level_limit_q", q_ref, q("libvoidc.level_limit"));
 
     v_add_symbol("enable_03_q", q_ref, q("v_enable_level_03"));
+
+    v_add_symbol("target_triple_q",  q_ref, q("libvoidc.target_triple"));
+    v_add_symbol("target_sysroot_q", q_ref, q("libvoidc.target_sysroot"));
+
+    v_add_symbol("bin_suffix_q", q_ref, q("voidc.import_bin_filename_suffix"));
 }
 
 
@@ -105,6 +111,8 @@ voidc_make_header: (name: *const char) ~> void
     {
         level = v_find_constant_value_q(level_limit_q);
 
+        is_win32 = v_find_constant("_WIN32", 0, 0);
+
         v_target_set_global_ctx(vctx);
 
         if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
@@ -121,8 +129,9 @@ voidc_make_header: (name: *const char) ~> void
         v_target_set_global_ctx(gctx);
 
         //----------------------------------------------------------
-        #if (v_defined(NDEBUG))   v_add_constant("NDEBUG", v_void_type(), 0);   #endif
-        #if (v_defined(_WIN32))   v_add_constant("_WIN32", v_void_type(), 0);   #endif
+        #if (v_defined(NDEBUG))   v_add_constant("NDEBUG", v_void_type(), 0);   #endif      //- ?!?!?!?!?
+
+        if (is_win32)   v_add_constant("_WIN32", v_void_type(), 0);
 
         if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
     }
@@ -138,6 +147,33 @@ voidc_make_header: (name: *const char) ~> void
 
 
 //---------------------------------------------------------------------
+strdup: (*const char) ~> *char;
+free:   (*void) ~> void;
+
+export
+voidc_set_target_triple: (triple: *const char) ~> void
+{
+    triple = strdup(triple);
+
+    v_add_constant_q(target_triple_q, void, (triple: LLVMValueRef));        //- Sic!
+
+    v_add_local_cleaner(free, triple);
+}
+
+//---------------------------------------------------------------------
+export
+voidc_set_target_sysroot: (sysroot: *const char) ~> void
+{
+    v_assert(v_find_constant_value_q(target_triple_q));
+
+    sysroot = strdup(sysroot);
+
+    v_add_constant_q(target_sysroot_q, void, (sysroot: LLVMValueRef));      //- Sic!
+
+    v_add_local_cleaner(free, sysroot);
+}
+
+//---------------------------------------------------------------------
 export
 voidc_make_module: (modname: *const char) ~> void
 {
@@ -147,27 +183,158 @@ voidc_make_module: (modname: *const char) ~> void
     my_enable_mainline();
 
     //----------------------------------------------------------
+    triple: &*const char := 0;
+
+    sizes: &size_t[3] := undef;
+
+    is_win32: &bool := undef;
+
+    data_layout: &LLVMTargetDataRef := undef;
+
+    //----------------------------------------------------------
+    if (triple := (v_find_constant_value_q(target_triple_q) : *const char))
+    {
+        //- Cross-compilation...
+
+        struct FILE;
+
+        popen:   (*const char, *const char) ~> *FILE;
+        pclose:  (*FILE) ~> int;
+        fprintf: (*FILE, *const char, ...) ~> int;
+        fscanf:  (*FILE, *const char, ...) ~> int;
+        sprintf: (*char, *const char, ...) ~> int;
+
+        //------------------------------------------------------
+        buflen = 1024;
+
+        buffer = v_malloc(char, buflen);
+        defer v_free(buffer);
+
+        {   p = popen("mktemp", "r");
+            defer pclose(p);
+
+            fscanf(p, "%500s", buffer);
+        }
+
+        #if (v_defined(_WIN32))
+        {
+            cmd = buffer + 512;
+
+            sprintf(cmd, "cygpath -m %s", buffer);
+
+            p = popen(cmd, "r");
+            defer pclose(p);
+
+            fscanf(p, "%1000s", buffer);
+        }
+        #endif
+
+        //------------------------------------------------------
+        {   p = popen("bash", "w");
+            defer pclose(p);
+
+            fprintf(p, "clang -target %s", triple);
+
+//            if (sysroot = (v_find_constant_value_q(target_sysroot_q) : *const char))
+//            {
+//                fprintf(p, " --sysroot=%s", sysroot);
+//            }
+
+            fprintf(p, " -emit-llvm -c -o %s -x c", buffer);
+
+            source_str =
+            """
+            int my_size_int  = sizeof(int);
+            int my_size_long = sizeof(long);
+            int my_size_ptr  = sizeof(void *);
+
+            #ifdef _WIN32
+            int my__WIN32 = 1;
+            #else
+            int my__WIN32 = 0;
+            #endif
+            """;
+
+            fprintf(p, " - <<HEREDOC\n%s\nHEREDOC\n", source_str);
+        }
+
+        //------------------------------------------------------
+        {   mb: &LLVMMemoryBufferRef := 0;
+            defer LLVMDisposeMemoryBuffer(mb);
+
+            LLVMCreateMemoryBufferWithContentsOfFile(buffer, &mb, 0);
+
+            mod: &LLVMModuleRef := undef;
+
+            LLVMParseBitcodeInContext2(v_target_get_llvm_ctx(), mb, &mod);
+
+            GN = LLVMGetNamedGlobal;
+            GI = LLVMGetInitializer;
+            ZV = LLVMConstIntGetZExtValue;
+
+            sizes[0] := (ZV(GI(GN(mod, "my_size_int")))  : size_t);
+            sizes[1] := (ZV(GI(GN(mod, "my_size_long"))) : size_t);
+            sizes[2] := (ZV(GI(GN(mod, "my_size_ptr")))  : size_t);
+
+            is_win32 := (ZV(GI(GN(mod, "my__WIN32"))) != 0);
+
+            data_layout := LLVMGetModuleDataLayout(mod);
+        }
+
+        //------------------------------------------------------
+        {   p = popen("bash", "w");
+            defer pclose(p);
+
+            fprintf(p, "rm %s\n", buffer);
+        }
+    }
+    else
+    {
+        //- Host-compilation...
+
+        sizes[0] := int.sizeof;
+        sizes[1] := long.sizeof;
+        sizes[2] := intptr_t.sizeof;
+
+        is_win32 := v_defined(_WIN32);
+
+        data_layout := v_target_get_voidc_data_layout();
+    }
+
+    //----------------------------------------------------------
     filename = v_target_local_ctx_get_filename(v_target_get_voidc_local_ctx());
 
-    gctx = v_target_create_global_ctx(int.sizeof, long.sizeof, intptr_t.sizeof);
+    gctx = v_target_create_global_ctx(sizes[0], sizes[1], sizes[2]);
     lctx = v_target_create_local_ctx(filename, gctx);
 
-    suf_q = v_quark_from_string("voidc.import_bin_filename_suffix");
+    suffix: &*const char := "c-aot";        //- ?
 
-    v_target_global_ctx_add_constant_value(gctx, suf_q, ("c-aot": LLVMValueRef));       //- ?
+    if (triple)
+    {
+        sstr = v_make_object(v_std_string_t);
+
+        v_std_string_set(sstr, "c-");
+
+        v_std_string_append(sstr, triple);
+
+        suffix := strdup(v_std_string_get(sstr));
+
+        v_add_local_cleaner(free, suffix);
+    }
+
+    v_target_global_ctx_add_constant_value(gctx, bin_suffix_q, (suffix: LLVMValueRef));
 
     level = v_find_constant_value_q(level_limit_q);
 
     v_target_set_global_ctx(gctx);
 
     //----------------------------------------------------------
-    dl = v_target_get_voidc_data_layout();
-
-    v_target_set_data_layout(dl);
+    v_target_set_data_layout(data_layout);
 
     //----------------------------------------------------------
-    #if (v_defined(NDEBUG))   v_add_constant("NDEBUG", v_void_type(), 0);   #endif
-    #if (v_defined(_WIN32))   v_add_constant("_WIN32", v_void_type(), 0);   #endif
+    #if (v_defined(NDEBUG))   v_add_constant("NDEBUG", v_void_type(), 0);   #endif      //- ?!?!?!?!?!?
+
+    if (is_win32)   v_add_constant("_WIN32", v_void_type(), 0);
 
     if (level)  v_add_constant_q(level_limit_q, v_void_type(), level);
 
@@ -197,14 +364,46 @@ voidc_emit_module: (filename: *const char) ~> void
     v_verify_module(module);
 
     //----------------------------------------------------------
-    triple = LLVMGetDefaultTargetTriple();
+    gctx = v_target_get_global_ctx();
+    vctx = v_target_get_voidc_global_ctx();
 
+    v_target_set_global_ctx(vctx);
+
+    //----------------------------------------------------------
+    triple: &*const char := 0;
+
+    cpu_name:     &*const char := undef;
+    cpu_features: &*const char := undef;
+
+    is_host: &bool := undef;
+
+    if (triple := (v_find_constant_value_q(target_triple_q) : *const char))
+    {
+        //- Cross-compilation...
+
+        cpu_name     := "generic";          //- ?
+        cpu_features := "";                 //- ?
+
+        is_host := false;
+    }
+    else
+    {
+        //- Host-compilation...
+
+        triple := LLVMGetDefaultTargetTriple();
+
+        cpu_name     := LLVMGetHostCPUName();
+        cpu_features := LLVMGetHostCPUFeatures();
+
+        is_host := true;
+    }
+
+    v_target_set_global_ctx(gctx);
+
+    //----------------------------------------------------------
     tr: &LLVMTargetRef := undef;
 
     LLVMGetTargetFromTriple(triple, &tr, 0);
-
-    cpu_name     = LLVMGetHostCPUName();
-    cpu_features = LLVMGetHostCPUFeatures();
 
     target_machine =
         LLVMCreateTargetMachine
@@ -239,9 +438,13 @@ voidc_emit_module: (filename: *const char) ~> void
     LLVMSetTarget(module, triple);
 
     LLVMDisposeTargetData(dl);
-    LLVMDisposeMessage(cpu_features);
-    LLVMDisposeMessage(cpu_name);
-    LLVMDisposeMessage(triple);
+
+    if (is_host)
+    {
+        LLVMDisposeMessage(cpu_features);
+        LLVMDisposeMessage(cpu_name);
+        LLVMDisposeMessage(triple);
+    }
 
     //----------------------------------------------------------
     {   opts = LLVMCreatePassBuilderOptions();
@@ -276,9 +479,8 @@ voidc_emit_module: (filename: *const char) ~> void
 
     //----------------------------------------------------------
     lctx = v_target_get_local_ctx();
-    gctx = v_target_get_global_ctx();
 
-    v_target_set_global_ctx(v_target_get_voidc_global_ctx());
+    v_target_set_global_ctx(vctx);
 
     v_target_destroy_local_ctx(lctx);
     v_target_destroy_global_ctx(gctx);

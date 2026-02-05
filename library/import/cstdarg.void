@@ -26,6 +26,9 @@
 
     v_add_symbol("q_static_type_t", q_ref, q("v_static_type_t"));
 
+    v_add_symbol("target_triple_q",  q_ref, q("libvoidc.target_triple"));
+    v_add_symbol("target_sysroot_q", q_ref, q("libvoidc.target_sysroot"));
+
     v_target_set_global_ctx(gctx);
 }
 
@@ -33,6 +36,7 @@
 {   v_target_set_global_ctx(v_target_get_voidc_global_ctx());
 
     v_import("llvm-c/Core.void");
+    v_import("llvm-c/BitReader.void");
 
     v_set_export_flag(false);
 
@@ -43,15 +47,11 @@
 //---------------------------------------------------------------------
 {   struct FILE;
 
-    popen: (command: *const char, prop: *const char) ~> *FILE;
-
-    pclose: (*FILE) ~> int;
-
-    fprintf: (stream: *FILE, format: *const char, ...) ~> int;
-
-    fscanf: (stream: *FILE, format: *const char, ...) ~> int;
-
-    sprintf: (str: *char, format: *const char, ...) ~> int;
+    popen:   (*const char, *const char) ~> *FILE;
+    pclose:  (*FILE) ~> int;
+    fprintf: (*FILE, *const char, ...) ~> int;
+    fscanf:  (*FILE, *const char, ...) ~> int;
+    sprintf: (*char, *const char, ...) ~> int;
 
     //-----------------------------------------------------------------
     buflen = 1024;
@@ -82,7 +82,19 @@
     {   p = popen("bash", "w");
         defer pclose(p);
 
-        fprintf(p, "clang -x c -c -o %s", buffer);
+        fprintf(p, "clang");
+
+        if (triple = (v_find_constant_value_q(target_triple_q) : *const char))
+        {
+            fprintf(p, " -target %s", triple);
+
+            if (sysroot = (v_find_constant_value_q(target_sysroot_q) : *const char))
+            {
+                fprintf(p, " --sysroot=%s", sysroot);
+            }
+        }
+
+        fprintf(p, " -emit-llvm -c -o %s -x c", buffer);
 
         source_str =
         """
@@ -100,7 +112,22 @@
 
         LLVMCreateMemoryBufferWithContentsOfFile(buffer, &mb, 0);
 
-        voidc_add_local_object_file_to_jit(mb);
+        mod: &LLVMModuleRef := undef;
+
+        LLVMParseBitcodeInContext2(v_target_get_llvm_ctx(), mb, &mod);
+
+        GN = LLVMGetNamedGlobal;
+        GI = LLVMGetInitializer;
+        ZV = LLVMConstIntGetZExtValue;
+
+        va_size = (ZV(GI(GN(mod, "my_va_list_size"))) : int);
+
+        v_target_set_global_ctx(cur_gctx);
+
+        _int = v_find_type_q(int_q);
+        int_ = v_type_get_llvm_type(_int);
+
+        v_add_constant("va_list_size", _int, LLVMConstInt(int_, va_size, 0));
     }
 
     //-----------------------------------------------------------------
@@ -109,20 +136,6 @@
 
         fprintf(p, "rm %s\n", buffer);
     }
-
-    //-----------------------------------------------------------------
-    voidc_clear_unit_buffer();
-}
-
-//---------------------------------------------------------------------
-{   my_va_list_size: &int;
-
-    v_target_set_global_ctx(cur_gctx);
-
-    _int = v_find_type_q(int_q);
-    int_ = v_type_get_llvm_type(_int);
-
-    v_add_constant("va_list_size", _int, LLVMConstInt(int_, my_va_list_size, 0));
 
     //-----------------------------------------------------------------
     voidc_clear_unit_buffer();
