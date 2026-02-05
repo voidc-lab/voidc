@@ -156,6 +156,7 @@ voidc_make_header: (name: *const char) ~> void
 
 free:   (*void) ~> void;
 
+//---------------------------------------------------------------------
 export
 voidc_set_target_triple: (triple: *const char) ~> void
 {
