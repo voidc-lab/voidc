@@ -147,7 +147,13 @@ voidc_make_header: (name: *const char) ~> void
 
 
 //---------------------------------------------------------------------
-strdup: (*const char) ~> *char;
+#if (v_defined(_WIN32))
+  _strdup: (*const char) ~> *char;
+  alwaysinline strdup: (s: *const char) ~> *char  =  _strdup(s);
+#else
+  strdup: (*const char) ~> *char;
+#endif
+
 free:   (*void) ~> void;
 
 export
