@@ -1068,7 +1068,9 @@ my_compile_defn_list_unit: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
         v_std_string_append_number(&sstr, global_module_number++);
 
-        module := LLVMModuleCreateWithName(v_std_string_get(&sstr));
+        llvm_ctx = v_target_get_voidc_llvm_ctx();
+
+        module := LLVMModuleCreateWithNameInContext(v_std_string_get(&sstr), llvm_ctx);
 
         filename = v_target_local_ctx_get_filename(v_target_get_voidc_local_ctx());
 

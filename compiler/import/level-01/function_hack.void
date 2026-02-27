@@ -55,7 +55,8 @@
 }
 
 //---------------------------------------------------------------------
-{   module = LLVMModuleCreateWithName("function_hack_module_N1");
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("function_hack_module_N1", llvm_ctx);
 
     v_set_module(module);
 
@@ -970,7 +971,8 @@
 //---------------------------------------------------------------------
 //- Function Hack module #2
 //---------------------------------------------------------------------
-{   module = LLVMModuleCreateWithName("function_hack_module_N2");
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("function_hack_module_N2", llvm_ctx);
 
     v_set_module(module);
 
@@ -1012,8 +1014,8 @@
 
     p0 = LLVMGetParam(f, 0);    v_add_variable("name", char_ptr, p0);
 }
-{
-    module = LLVMModuleCreateWithName(name);
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext(name, llvm_ctx);
 
     v_set_module(module);
 

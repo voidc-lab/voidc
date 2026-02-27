@@ -1210,7 +1210,9 @@
     {
         //- voidc_guard_target(...);
 
-        defn_module := LLVMModuleCreateWithName("voidc_definitions_internal_defn_module");
+        llvm_ctx = v_target_get_voidc_llvm_ctx();
+
+        defn_module := LLVMModuleCreateWithNameInContext("voidc_definitions_internal_defn_module", llvm_ctx);
     }
 
     v_return(defn_module);

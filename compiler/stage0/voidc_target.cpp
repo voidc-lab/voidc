@@ -1764,7 +1764,7 @@ VOIDC_DLLEXPORT_END
 
 //---------------------------------------------------------------------
 voidc_global_ctx_t::voidc_global_ctx_t()
-  : voidc_template_ctx_t(LLVMGetGlobalContext(), sizeof(int), sizeof(long), sizeof(intptr_t)),
+  : voidc_template_ctx_t(LLVMContextCreate(), sizeof(int), sizeof(long), sizeof(intptr_t)),
     type_type(make_struct_type(v_quark_from_string("v_type_t"))),
     type_ptr_type(make_pointer_type(type_type, 0))
 {
@@ -1825,6 +1825,11 @@ voidc_global_ctx_t::voidc_global_ctx_t()
     decls.constants_insert({q("NDEBUG"), void_type});           //- Sic!!!
 
 #endif
+}
+
+voidc_global_ctx_t::~voidc_global_ctx_t()
+{
+    LLVMContextDispose(llvm_ctx);
 }
 
 
@@ -2760,7 +2765,7 @@ voidc_compile_load_object_file_to_jit(LLVMMemoryBufferRef membuf, bool is_local,
     auto membuf_ptr  = LLVMGetBufferStart(membuf);
     auto membuf_size = LLVMGetBufferSize(membuf);
 
-    auto membuf_const = LLVMConstString(membuf_ptr, membuf_size, 1);
+    auto membuf_const = LLVMConstStringInContext2(gctx.llvm_ctx, membuf_ptr, membuf_size, 1);
     auto membuf_const_type = LLVMTypeOf(membuf_const);
 
     auto membuf_glob = LLVMAddGlobal(lctx.module, membuf_const_type, "membuf_g");

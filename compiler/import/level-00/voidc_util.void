@@ -196,7 +196,8 @@
 
 
 //---------------------------------------------------------------------
-{   module = LLVMModuleCreateWithName("voidc_util_void_module_N1");
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("voidc_util_void_module_N1", llvm_ctx);
 
     v_set_module(module);       //- Sic!!!
 
@@ -726,7 +727,8 @@
 
 
 //---------------------------------------------------------------------
-{   module = LLVMModuleCreateWithName("voidc_util_void_module_N2");
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("voidc_util_void_module_N2", llvm_ctx);
 
     v_set_module(module);
 

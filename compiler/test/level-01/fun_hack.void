@@ -52,7 +52,7 @@
 //- ...
 //---------------------------------------------------------------------
 {
-    module = LLVMModuleCreateWithName("hello_mod");
+    module = LLVMModuleCreateWithNameInContext("hello_mod", v_target_get_voidc_llvm_ctx());
 
     v_set_module(module);       //- Sic!
 

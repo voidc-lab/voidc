@@ -448,7 +448,7 @@ class voidc_global_ctx_t : public voidc_global_template_ctx_t
 {
 public:
     voidc_global_ctx_t();
-    ~voidc_global_ctx_t() = default;
+    ~voidc_global_ctx_t() override;
 
 public:
     static void static_initialize(void);
