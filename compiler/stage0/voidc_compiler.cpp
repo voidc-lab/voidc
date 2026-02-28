@@ -305,7 +305,7 @@ void compile_expr_string(void *, const visitor_t *vis, const ast_base_t *self)
 
     auto len = str.size();
 
-    auto val = LLVMConstStringInContext(gctx.llvm_ctx, str.c_str(), unsigned(len), 0);
+    auto val = LLVMConstStringInContext2(gctx.llvm_ctx, str.c_str(), len, 0);
 
     auto typ = gctx.make_array_type(gctx.char_type, len+1);
 

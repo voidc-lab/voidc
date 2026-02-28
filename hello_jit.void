@@ -6,7 +6,8 @@
     v_import("printf.void");
 }
 
-{   module = LLVMModuleCreateWithNameInContext("hello_mod", v_target_get_voidc_llvm_ctx());
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("hello_mod", llvm_ctx);
 
     builder = v_target_get_voidc_builder();
 
@@ -14,7 +15,7 @@
     hello_ft_ = v_type_get_llvm_type(hello_ft);
     hello_f   = LLVMAddFunction(module, "hello", hello_ft_);
 
-    entry = LLVMAppendBasicBlock(hello_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, hello_f, "entry");
 
     LLVMPositionBuilderAtEnd(builder, entry);
 

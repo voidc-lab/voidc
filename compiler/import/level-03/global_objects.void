@@ -1226,6 +1226,8 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
                 ev := new LLVMValueRef[list_size];
             }
 
+            llvm_ctx = v_target_get_voidc_llvm_ctx();
+
             if (i == 0)     //- initializers?
             {
                 ev = ev + (N - list_size);
@@ -1236,7 +1238,7 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
                     val[1] := (v_std_any_get_value(intptr_t, any) : LLVMValueRef);
 
-                    elt_v = LLVMConstStruct(val, 3, 0);
+                    elt_v = LLVMConstStructInContext(llvm_ctx, val, 3, 0);
 
                     ev[j] := elt_v;
                 }
@@ -1251,7 +1253,7 @@ my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
                     val[1] := (v_std_any_get_value(intptr_t, any) : LLVMValueRef);
 
-                    elt_v = LLVMConstStruct(val, 3, 0);
+                    elt_v = LLVMConstStructInContext(llvm_ctx, val, 3, 0);
 
                     ev[-j] := elt_v;
                 }

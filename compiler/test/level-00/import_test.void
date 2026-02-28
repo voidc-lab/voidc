@@ -10,7 +10,9 @@
 }
 
 {
-    t = LLVMDoubleType();
+    llvm_ctx = LLVMContextCreate();
+
+    t = LLVMDoubleTypeInContext(llvm_ctx);
 
     v = LLVMConstRealOfString(t, "3.14159265358979323846264338327950288419716939937510582");
 
@@ -27,6 +29,8 @@
     e = v_load(err);
 
     printf("%.99g (%d)\n", d, e);
+
+    LLVMContextDispose(llvm_ctx);
 }
 
 

@@ -246,7 +246,7 @@
     fun_name = LLVMGetParam(obtain_fun_f, 0);
     ft_p     = LLVMGetParam(obtain_fun_f, 1);
 
-    entry = LLVMAppendBasicBlock(obtain_fun_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -284,8 +284,8 @@
     ok_ft_p = LLVMBuildIsNotNull(builder, ft_p, "ok_ft_p");
 
 
-    then_b0 = LLVMAppendBasicBlock(obtain_fun_f, "then_b0");
-    else_b0 = LLVMAppendBasicBlock(obtain_fun_f, "else_b0");
+    then_b0 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "then_b0");
+    else_b0 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "else_b0");
 
     LLVMBuildCondBr(builder, ok_fun_value, then_b0, else_b0);           //- if (fun_value) ...
 
@@ -293,7 +293,7 @@
     LLVMPositionBuilderAtEnd(builder, then_b0);
 
 
-    then_b1 = LLVMAppendBasicBlock(obtain_fun_f, "then_b1");
+    then_b1 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "then_b1");
 
     LLVMBuildCondBr(builder, ok_ft_p, else_b0, then_b1);                //- if (!ft_p) ...
 
@@ -327,8 +327,8 @@
     fun_type_ = LLVMBuildCall2(builder, get_llvm_type_ft_, get_llvm_type_f, val0, 1, "fun_type_");
 
 
-    then_b2 = LLVMAppendBasicBlock(obtain_fun_f, "then_b2");
-    else_b2 = LLVMAppendBasicBlock(obtain_fun_f, "else_b2");
+    then_b2 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "then_b2");
+    else_b2 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "else_b2");
 
     LLVMBuildCondBr(builder, ok_ft_p, then_b2, else_b2);                //- if (ft_p) ...
 
@@ -345,7 +345,7 @@
     LLVMPositionBuilderAtEnd(builder, else_b2);
 
 
-    else_b3 = LLVMAppendBasicBlock(obtain_fun_f, "else_b3");
+    else_b3 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_fun_f, "else_b3");
 
     LLVMBuildCondBr(builder, ok_fun_value, then_b1, else_b3);           //- if (fun_value) ...
 
@@ -422,7 +422,7 @@
     var_name = LLVMGetParam(obtain_var_f, 0);
     vt_p     = LLVMGetParam(obtain_var_f, 1);
 
-    entry = LLVMAppendBasicBlock(obtain_var_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -449,8 +449,8 @@
     ok_vt_p = LLVMBuildIsNotNull(builder, vt_p, "ok_vt_p");
 
 
-    then_b0 = LLVMAppendBasicBlock(obtain_var_f, "then_b0");
-    else_b0 = LLVMAppendBasicBlock(obtain_var_f, "else_b0");
+    then_b0 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "then_b0");
+    else_b0 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "else_b0");
 
     LLVMBuildCondBr(builder, ok_var_value, then_b0, else_b0);           //- if (var_value) ...
 
@@ -458,7 +458,7 @@
     LLVMPositionBuilderAtEnd(builder, then_b0);
 
 
-    then_b1 = LLVMAppendBasicBlock(obtain_var_f, "then_b1");
+    then_b1 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "then_b1");
 
     LLVMBuildCondBr(builder, ok_vt_p, else_b0, then_b1);                //- if (!vt_p) ...
 
@@ -492,9 +492,9 @@
     is_ref = LLVMBuildCall2(builder, type_is_ref_ft_, type_is_ref_f, val0, 1, "is_ref");
 
 
-    then_b2 = LLVMAppendBasicBlock(obtain_var_f, "then_b2");
-    else_b2 = LLVMAppendBasicBlock(obtain_var_f, "else_b2");
-    cont_b2 = LLVMAppendBasicBlock(obtain_var_f, "cont_b2");
+    then_b2 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "then_b2");
+    else_b2 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "else_b2");
+    cont_b2 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "cont_b2");
 
     LLVMBuildCondBr(builder, is_ref, then_b2, else_b2);
 
@@ -533,8 +533,8 @@
     var_type_ = LLVMBuildCall2(builder, get_llvm_type_ft_, get_llvm_type_f, val0, 1, "var_type_");
 
 
-    then_b3 = LLVMAppendBasicBlock(obtain_var_f, "then_b3");
-    else_b3 = LLVMAppendBasicBlock(obtain_var_f, "else_b3");
+    then_b3 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "then_b3");
+    else_b3 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "else_b3");
 
     LLVMBuildCondBr(builder, ok_vt_p, then_b3, else_b3);                //- if (vt_p) ...
 
@@ -551,7 +551,7 @@
     LLVMPositionBuilderAtEnd(builder, else_b3);
 
 
-    else_b4 = LLVMAppendBasicBlock(obtain_var_f, "else_b4");
+    else_b4 = LLVMAppendBasicBlockInContext(llvm_ctx, obtain_var_f, "else_b4");
 
     LLVMBuildCondBr(builder, ok_var_value, then_b1, else_b4);           //- if (var_value) ...
 
@@ -789,7 +789,7 @@
     fun_name   = LLVMGetParam(util_reg_helper_f, 2);
     fun_type   = LLVMGetParam(util_reg_helper_f, 3);
 
-    entry = LLVMAppendBasicBlock(util_reg_helper_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, util_reg_helper_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -849,7 +849,7 @@
     fun_name   = LLVMGetParam(init_term_helper_f, 1);
     q_dict     = LLVMGetParam(init_term_helper_f, 2);
 
-    entry = LLVMAppendBasicBlock(init_term_helper_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, init_term_helper_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -914,7 +914,7 @@
     val_t_type = LLVMGetParam(init_f, 0);
     fun_name   = LLVMGetParam(init_f, 1);
 
-    entry = LLVMAppendBasicBlock(init_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, init_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -944,7 +944,7 @@
     val_t_type = LLVMGetParam(term_f, 0);
     fun_name   = LLVMGetParam(term_f, 1);
 
-    entry = LLVMAppendBasicBlock(term_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, term_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -989,7 +989,7 @@
     fun_name   = LLVMGetParam(copy_move_helper_f, 1);
     q_dict     = LLVMGetParam(copy_move_helper_f, 2);
 
-    entry = LLVMAppendBasicBlock(copy_move_helper_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, copy_move_helper_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1049,7 +1049,7 @@
     val_t_type = LLVMGetParam(copy_f, 0);
     fun_name   = LLVMGetParam(copy_f, 1);
 
-    entry = LLVMAppendBasicBlock(copy_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, copy_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1079,7 +1079,7 @@
     val_t_type = LLVMGetParam(move_f, 0);
     fun_name   = LLVMGetParam(move_f, 1);
 
-    entry = LLVMAppendBasicBlock(move_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, move_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1117,7 +1117,7 @@
     val_t_type = LLVMGetParam(empty_f, 0);
     fun_name   = LLVMGetParam(empty_f, 1);
 
-    entry = LLVMAppendBasicBlock(empty_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, empty_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1223,7 +1223,7 @@
     prefix     = LLVMGetParam(itcme_f, 1);
     typename   = LLVMGetParam(itcme_f, 2);
 
-    entry = LLVMAppendBasicBlock(itcme_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, itcme_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1389,7 +1389,7 @@
     val_t_type = LLVMGetParam(get_value_f, 0);
     fun_name   = LLVMGetParam(get_value_f, 1);
 
-    entry = LLVMAppendBasicBlock(get_value_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, get_value_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1444,7 +1444,7 @@
     val_t_type = LLVMGetParam(get_pointer_f, 0);
     fun_name   = LLVMGetParam(get_pointer_f, 1);
 
-    entry = LLVMAppendBasicBlock(get_pointer_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, get_pointer_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1503,7 +1503,7 @@
     val_t_type = LLVMGetParam(set_value_f, 0);
     fun_name   = LLVMGetParam(set_value_f, 1);
 
-    entry = LLVMAppendBasicBlock(set_value_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, set_value_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1564,7 +1564,7 @@
     val_t_type = LLVMGetParam(set_pointer_f, 0);
     fun_name   = LLVMGetParam(set_pointer_f, 1);
 
-    entry = LLVMAppendBasicBlock(set_pointer_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, set_pointer_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1644,7 +1644,7 @@
     prefix     = LLVMGetParam(gs_value_f, 1);
     typename   = LLVMGetParam(gs_value_f, 2);
 
-    entry = LLVMAppendBasicBlock(gs_value_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, gs_value_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1741,7 +1741,7 @@
     prefix     = LLVMGetParam(gs_pointer_f, 1);
     typename   = LLVMGetParam(gs_pointer_f, 2);
 
-    entry = LLVMAppendBasicBlock(gs_pointer_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, gs_pointer_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1816,7 +1816,7 @@
     prefix     = LLVMGetParam(gs_vp_f, 1);
     typename   = LLVMGetParam(gs_vp_f, 2);
 
-    entry = LLVMAppendBasicBlock(gs_vp_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, gs_vp_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
     v_store(val_t_type, val0);
@@ -1845,7 +1845,7 @@
     prefix     = LLVMGetParam(itcmep_f, 1);
     typename   = LLVMGetParam(itcmep_f, 2);
 
-    entry = LLVMAppendBasicBlock(itcmep_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, itcmep_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
     v_store(val_t_type, val0);
@@ -1873,7 +1873,7 @@
     fun_name   = LLVMGetParam(make_list_nil_f, 1);
     fun_type   = LLVMGetParam(make_list_nil_f, 2);
 
-    entry = LLVMAppendBasicBlock(make_list_nil_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, make_list_nil_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1904,7 +1904,7 @@
     fun_name   = LLVMGetParam(make_list_f, 1);
     fun_type   = LLVMGetParam(make_list_f, 2);
 
-    entry = LLVMAppendBasicBlock(make_list_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, make_list_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -1951,7 +1951,7 @@
     fun_name   = LLVMGetParam(list_append_f, 1);
     item_type  = LLVMGetParam(list_append_f, 2);
 
-    entry = LLVMAppendBasicBlock(list_append_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_append_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2034,7 +2034,7 @@
     val_t_type = LLVMGetParam(list_get_size_f, 0);
     fun_name   = LLVMGetParam(list_get_size_f, 1);
 
-    entry = LLVMAppendBasicBlock(list_get_size_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_get_size_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2097,7 +2097,7 @@
     fun_name   = LLVMGetParam(list_get_item_f, 1);
     item_type  = LLVMGetParam(list_get_item_f, 2);
 
-    entry = LLVMAppendBasicBlock(list_get_item_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_get_item_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2193,7 +2193,7 @@
     prefix     = LLVMGetParam(list_agsgi_f, 2);
     typename   = LLVMGetParam(list_agsgi_f, 3);
 
-    entry = LLVMAppendBasicBlock(list_agsgi_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_agsgi_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2303,7 +2303,7 @@
     fun_name   = LLVMGetParam(list_concat_f, 1);
     item_type  = LLVMGetParam(list_concat_f, 2);
 
-    entry = LLVMAppendBasicBlock(list_concat_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_concat_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2384,7 +2384,7 @@
     fun_name   = LLVMGetParam(list_insert_f, 1);
     item_type  = LLVMGetParam(list_insert_f, 2);
 
-    entry = LLVMAppendBasicBlock(list_insert_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_insert_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2479,7 +2479,7 @@
     val_t_type = LLVMGetParam(list_erase_f, 0);
     fun_name   = LLVMGetParam(list_erase_f, 1);
 
-    entry = LLVMAppendBasicBlock(list_erase_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_erase_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2581,7 +2581,7 @@
     prefix     = LLVMGetParam(list_cie_f, 2);
     typename   = LLVMGetParam(list_cie_f, 3);
 
-    entry = LLVMAppendBasicBlock(list_cie_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, list_cie_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2677,7 +2677,7 @@
     fun_name   = LLVMGetParam(make_map_f, 1);
     fun_type   = LLVMGetParam(make_map_f, 2);
 
-    entry = LLVMAppendBasicBlock(make_map_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, make_map_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2716,7 +2716,7 @@
     val_t_type = LLVMGetParam(map_get_size_f, 0);
     fun_name   = LLVMGetParam(map_get_size_f, 1);
 
-    entry = LLVMAppendBasicBlock(map_get_size_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, map_get_size_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2781,7 +2781,7 @@
     key_type   = LLVMGetParam(map_find_f, 2);
     value_type = LLVMGetParam(map_find_f, 3);
 
-    entry = LLVMAppendBasicBlock(map_find_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, map_find_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2862,7 +2862,7 @@
     key_type   = LLVMGetParam(map_insert_f, 2);
     value_type = LLVMGetParam(map_insert_f, 3);
 
-    entry = LLVMAppendBasicBlock(map_insert_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, map_insert_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -2950,7 +2950,7 @@
     fun_name   = LLVMGetParam(map_erase_f, 1);
     key_type   = LLVMGetParam(map_erase_f, 2);
 
-    entry = LLVMAppendBasicBlock(map_erase_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, map_erase_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -3055,7 +3055,7 @@
     prefix     = LLVMGetParam(map_gsfie_f, 3);
     typename   = LLVMGetParam(map_gsfie_f, 4);
 
-    entry = LLVMAppendBasicBlock(map_gsfie_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, map_gsfie_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -3209,7 +3209,7 @@
     val_t_type = LLVMGetParam(make_generic_f, 0);
     fun_name   = LLVMGetParam(make_generic_f, 1);
 
-    entry = LLVMAppendBasicBlock(make_generic_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, make_generic_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -3284,7 +3284,7 @@
     val_t_type = LLVMGetParam(get_vtable_f, 0);
     fun_name   = LLVMGetParam(get_vtable_f, 1);
 
-    entry = LLVMAppendBasicBlock(get_vtable_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, get_vtable_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -3343,7 +3343,7 @@
     val_t_type = LLVMGetParam(get_object_f, 0);
     fun_name   = LLVMGetParam(get_object_f, 1);
 
-    entry = LLVMAppendBasicBlock(get_object_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, get_object_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -3427,7 +3427,7 @@
     prefix_    = LLVMGetParam(generic_mkgvgo_f, 1);
     name_      = LLVMGetParam(generic_mkgvgo_f, 2);
 
-    entry = LLVMAppendBasicBlock(generic_mkgvgo_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, generic_mkgvgo_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 

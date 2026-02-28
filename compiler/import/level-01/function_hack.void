@@ -163,7 +163,7 @@
     visitor = LLVMGetParam(method_f, 1);
     self    = LLVMGetParam(method_f, 2);
 
-    entry = LLVMAppendBasicBlock(method_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, method_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -240,8 +240,8 @@
 
     old_mod_not_null_v = LLVMBuildIsNotNull(builder, old_module_v, "old_mod_not_null_v");
 
-    then_b = LLVMAppendBasicBlock(method_f, "then_b");
-    else_b = LLVMAppendBasicBlock(method_f, "else_b");
+    then_b = LLVMAppendBasicBlockInContext(llvm_ctx, method_f, "then_b");
+    else_b = LLVMAppendBasicBlockInContext(llvm_ctx, method_f, "else_b");
 
     LLVMBuildCondBr(builder, old_mod_not_null_v, then_b, else_b);
 
@@ -313,7 +313,7 @@
     fun_name = LLVMGetParam(helper_f, 0);       //- :char_ptr
     fun_type = LLVMGetParam(helper_f, 1);       //- :v_type_ptr
 
-    entry = LLVMAppendBasicBlock(helper_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, helper_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -335,8 +335,8 @@
 
     ok_v = LLVMBuildIsNotNull(builder, grm_v, "ok_v");
 
-    else_b = LLVMAppendBasicBlock(helper_f, "else_b");      //- "else" first!
-    then_b = LLVMAppendBasicBlock(helper_f, "then_b");
+    else_b = LLVMAppendBasicBlockInContext(llvm_ctx, helper_f, "else_b");       //- "else" first!
+    then_b = LLVMAppendBasicBlockInContext(llvm_ctx, helper_f, "then_b");
 
     LLVMBuildCondBr(builder, ok_v, then_b, else_b);
 
@@ -354,8 +354,8 @@
 
     old_mod_null_v = LLVMBuildIsNull(builder, old_module_v, "old_mod_null_v");
 
-    then_b = LLVMAppendBasicBlock(helper_f, "then_b");
-    else_b = LLVMAppendBasicBlock(helper_f, "else_b");
+    then_b = LLVMAppendBasicBlockInContext(llvm_ctx, helper_f, "then_b");
+    else_b = LLVMAppendBasicBlockInContext(llvm_ctx, helper_f, "else_b");
 
     LLVMBuildCondBr(builder, old_mod_null_v, then_b, else_b);
 
@@ -503,8 +503,10 @@
     //-     cur_b = LLVMGetInsertBlock(builder);
     //-     cur_f = LLVMGetBasicBlockParent(cur_b);
     //-
-    //-     then_b = LLVMAppendBasicBlock(cur_f, "then_b");
-    //-     else_b = LLVMAppendBasicBlock(cur_f, "else_b");
+    //-     llvm_ctx = v_target_get_llvm_ctx();
+    //-
+    //-     then_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "then_b");
+    //-     else_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "else_b");
     //-
     //-     LLVMBuildCondBr(builder, nok_v, then_b, else_b);
     //-
@@ -526,7 +528,7 @@
     visitor = LLVMGetParam(intrinsic_f, 1);
     self    = LLVMGetParam(intrinsic_f, 2);
 
-    entry = LLVMAppendBasicBlock(intrinsic_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, intrinsic_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -690,21 +692,45 @@
 
     cur_fv = LLVMBuildCall2(builder, llvm_get_basic_block_parent_ft_, llvm_get_basic_block_parent_f, val0, 1, "cur_fv");
 
-    llvm_append_basic_block_f   = v_obtain_function("LLVMAppendBasicBlock", lltyp);
-    llvm_append_basic_block_ft_ = v_load(lltyp);
+    get_llvm_ctx_f   = v_obtain_function("v_target_get_llvm_ctx", lltyp);
+    get_llvm_ctx_ft_ = v_load(lltyp);
+
+    llvm_ctx_v = LLVMBuildCall2(builder, get_llvm_ctx_ft_, get_llvm_ctx_f, val0, 0, "llvm_ctx_v");
+
+    llvm_append_bblock_in_context_f   = v_obtain_function("LLVMAppendBasicBlockInContext", lltyp);
+    llvm_append_bblock_in_context_ft_ = v_load(lltyp);
 
     then_b_str = LLVMBuildGlobalStringPtr(builder, "then_b", "then_b_str");
     else_b_str = LLVMBuildGlobalStringPtr(builder, "else_b", "else_b_str");
 
-    v_store(cur_fv,     val0);
-    v_store(then_b_str, val1);
+    v_store(llvm_ctx_v, val0);
+    v_store(cur_fv,     val1);
+    v_store(then_b_str, val2);
 
-    then_bv = LLVMBuildCall2(builder, llvm_append_basic_block_ft_, llvm_append_basic_block_f, val0, 2, "then_bv");
+    then_bv = LLVMBuildCall2(builder, llvm_append_bblock_in_context_ft_, llvm_append_bblock_in_context_f, val0, 3, "then_bv");
 
-//  v_store(cur_fv,     val0);
-    v_store(else_b_str, val1);
+//  v_store(llvm_ctx_v, val0);
+//  v_store(cur_fv,     val1);
+    v_store(else_b_str, val2);
 
-    else_bv = LLVMBuildCall2(builder, llvm_append_basic_block_ft_, llvm_append_basic_block_f, val0, 2, "else_bv");
+    else_bv = LLVMBuildCall2(builder, llvm_append_bblock_in_context_ft_, llvm_append_bblock_in_context_f, val0, 3, "else_bv");
+
+
+//    llvm_append_basic_block_f   = v_obtain_function("LLVMAppendBasicBlock", lltyp);
+//    llvm_append_basic_block_ft_ = v_load(lltyp);
+//
+//    then_b_str = LLVMBuildGlobalStringPtr(builder, "then_b", "then_b_str");
+//    else_b_str = LLVMBuildGlobalStringPtr(builder, "else_b", "else_b_str");
+//
+//    v_store(cur_fv,     val0);
+//    v_store(then_b_str, val1);
+//
+//    then_bv = LLVMBuildCall2(builder, llvm_append_basic_block_ft_, llvm_append_basic_block_f, val0, 2, "then_bv");
+//
+////  v_store(cur_fv,     val0);
+//    v_store(else_b_str, val1);
+//
+//    else_bv = LLVMBuildCall2(builder, llvm_append_basic_block_ft_, llvm_append_basic_block_f, val0, 2, "else_bv");
 
 
     llvm_build_cond_br_f   = v_obtain_function("LLVMBuildCondBr", lltyp);
@@ -812,7 +838,7 @@
     visitor = LLVMGetParam(return_f, 1);
     self    = LLVMGetParam(return_f, 2);
 
-    entry = LLVMAppendBasicBlock(return_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, return_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
@@ -834,8 +860,8 @@
     args_count_v = LLVMBuildCall2(builder, list_get_size_ft_, list_get_size_f, val0, 1, "args_count_v");
 
 
-    then_b = LLVMAppendBasicBlock(return_f, "then_b");
-    else_b = LLVMAppendBasicBlock(return_f, "else_b");
+    then_b = LLVMAppendBasicBlockInContext(llvm_ctx, return_f, "then_b");
+    else_b = LLVMAppendBasicBlockInContext(llvm_ctx, return_f, "else_b");
 
 
     ok_v = LLVMBuildIsNotNull(builder, args_count_v, "ok_v");
@@ -1073,8 +1099,10 @@
     cur_b = LLVMGetInsertBlock(builder);
     cur_f = LLVMGetBasicBlockParent(cur_b);
 
-    then_b = LLVMAppendBasicBlock(cur_f, "then_b");
-    else_b = LLVMAppendBasicBlock(cur_f, "else_b");
+    llvm_ctx = v_target_get_llvm_ctx();
+
+    then_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "then_b");
+    else_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "else_b");
 
     LLVMBuildCondBr(builder, cond, then_b, else_b);
 
@@ -1122,8 +1150,10 @@
     cur_b = LLVMGetInsertBlock(builder);
     cur_f = LLVMGetBasicBlockParent(cur_b);
 
-    then_b = LLVMAppendBasicBlock(cur_f, "then_b");
-    else_b = LLVMAppendBasicBlock(cur_f, "else_b");
+    llvm_ctx = v_target_get_llvm_ctx();
+
+    then_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "then_b");
+    else_b = LLVMAppendBasicBlockInContext(llvm_ctx, cur_f, "else_b");
 
     LLVMBuildCondBr(builder, cond, then_b, else_b);
 

@@ -30,7 +30,8 @@
 }
 
 
-{   module = LLVMModuleCreateWithNameInContext("my_echo_mod", v_target_get_voidc_llvm_ctx());
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("my_echo_mod", llvm_ctx);
 
     v_set_module(module);
 
@@ -42,7 +43,7 @@
 
     my_echo_f = v_obtain_function("my_echo_grammar_action", lltyp);
 
-    entry = LLVMAppendBasicBlock(my_echo_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, my_echo_f, "entry");
 
     LLVMPositionBuilderAtEnd(builder, entry);
 

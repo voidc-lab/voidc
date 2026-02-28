@@ -779,7 +779,7 @@
         astr_size = *v_alloca(size_t);
         astr_data = v_std_string_get_data(v_type_generic_arg_string_get_string(arg), &astr_size);
 
-        astr_const = LLVMConstString(astr_data, v_cast(astr_size, unsigned), 1);
+        astr_const = LLVMConstStringInContext(v_target_get_voidc_llvm_ctx(), astr_data, v_cast(astr_size, unsigned), 1);
         astr_const_type = LLVMTypeOf(astr_const);
 
         astr_glob = LLVMAddGlobal(v_get_module(), astr_const_type, "astr_g");

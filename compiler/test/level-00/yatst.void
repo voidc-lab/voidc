@@ -108,7 +108,8 @@
 }
 
 //---------------------------------------------------------------------
-{   module = LLVMModuleCreateWithNameInContext("ast_tests_mod", v_target_get_voidc_llvm_ctx());
+{   llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("ast_tests_mod", llvm_ctx);
 
     v_set_module(module);
 
@@ -125,7 +126,7 @@
     init_f = v_obtain_function("init_f", lltyp);
     LLVMSetLinkage(init_f, LLVMPrivateLinkage);
 
-    entry = LLVMAppendBasicBlock(init_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, init_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
     printf_f   = v_obtain_function("printf", lltyp);
@@ -143,7 +144,7 @@
     term_f = v_obtain_function("term_f", lltyp);
     LLVMSetLinkage(term_f, LLVMPrivateLinkage);
 
-    entry = LLVMAppendBasicBlock(term_f, "entry");
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, term_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
     str = LLVMBuildGlobalStringPtr(builder, "term!\n", "str");

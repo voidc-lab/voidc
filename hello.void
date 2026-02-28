@@ -35,7 +35,10 @@
     LLVMDisposeMessage(triple);
 
     //-----------------------------------------------------------------
-    module = LLVMModuleCreateWithNameInContext("hello_mod", v_target_get_voidc_llvm_ctx());
+    llvm_ctx = v_target_get_voidc_llvm_ctx();
+    module = LLVMModuleCreateWithNameInContext("hello_mod", llvm_ctx);
+
+    builder = v_target_get_voidc_builder();
 
 
     int_ = v_type_get_llvm_type(int);
@@ -43,16 +46,14 @@
     main_ft_ = LLVMFunctionType(int_, 0, 0, false);
     main_f   = LLVMAddFunction(module, "main", main_ft_);
 
-    entry = LLVMAppendBasicBlock(main_f, "entry");
-
-    builder = LLVMCreateBuilder();
+    entry = LLVMAppendBasicBlockInContext(llvm_ctx, main_f, "entry");
 
     LLVMPositionBuilderAtEnd(builder, entry);
 
 
     typ_ = v_alloca(LLVMTypeRef);
 
-    char_     = LLVMInt8Type();
+    char_     = v_type_get_llvm_type(char);
     char_ptr_ = LLVMPointerType(char_, 0);
 
     v_store(char_ptr_, typ_);
@@ -75,8 +76,6 @@
 
 
     LLVMClearInsertionPosition(builder);
-
-    LLVMDisposeBuilder(builder);
 
     //-----------------------------------------------------------------
     msg = LLVMPrintModuleToString(module);
