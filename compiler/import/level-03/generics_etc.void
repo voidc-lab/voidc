@@ -511,6 +511,33 @@ v_generic_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
 //---------------------------------------------------------------------
 private
+compute_generic_ns_name: (vis: *voidc_visitor_t, args: *v_ast_expr_list_t) ~> v_quark_t
+{
+//printf("compute_generic_ns_name: start\n");
+//defer printf("compute_generic_ns_name: stop\n");
+
+    aa: &**v_type_generic_arg_t := 0;
+    defer if (aa) delete[] aa;
+
+    n = v_list_get_size(args) - 1;
+
+    if (n)  aa := new (*v_type_generic_arg_t)[n];
+
+    q = compute_generic_arg_cons(vis, args, aa);
+
+    ga = v_type_generic_cons_arg(q, aa, (n: unsigned));
+
+    sstr: &v_std_string_t := {};
+
+    v_std_string_set(&sstr, "v.generic_ns-");
+
+    voidc_internal_std_string_append_type_generic_arg(&sstr, ga);
+
+    return  v_quark_from_string(v_std_string_get(&sstr));
+}
+
+//---------------------------------------------------------------------
+private
 v_generic_ns_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
 //printf("v_generic_ns_intrinsic: start\n");
@@ -522,48 +549,12 @@ v_generic_ns_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
 
     v_push_result();
 
-    static_namespace_t = v_find_type_q(q_static_namespace_t);
+    ns_name = compute_generic_ns_name(vis, args);
 
-    v_set_result_type(static_namespace_t);
+    ns = v_obtain_namespace_q(ns_name);             //- Sic!
 
-    v_ast_accept_visitor(v_list_get_item(args, 0), vis);        //- Namespace
-
-    ns = (v_get_result_value() : *v_namespace_t);
-
-    v_reset_result();
-
-    ga = compute_generic_arg(vis, v_list_get_item(args, 1));
-
-    sstr: &v_std_string_t := {};
-
-    v_std_string_set(&sstr, "v.generic_ns-");
-
-    voidc_internal_std_string_append_type_generic_arg(&sstr, ga);
-
-    ns_name = v_quark_from_string(v_std_string_get(&sstr));
-
-    t: &*v_type_t    := 0;
-    v: &LLVMValueRef := undef;
-
-    root_ns = ((-1: intptr_t) : *v_namespace_t);        //- Sic!
-
-    if (ns  &&  ns != root_ns)      //- Just some "normal" namespace...
-    {
-        if (a = v_map_find(&ns->map, (ns_name: intptr_t)))
-        {
-            q = v_std_any_get_value(v_quark_t, a);
-
-            v_find_constant_q(q, &t, &v);
-        }
-    }
-
-    if (!t)
-    {
-        ns = v_obtain_namespace_q(ns_name);                 //- WTF ?!?!?!?!?
-
-        t := static_namespace_t;
-        v := (ns: LLVMValueRef);
-    }
+    t = v_find_type_q(q_static_namespace_t);
+    v = (ns: LLVMValueRef);
 
     v_pop_result();
 
@@ -572,9 +563,52 @@ v_generic_ns_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> v
 
 //---------------------------------------------------------------------
 private
-v_root_ns_intrinsic: (*void, vis: *voidc_visitor_t, *v_ast_base_t) ~> void
+v_generic_ns_projection_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                    args: **v_ast_expr_t, count: unsigned
+                                    ) ~> void
 {
-    v_adopt_result(v_find_type_q(q_static_namespace_t), ((-1: intptr_t) : LLVMValueRef));
+//printf("v_generic_ns_projection_intrinsic: start\n");
+//defer printf("v_generic_ns_projection_intrinsic: stop\n");
+
+    v_assert(v_ast_expr_compiled_get_type(args[0]) == v_find_type_q(q_static_namespace_t));
+
+    ns = (v_ast_expr_compiled_get_value(args[0]) : *v_namespace_t);
+    v_assert(ns);
+
+    list : &v_ast_expr_list_t := {};
+
+    {   n = count - 1;
+
+        v_assert(n);
+
+        aa = new v_ast_expr_t[n];
+        defer delete[] aa;
+
+        for (i: &int := 0; i < n; ++i)
+        {
+            v_copy(aa+i, args[i+1]);
+        }
+
+        v_make_list(&list, aa, n);
+    }
+
+    v_push_result();
+
+    ns_name = compute_generic_ns_name(vis, &list);
+
+    a = v_map_find(&ns->map, (ns_name: intptr_t));
+    v_assert(a);
+
+    q = v_std_any_get_value(v_quark_t, a);
+
+    t: &*v_type_t    := undef;
+    v: &LLVMValueRef := undef;
+
+    v_find_constant_q(q, &t, &v);
+
+    v_pop_result();
+
+    v_adopt_result(t, v);
 }
 
 
@@ -718,7 +752,10 @@ voidc_enable_generics_etc: () ~> void
 
     v_add_intrinsic("v_generic",    v_generic_intrinsic,    0);
     v_add_intrinsic("v_generic_ns", v_generic_ns_intrinsic, 0);
-    v_add_intrinsic("v_root_ns",    v_root_ns_intrinsic,    0);
+
+    v_add_overload(".v_generic_ns()", v_find_type_q(q_static_namespace_t), "v.generic_ns.projection");
+
+    v_add_intrinsic("v.generic_ns.projection", v_generic_ns_projection_intrinsic, 0);
 
     //---------------------------------------------------------------------
     object_intrinsic_t = v_generic_type(q_object_intrinsic_t, 0, 0);

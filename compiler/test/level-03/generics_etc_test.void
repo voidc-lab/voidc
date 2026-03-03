@@ -129,4 +129,15 @@ some = my.make_unique(some_t);
 { printf("some: (%d, %d)\n", some->x, some->y); }
 
 
+//---------------------------------------------------------------------
+namespace my
+{
+    namespace v_generic_ns(qwe) { v = 1; }
+    namespace v_generic_ns(asd) { v = 2; }
+}
+
+{   printf("my.v_generic_ns(qwe).v: %d\n", my.v_generic_ns(qwe).v);
+    printf("my.v_generic_ns(asd).v: %d\n", my.v_generic_ns(asd).v);
+}
+
 

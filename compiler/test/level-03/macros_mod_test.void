@@ -183,7 +183,7 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
     #do (v_set_implementation_type(list(T), v_util_list_t))
 
     private
-    namespace v_generic_ns(.my, c(list_detail, t(T)))       //- ???
+    namespace v_generic_ns(list_detail, t(T))
     {
         impl_t = v_get_implementation_type(list(T));
 
