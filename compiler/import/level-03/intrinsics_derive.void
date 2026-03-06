@@ -157,16 +157,16 @@ compute_key_quark_type: (aux: *void,
 {
     key: &voidc_intrinsic_quarks_item_t := { 0, &q };
 
-    if (bsearch(&key, voidc_intrinsic_quarks, quarks_count, voidc_intrinsic_quarks_item_t.sizeof, quarks_compare))
+    if (!bsearch(&key, voidc_intrinsic_quarks, quarks_count, voidc_intrinsic_quarks_item_t.sizeof, quarks_compare))
     {
-        type = v_type_function_get_param_types(ft)[0];
+        ctx = *(aux: *compute_key_quark_type_t);
 
-        return  v_type_refptr_get_element_type(type);
+        return  ctx.fun(ctx.aux, ft, q);
     }
 
-    ctx = *(aux: *compute_key_quark_type_t);
+    type = v_type_function_get_param_types(ft)[0];
 
-    return  ctx.fun(ctx.aux, ft, q);
+    return  v_type_refptr_get_element_type(type);
 }
 
 //---------------------------------------------------------------------

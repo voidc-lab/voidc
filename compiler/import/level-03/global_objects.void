@@ -39,7 +39,6 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
 
     v_add_symbol("q_initialize", q_ref, q("v_initialize"));
     v_add_symbol("q_terminate",  q_ref, q("v_terminate"));
-    v_add_symbol("q_copy",       q_ref, q("v_copy"));
 
     v_add_symbol("voidc_compile_type_q", q_ref, q("voidc.compile_type"));
 

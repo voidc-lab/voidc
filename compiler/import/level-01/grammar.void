@@ -42,7 +42,6 @@
     v_add_symbol("q_getelementptr", q_ref, q("v_getelementptr"));
     v_add_symbol("q_load",          q_ref, q("v_load"));
     v_add_symbol("q_store",         q_ref, q("v_store"));
-    v_add_symbol("q_copy",          q_ref, q("v_copy"));
 
     v_add_symbol("q_act",   q_ref, q("v.act"));
     v_add_symbol("int_q",   q_ref, q("int"));

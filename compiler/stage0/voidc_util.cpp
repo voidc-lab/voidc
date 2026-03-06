@@ -203,15 +203,13 @@ void v_universal_intrinsic(void *void_aux, const visitor_t *vis, const ast_base_
 
     argp[0] = &arg0;
 
-    ast_expr_t e_one;
-
     for (int i=1; i<count; ++i)
     {
         if (i >= arg_count)
         {
-            static ast_expr_t expr = std::make_shared<const ast_expr_integer_data_t>(1);
+            static ast_expr_t e_one = std::make_shared<const ast_expr_integer_data_t>(1);
 
-            argp[i] = &expr;
+            argp[i] = &e_one;
         }
         else
         {
