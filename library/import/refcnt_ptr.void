@@ -188,8 +188,6 @@ namespace .std {
         inlinehint
         create: (n: size_t) ~> refcnt_ptr(T)
         {
-            n_size = ET_size * n;
-
             b_size = ((&(0: *detail_ns.data_t)->data[n] : *char) : size_t);
 
             align = detail_ns.data_t.alignof;
@@ -202,6 +200,8 @@ namespace .std {
 
             #if (is_object)
 
+              n_size = ET_size * n;
+
               d.size := n_size;
 
               v_initialize((&d.data : *RT), n_size);
@@ -209,6 +209,8 @@ namespace .std {
             #endif
 
             ret = v_get_return_value();
+
+            v_assert(ret.impl == 0);        //- WTF ?!?
 
             ret.impl := (&d.data : *ET);
         }
@@ -221,6 +223,8 @@ namespace .std {
             ret = v_get_return_value();
 
             dp = new detail_ns.data_t {{1}};
+
+            v_assert(ret.impl == 0);        //- WTF ?!?
 
             ret.impl := &dp->data;
         }
