@@ -1,0 +1,325 @@
+//---------------------------------------------------------------------
+//- Copyright (C) 2020-2026 Dmitry Borodkin <borodkin.dn@gmail.com>
+//- SDPX-License-Identifier: LGPL-3.0-or-later
+//---------------------------------------------------------------------
+{ voidc_import("libvoidc.void"); }
+{
+    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_03);
+
+    voidc_make_header("refcnt_ptr");
+}
+//---------------------------------------------------------------------
+{
+    v_export_import("type_traits.void");
+}
+
+
+//---------------------------------------------------------------------
+namespace .std {
+
+
+//---------------------------------------------------------------------
+#define refcnt_ptr: (T: v_static_type_t) ~> v_static_type_t  =  v_generic(refcnt_ptr, t(T));
+
+
+//---------------------------------------------------------------------
+#define instantiate_refcnt_ptr: (T: v_static_type_t)
+{'unit_defn_list'
+
+  namespace .std
+  {
+    private is_incomplete_array = T.is_incomplete_array;
+
+    #if (is_incomplete_array)
+
+      private ET = T.element_type;
+
+      private ET_size = 1;
+
+      private RT = ET;
+
+      private
+      #define check_ET_size: ()
+      {'unit_defn_list'
+
+        #if (RT.is_array)
+
+          private ET_size = ET_size * RT.length;
+
+          private RT = RT.element_type;
+
+          #do (check_ET_size())         //- Kinda, TODO...
+
+        #endif
+
+      'unit_defn_list'}
+
+      #do (check_ET_size())
+
+      private is_object = RT.is_special(v_initialize);
+
+    #else
+
+      private ET = T;
+
+    #endif
+
+    #do (v_set_implementation_type(refcnt_ptr(T), *ET))
+
+    private
+    namespace v_generic_ns(refcnt_ptr_detail, t(T))
+    {
+        impl_t = v_get_implementation_type(refcnt_ptr(T));
+
+        alwaysinline
+        (_.impl): (s: &refcnt_ptr(T)) ~> &impl_t  =  *(&s : *impl_t);
+    }
+
+    private
+    detail_ns = v_generic_ns(refcnt_ptr_detail, t(T));
+
+    //-------------------------------------------------------------
+    inlinehint
+    (v_initialize(_)): (d: *refcnt_ptr(T), n: size_t) ~> void
+    {
+        .memset: (*void, int, size_t) ~> *void;
+
+        .memset(d, 0, n*refcnt_ptr(T).sizeof);
+    }
+
+    //-------------------------------------------------------------
+    private
+    namespace detail_ns
+    {
+      #if (is_incomplete_array)
+
+        #if (is_object)
+
+          struct data_t
+          {
+              count: size_t;
+              size:  size_t;
+
+              data: ET[0];
+          };
+
+        #else
+
+          struct data_t
+          {
+              count: size_t;
+
+              data: ET[0];
+          };
+
+        #endif
+
+      #else
+
+        struct data_t
+        {
+            count: size_t;
+
+            data: T;
+        };
+
+        inlinehint
+        (v_initialize(_)): (*data_t, size_t) ~> void  =  derive;
+
+        inlinehint
+        (v_terminate(_)): (*data_t, size_t) ~> void  =  derive;
+
+      #endif
+
+      alwaysinline
+      get_data: (p: &refcnt_ptr(T)) ~> &data_t
+      {
+          v_assert(p.impl);
+
+          r = *((p.impl: *char) - (&(0: *data_t)->data : intptr_t) : *data_t);
+
+          return  r;
+      }
+
+      inlinehint
+      inc: (p: &refcnt_ptr(T)) ~> void
+      {
+          if (!p.impl)  return;
+
+          d = get_data(p);
+
+          ++d.count;
+      }
+
+      inlinehint
+      dec: (p: &refcnt_ptr(T)) ~> void
+      {
+          if (!p.impl)  return;
+
+          d = get_data(p);
+
+          if (--d.count == 0)
+          {
+            #if (is_incomplete_array)
+
+              #if (is_object)
+
+                v_terminate((&d.data : *RT), d.size);       //- ...
+
+              #endif
+
+              v_aligned_free(&d);
+
+            #else
+
+              delete &d;
+
+            #endif
+          }
+      }
+
+    }   //- namespace detail_ns
+
+    //-------------------------------------------------------------
+    namespace v_generic_ns(refcnt_ptr_public, t(T))
+    {
+      #if (is_incomplete_array)
+
+        inlinehint
+        create: (n: size_t) ~> refcnt_ptr(T)
+        {
+            n_size = ET_size * n;
+
+            b_size = ((&(0: *detail_ns.data_t)->data[n] : *char) : size_t);
+
+            align = detail_ns.data_t.alignof;
+
+            b_size = (b_size + (align-1))/align * align;
+
+            d = *(v_aligned_alloc(align, b_size) : *detail_ns.data_t);
+
+            d.count := 1;
+
+            #if (is_object)
+
+              d.size := n_size;
+
+              v_initialize((&d.data : *RT), n_size);
+
+            #endif
+
+            ret = v_get_return_value();
+
+            ret.impl := (&d.data : *ET);
+        }
+
+      #else
+
+        inlinehint
+        create: () ~> refcnt_ptr(T)
+        {
+            ret = v_get_return_value();
+
+            dp = new detail_ns.data_t {{1}};
+
+            ret.impl := &dp->data;
+        }
+
+      #endif
+
+    }   //- namespace v_generic_ns(refcnt_ptr_public, t(T))
+
+    //-------------------------------------------------------------
+    inlinehint
+    (v_terminate(_)): (d: *refcnt_ptr(T), n: size_t) ~> void
+    {
+        for (i: &int := 0; i < n; ++i)
+        {
+            detail_ns.dec(d[i]);
+        }
+    }
+
+    inlinehint
+    (v_copy(_)): (d: *refcnt_ptr(T), s: *const refcnt_ptr(T), n: size_t) ~> void
+    {
+        for (i: &int := 0; i < n; ++i)
+        {
+            di = d[i];
+            si = s[i];
+
+            detail_ns.dec(di);
+            detail_ns.inc(si);
+
+            di.impl := si.impl;
+        }
+    }
+
+    inlinehint
+    (v_move(_)): (d: *refcnt_ptr(T), s: *refcnt_ptr(T), n: size_t) ~> void
+    {
+        for (i: &int := 0; i < n; ++i)
+        {
+            di = d[i];
+            si = s[i];
+
+            detail_ns.dec(di);
+
+            di.impl := si.impl;
+            si.impl := 0;
+        }
+    }
+
+    alwaysinline
+    (v_empty(_)): (p: *refcnt_ptr(T)) ~> bool  =  p->impl == 0;
+
+    //-------------------------------------------------------------
+    alwaysinline
+    (_.get()): (p: refcnt_ptr(T)) ~> *ET  =  (&p)->impl;
+
+    #if (is_incomplete_array)
+
+      alwaysinline
+      (_[]): (p: refcnt_ptr(T), i: intptr_t) ~> &ET  =  p.get()[i];
+
+    #else
+
+      alwaysinline
+      (*_): (p: refcnt_ptr(T)) ~> &T  =  *p.get();
+
+      alwaysinline
+      (_->): (p: refcnt_ptr(T)) ~> *T  =  p.get();
+
+    #endif
+
+    //-------------------------------------------------------------
+    alwaysinline
+    (_:=_): (d: &refcnt_ptr(T), s: refcnt_ptr(T)) ~> &refcnt_ptr(T)
+    {
+        v_copy(&d, &s);
+
+        return  d;
+    }
+
+    //-------------------------------------------------------------
+    alwaysinline
+    (_.use_count): (p: refcnt_ptr(T)) ~> size_t  =  detail_ns.get_data(*&p).count;
+
+  }   //- namespace .std
+
+'unit_defn_list'}
+
+
+//---------------------------------------------------------------------
+#define make_refcnt: (T: v_static_type_t, n = 0) ~> .std.refcnt_ptr(T)  =
+{
+    ns = .std.v_generic_ns(refcnt_ptr_public, t(T));
+
+    #if (T.is_incomplete_array) ns.create(n)
+    #else                       ns.create()
+    #endif
+};
+
+
+//---------------------------------------------------------------------
+}   //- namespace .std
+

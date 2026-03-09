@@ -432,6 +432,15 @@ alwaysinline
 alwaysinline
 (_+__): (a: v_string_t, b: v_string_t) ~> v_string_t  =  a + b;
 
+//---------------------------------------------------------------------
+alwaysinline
+(_+=_): (ref: &v_string_t, str: v_string_t) ~> &v_string_t  =
+{
+    ref.append_data(str.data, str.size);
+
+    ref
+};
+
 
 //---------------------------------------------------------------------
 //- ...

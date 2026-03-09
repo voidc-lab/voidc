@@ -333,6 +333,24 @@ static_type_generic_args_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_
     v_adopt_result(array_of_args_t, (args: LLVMValueRef));
 }
 
+//---------------------------------------------------------------------
+private
+static_type_is_special_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                   arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                  ) ~> void
+{
+    type = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_type_t);
+
+    quark = v_ast_expr_identifier_get_name_q(arg_ptrs[1]);
+
+    v = v_type_is_special(type, quark);
+
+    t = v_uint_type(1);
+    v = LLVMConstInt(v_type_get_llvm_type(t), v, 0);
+
+    v_adopt_result(t, v);
+}
+
 
 //---------------------------------------------------------------------
 //- Static generic args "inheritance" table
@@ -808,6 +826,11 @@ v_internal_type_traits_effort: (*void) ~> void
     {   v_add_overload(".args", static_type_generic_t, "my.static_type_generic_args");
 
         v_add_intrinsic("my.static_type_generic_args", static_type_generic_args_intrinsic, 0);
+    }
+
+    {   v_add_overload(".is_special()", static_type_t, "my.static_type_is_special");
+
+        v_add_intrinsic("my.static_type_is_special", static_type_is_special_intrinsic, 0);
     }
 
     static_array_of_generic_args_t = v_generic_type(q_static_array_of_generic_args_t, 0, 0);
