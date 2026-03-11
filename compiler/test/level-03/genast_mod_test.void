@@ -233,6 +233,8 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
       {
           ret = v_get_return_value();
 
+          detail_ns.dec(ret);       //- Sic !!!
+
           dp = new detail_ns.data_t {{1}};
 
           ret.impl := &dp->data;
@@ -255,11 +257,8 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
     {
         for (i: &int := 0; i < N; ++i)
         {
-            di = dst[i];
-            si = src[i];
-
-            detail_ns.dec(di);
-            detail_ns.inc(si);
+            di = dst[i];    detail_ns.dec(di);
+            si = src[i];    detail_ns.inc(si);
 
             di.impl := si.impl;
         }
@@ -270,10 +269,8 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
     {
         for (i: &int := 0; i < N; ++i)
         {
-            di = dst[i];
+            di = dst[i];    detail_ns.dec(di);
             si = src[i];
-
-            detail_ns.dec(di);
 
             di.impl := si.impl;
             si.impl := 0;

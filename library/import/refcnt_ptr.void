@@ -188,7 +188,11 @@ namespace .std {
         inlinehint
         create: (n: size_t) ~> refcnt_ptr(T)
         {
-            b_size = ((&(0: *detail_ns.data_t)->data[n] : *char) : size_t);
+            ret = v_get_return_value();
+
+            detail_ns.dec(ret);             //- Sic !!!
+
+            b_size = (&(0: *detail_ns.data_t)->data[n] : size_t);
 
             align = detail_ns.data_t.alignof;
 
@@ -208,10 +212,6 @@ namespace .std {
 
             #endif
 
-            ret = v_get_return_value();
-
-            v_assert(ret.impl == 0);        //- WTF ?!?
-
             ret.impl := (&d.data : *ET);
         }
 
@@ -222,9 +222,9 @@ namespace .std {
         {
             ret = v_get_return_value();
 
-            dp = new detail_ns.data_t {{1}};
+            detail_ns.dec(ret);             //- Sic !!!
 
-            v_assert(ret.impl == 0);        //- WTF ?!?
+            dp = new detail_ns.data_t {{1}};
 
             ret.impl := &dp->data;
         }
@@ -248,11 +248,8 @@ namespace .std {
     {
         for (i: &int := 0; i < n; ++i)
         {
-            di = d[i];
-            si = s[i];
-
-            detail_ns.dec(di);
-            detail_ns.inc(si);
+            di = d[i];  detail_ns.dec(di);
+            si = s[i];  detail_ns.inc(si);
 
             di.impl := si.impl;
         }
@@ -263,10 +260,8 @@ namespace .std {
     {
         for (i: &int := 0; i < n; ++i)
         {
-            di = d[i];
+            di = d[i];  detail_ns.dec(di);
             si = s[i];
-
-            detail_ns.dec(di);
 
             di.impl := si.impl;
             si.impl := 0;

@@ -49,7 +49,7 @@ some = my.make_refcnt(int);
 {   *some := 777;
 }
 
-{   printf("some: %d\n", *some); }
+{   printf("some: %d, some.get(): %p\n", *some, some.get()); }
 
 
 {   foo: &my.refcnt_ptr(int)[3] := { some, some, some };
@@ -60,6 +60,50 @@ some = my.make_refcnt(int);
 {   printf("some.use_count: %zd\n", some.use_count);
 }
 
+
+//---------------------------------------------------------------------
+check1: () ~> my.refcnt_ptr(int)
+{
+    ret = v_get_return_value();
+
+    printf("start check1() - ret.get(): %p\n", ret.get());
+    defer printf("stop  check1() - ret.get(): %p\n", ret.get());
+
+    ret := some;
+
+    return  my.make_refcnt(int);        //- Sic !!!
+}
+
+check2: () ~> my.refcnt_ptr(int)
+{
+    ret = v_get_return_value();
+
+    printf("start check2() - ret.get(): %p\n", ret.get());
+    defer printf("stop  check2() - ret.get(): %p\n", ret.get());
+
+    ret := some;
+
+    return  check1();                   //- Sic !!!
+}
+
+{   q1 = check1();
+
+    *q1 := 77;
+
+    printf("*q1: %d, q1.get(): %p\n", *q1, q1.get());
+
+    q2 = check2();
+
+    *q2 := 88;
+
+    printf("*q2: %d, q2.get(): %p\n", *q2, q2.get());
+}
+
+{   printf("some.use_count: %zd\n", some.use_count);
+}
+
+
+//---------------------------------------------------------------------
 {   foo: &my.refcnt_ptr(int) := some;
 
     printf("foo.use_count: %zd\n", foo.use_count);
