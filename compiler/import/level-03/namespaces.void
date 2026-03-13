@@ -548,6 +548,9 @@ v_lookup_identifier: (name: *const char, type: **v_type_t, value: *LLVMValueRef)
 export
 voidc_unit_namespace_open_block_effort: (*void) ~> void
 {
+//printf("voidc_unit_namespace_open_block_effort start\n");
+//defer printf("voidc_unit_namespace_open_block_effort stop\n");
+
     anss = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_stack));
 
     v_list_append(anss, anss, v_get_property_q(q_current_namespace_list));

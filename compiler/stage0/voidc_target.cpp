@@ -2207,6 +2207,13 @@ voidc_local_ctx_t::run_unit_action(void)
 {
     if (!unit_buffer) return;
 
+    if (skip_run_unit > 0)
+    {
+        --skip_run_unit;
+
+        return;
+    }
+
     auto es = LLVMOrcLLJITGetExecutionSession(voidc_global_ctx_t::jit);
 
     auto &gctx = *voidc_global_ctx_t::voidc;
@@ -2684,6 +2691,15 @@ voidc_run_unit_action(void)
     auto &lctx = static_cast<voidc_local_ctx_t &>(*gctx.local_ctx);
 
     lctx.run_unit_action();
+}
+
+void
+voidc_skip_run_unit_action(int n)
+{
+    auto &gctx = *voidc_global_ctx_t::voidc;
+    auto &lctx = static_cast<voidc_local_ctx_t &>(*gctx.local_ctx);
+
+    lctx.skip_run_unit = n;
 }
 
 //---------------------------------------------------------------------

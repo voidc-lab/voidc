@@ -499,6 +499,8 @@ public:
     void run_unit_action(void);
 
     LLVMMemoryBufferRef unit_buffer = nullptr;
+
+    int skip_run_unit = 0;
 };
 
 

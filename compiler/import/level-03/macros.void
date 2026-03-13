@@ -717,9 +717,18 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     kind = v_ast_expr_integer_get_number(kind);
 
+    //-------------------------------------------------------------
+    hidden_flag = v_get_hidden_flag();
+    export_flag = v_get_export_flag();
+
+    private = qfl & qf_private;
+    export  = (export_flag  ||  qfl & qf_export)  &&  !private  &&  !hidden_flag;
+
+    //-------------------------------------------------------------
     ctx = new macro_defn_ctx_t;
 
-    v_add_local_cleaner(macro_defn_ctx_cleaner, ctx);
+    if (export) v_add_cleaner(macro_defn_ctx_cleaner, ctx);
+    else        v_add_local_cleaner(macro_defn_ctx_cleaner, ctx);
 
     {   ctx_pars = &ctx->pars;
 
@@ -767,12 +776,6 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     quark: &v_quark_t := 0;
     ktype: &*v_type_t := 0;
-
-    hidden_flag = v_get_hidden_flag();
-    export_flag = v_get_export_flag();
-
-    private = qfl & qf_private;
-    export  = (export_flag  ||  qfl & qf_export)  &&  !private  &&  !hidden_flag;
 
     //-------------------------------------------------------------
     if (!spec)      //- Just "identifier"...
@@ -839,10 +842,19 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
         object_intrinsic_t = v_find_type_q(q_object_intrinsic_t);
 
-        if (kind) v_add_variable_q(quark, object_intrinsic_t, (qintr: LLVMValueRef));
-        else      v_add_constant_q(quark, object_intrinsic_t, (qintr: LLVMValueRef));
+        if (export)
+        {
+            v_export_constant_q(quark, object_intrinsic_t, (qintr: LLVMValueRef));
 
-        v_add_intrinsic_q(qintr, macro_expand_intrinsic, ctx);
+            v_export_intrinsic_q(qintr, macro_expand_intrinsic, ctx);
+        }
+        else
+        {
+            if (kind) v_add_variable_q(quark, object_intrinsic_t, (qintr: LLVMValueRef));
+            else      v_add_constant_q(quark, object_intrinsic_t, (qintr: LLVMValueRef));
+
+            v_add_intrinsic_q(qintr, macro_expand_intrinsic, ctx);
+        }
     }
     else            //- Special identifier
     {
@@ -914,17 +926,30 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
         qname = v_quark_from_string(v_std_string_get(&sstr));
 
-        v_add_overload_q(quark, ktype, qname);
+        overload_ref = !v_type_is_reference(ktype)  &&  v_type_get_llvm_type(ktype);
 
-        if (!v_type_is_reference(ktype))            //- TODO !!!!!!!!!!!
+        if (export)
         {
-            if (v_type_get_llvm_type(ktype))        //- ???
+            v_export_overload_q(quark, ktype, qname);
+
+            if (overload_ref)                           //- TODO !!!!!!!!!!!
+            {
+                v_export_overload_q(quark, v_reference_type(ktype, 0), qname);      //- ?
+            }
+
+            v_export_intrinsic_q(qname, macro_spec_expand_intrinsic, ctx);
+        }
+        else
+        {
+            v_add_overload_q(quark, ktype, qname);
+
+            if (overload_ref)                           //- TODO !!!!!!!!!!!
             {
                 v_add_overload_q(quark, v_reference_type(ktype, 0), qname);         //- ?
             }
-        }
 
-        v_add_intrinsic_q(qname, macro_spec_expand_intrinsic, ctx);
+            v_add_intrinsic_q(qname, macro_spec_expand_intrinsic, ctx);
+        }
     }
 
     if (kind) return;       //- Sic !!!

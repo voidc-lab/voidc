@@ -461,6 +461,7 @@
     v_export_symbol_type("v_debug_print_module", ft);
     v_export_symbol_type("voidc_skip_object_file_load", ft);        //- Sic!!!
     v_export_symbol_type("v_hold_compilation_state", ft);           //- Sic!!!
+    v_export_symbol_type("voidc_skip_run_unit_action", ft);         //- Sic!!!
 
     v_store(bool, typ0);                    //- ...
 

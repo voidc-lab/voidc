@@ -1995,6 +1995,8 @@
         //---------------------------------------------------------
         if (mod_const)  LLVMDisposeModule(mod_const);
 
+        voidc_flush_unit_symbols();         //- WTF?
+
         //---------------------------------------------------------
         if (defn_module  &&  !saved_module)
         {
@@ -2002,12 +2004,14 @@
 
             voidc_prepare_module_for_jit(defn_module);
 
-            voidc_compile_load_module_to_jit(defn_module, true, false);     //- local?  (TODO)
+            voidc_compile_load_module_to_jit(defn_module, true, true);      //- local?  (TODO)
 
             LLVMDisposeModule(defn_module);
         }
 
         voidc_finish_unit_action();
+
+        voidc_skip_run_unit_action(1);
 
         v_set_module(saved_voidc_module);
 
