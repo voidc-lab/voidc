@@ -132,14 +132,12 @@ namespace .std {
       #endif
 
       alwaysinline
-      get_data: (p: &refcnt_ptr(T)) ~> &data_t
+      get_data: (p: &refcnt_ptr(T)) ~> &data_t  =
       {
           v_assert(p.impl);
 
-          r = *((p.impl: *char) - (&(0: *data_t)->data : intptr_t) : *data_t);
-
-          return  r;
-      }
+          *((p.impl: *char) - (&(0: *data_t)->data : intptr_t) : *data_t)
+      };
 
       inlinehint
       inc: (p: &refcnt_ptr(T)) ~> void
