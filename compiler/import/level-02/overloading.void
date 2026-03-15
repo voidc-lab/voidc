@@ -203,6 +203,9 @@ llvm_build_call_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                          arg_ptrs: **v_ast_expr_t, arg_count: unsigned
                         ) ~> void
 {
+//printf("llvm_build_call_helper: start\n");
+//defer printf("llvm_build_call_helper: stop\n");
+
     par_count = v_type_function_get_param_count(ft);
     par_types = v_type_function_get_param_types(ft);
 
@@ -918,6 +921,9 @@ compile_expr_call_helper: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                            t: *v_type_t, v: LLVMValueRef
                           ) ~> void
 {
+//printf("compile_expr_call_helper: start\n");
+//defer printf("compile_expr_call_helper: stop\n");
+
     t: &*v_type_t    := t;
     v: &LLVMValueRef := v;
 

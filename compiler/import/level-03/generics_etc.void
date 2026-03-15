@@ -49,6 +49,7 @@
 
     //-------------------------------------------------------------
     v_add_symbol("voidc_compile_quark_q", q_ref, q("voidc.compile_quark"));
+    v_add_symbol("voidc_compile_type_q",  q_ref, q("voidc.compile_type"));
     v_add_symbol("q_export_constant_q",   q_ref, q("v_export_constant_q"));
     v_add_symbol("q_add_constant_q",      q_ref, q("v_add_constant_q"));
 
@@ -229,6 +230,43 @@ v_type_generic_get_implementation_type: (type: *v_type_t) ~> *v_type_t
 
 //---------------------------------------------------------------------
 private
+v_type_generic_set_implementation_type_effort: (aux: *void) ~> void
+{
+    tt = (aux: **v_type_t);
+
+    type = tt[0];
+    impl = tt[1];
+
+    v_type_generic_set_implementation_type(type, impl);
+}
+
+//---------------------------------------------------------------------
+export
+v_type_generic_set_implementation_type_make_effort: (type: *v_type_t, impl: *v_type_t, export: bool) ~> void
+{
+    if (export)
+    {
+        tt = v_malloc(*v_type_t, 2);
+
+        tt[0] := type;
+        tt[1] := impl;
+
+        v_export_effort(v_type_generic_set_implementation_type_effort, tt);
+
+        free: (*void) ~> void;
+
+        v_add_cleaner(free, tt);
+    }
+    else
+    {
+        tt: &(*v_type_t)[2] := { type, impl };
+
+        v_add_effort(v_type_generic_set_implementation_type_effort, tt);
+    }
+}
+
+//---------------------------------------------------------------------
+private
 set_implementation_type_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
@@ -256,7 +294,52 @@ set_implementation_type_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
     v_pop_result();
 
-    v_type_generic_set_implementation_type(type, impl);
+    hidden_flag = v_get_hidden_flag();
+    export_flag = v_get_export_flag();
+
+    export = export_flag  &&  !hidden_flag;
+
+    v_type_generic_set_implementation_type_make_effort(type, impl, export);
+
+    if (!export)  return;
+
+    //-----------------------------------------------------------------
+    stmt_list = voidc_definitions_context_get_stmt_list();
+    if (!stmt_list) return;
+
+    expr: &v_ast_expr_t[3] := {};
+
+    elst: &v_ast_expr_list_t := {};
+
+    stmt: &v_ast_stmt_t := {};
+
+    v_ast_make_expr_integer(expr+0, (type: intptr_t));
+
+    v_make_list(&elst, expr+0);
+
+    v_ast_make_expr_identifier_q(expr+0, voidc_compile_type_q);
+
+    v_ast_make_expr_call(expr+0, expr+0, &elst);
+
+    v_ast_make_expr_integer(expr+1, (impl: intptr_t));
+
+    v_make_list(&elst, expr+1);
+
+    v_ast_make_expr_identifier_q(expr+1, voidc_compile_type_q);
+
+    v_ast_make_expr_call(expr+1, expr+1, &elst);
+
+    v_ast_make_expr_integer(expr+2, export);
+
+    v_make_list(&elst, expr, 3);
+
+    v_ast_make_expr_identifier(expr+0, "v_type_generic_set_implementation_type_make_effort");
+
+    v_ast_make_expr_call(expr+0, expr+0, &elst);
+
+    v_ast_make_stmt(&stmt, 0, expr+0);
+
+    v_list_append(stmt_list, stmt_list, &stmt);
 }
 
 //---------------------------------------------------------------------

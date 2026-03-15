@@ -141,18 +141,9 @@ voidc_internal_create_inline_function_data: (flags: intptr_t, fun_name: *const c
 
     iname = v_std_string_get(sstr);
 
-    if (flags & qf_export)
-    {
-        v_export_intrinsic(iname, &data, 0);
+    v_export_intrinsic(iname, &data, 0);                //- Sic !!!
 
-        v_add_cleaner(inline_function_data_cleaner, &data);
-    }
-    else
-    {
-        v_add_intrinsic(iname, &data, 0);
-
-        v_add_local_cleaner(inline_function_data_cleaner, &data);
-    }
+    v_add_cleaner(inline_function_data_cleaner, &data);
 }
 
 
@@ -374,6 +365,8 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
     llvm_ctx = v_target_get_llvm_ctx();
 
+    found: &bool := false;
+
     loop
     {
         //- Collect "unresolved" inline functions ...
@@ -410,6 +403,8 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
         if (!hack)  break;      //- Nothing to do ...
 
+        found := true;
+
         for (; hack; hack := hack->hack)
         {
             if (!hack->module)
@@ -428,10 +423,27 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
             ok = LLVMLinkModules2(module, m);
 
             v_assert(ok == 0);          //- ?
+        }
+    }
 
-            f = LLVMGetNamedFunction(module, v_quark_to_string(hack->quark));
+    if (found)
+    {
+        for (f: &LLVMValueRef := LLVMGetFirstFunction(module);  f;  f := LLVMGetNextFunction(f))
+        {
+            sz: &size_t := undef;
 
-            LLVMSetLinkage(f, LLVMPrivateLinkage);
+            fun_name = LLVMGetValueName2(f, &sz);
+
+            v_std_string_set(sstr, "v.inlining.");
+
+            v_std_string_append(sstr, fun_name);
+
+            iname = v_std_string_get(sstr);
+
+            if (v_get_intrinsic(iname, 0))
+            {
+                LLVMSetLinkage(f, LLVMPrivateLinkage);
+            }
         }
     }
 
