@@ -1,0 +1,190 @@
+//---------------------------------------------------------------------
+//- Copyright (C) 2020-2026 Dmitry Borodkin <borodkin.dn@gmail.com>
+//- SDPX-License-Identifier: LGPL-3.0-or-later
+//---------------------------------------------------------------------
+{ voidc_import("libvoidc.void"); }
+{
+    voidc_set_level_limit(LIBVOIDC_LIMIT_LEVEL_03);
+
+    voidc_make_header("unique_ptr");
+}
+//---------------------------------------------------------------------
+{
+    v_export_import("type_traits.void");
+}
+
+
+//---------------------------------------------------------------------
+namespace .std {
+
+
+//---------------------------------------------------------------------
+#define unique_ptr: (T: v_static_type_t) ~> v_static_type_t  =  v_generic(unique_ptr, t(T));
+
+
+//---------------------------------------------------------------------
+#define instantiate_unique_ptr: (T: v_static_type_t)
+{'unit_defn_list'
+
+  namespace .std
+  {
+    private is_incomplete_array = T.is_incomplete_array;
+
+    #if (is_incomplete_array)   private ET = T.element_type;
+    #else                       private ET = T;
+    #endif
+
+    #do (v_set_implementation_type(unique_ptr(T), *ET))
+
+    private
+    namespace v_generic_ns(unique_ptr_detail, t(T))
+    {
+        impl_t = v_get_implementation_type(unique_ptr(T));
+
+        alwaysinline
+        (_.impl): (s: &unique_ptr(T)) ~> &impl_t  =  *(&s : *impl_t);
+    }
+
+    //-------------------------------------------------------------
+    inlinehint
+    (v_initialize(_)): (d: *unique_ptr(T), n: size_t) ~> void
+    {
+        .memset: (*void, int, size_t) ~> *void;
+
+        .memset(d, 0, n*unique_ptr(T).sizeof);
+    }
+
+    alwaysinline
+    (_.get()): (p: unique_ptr(T)) ~> *ET  =  (&p)->impl;
+
+    inlinehint
+    (v_terminate(_)): (sp: *unique_ptr(T), n: size_t) ~> void
+    {
+        for (i: &int := 0; i < n; ++i)
+        {
+            if (p = sp[i].get())
+            {
+                #if (is_incomplete_array)   delete[] p;
+                #else                       delete p;
+                #endif
+            }
+        }
+    }
+
+    alwaysinline
+    (_.release()): (sp: &unique_ptr(T)) ~> *ET  =
+    {
+        r = sp.get();
+
+        sp.impl := 0;
+
+        r
+    };
+
+    alwaysinline
+    (_.reset()): (sp: &unique_ptr(T), p: *ET) ~> void
+    {
+        if (pp = sp.get())
+        {
+            #if (is_incomplete_array)   delete[] pp;
+            #else                       delete pp;
+            #endif
+        }
+
+        sp.impl := p;
+    }
+
+    #define
+    (v_copy(_)): (d: * .std.unique_ptr(T), s: *const .std.unique_ptr(T), n: size_t)
+    {'stmt'
+        #error ("Not supported!")
+    'stmt'}
+
+    inlinehint
+    (v_move(_)): (d: *unique_ptr(T), s: *unique_ptr(T), n: size_t) ~> void
+    {
+        for (i: &int := 0; i < n; ++i)  d[i].reset(s[i].release());
+    }
+
+    alwaysinline
+    (v_empty(_)): (p: *unique_ptr(T)) ~> bool  =  p->impl == 0;
+
+    //-------------------------------------------------------------
+    namespace v_generic_ns(unique_ptr_public, t(T))
+    {
+      #if (is_incomplete_array)
+
+        inlinehint
+        create: (n: size_t) ~> unique_ptr(T)
+        {
+            v_get_return_value().reset(new ET[n]);
+        }
+
+      #else
+
+        inlinehint
+        create: () ~> unique_ptr(T)
+        {
+            v_get_return_value().reset(new ET);
+        }
+
+      #endif
+
+    }   //- namespace v_generic_ns(unique_ptr_public, t(T))
+
+    //-------------------------------------------------------------
+    #if (is_incomplete_array)
+
+      alwaysinline
+      (_[]): (p: unique_ptr(T), i: intptr_t) ~> &ET  =  p.get()[i];
+
+    #else
+
+      alwaysinline
+      (*_): (p: unique_ptr(T)) ~> &T  =  *p.get();
+
+      alwaysinline
+      (_->): (p: unique_ptr(T)) ~> *T  =  p.get();
+
+    #endif
+
+    //-------------------------------------------------------------
+    alwaysinline
+    (_:=_): (d: &unique_ptr(T), s: &unique_ptr(T)) ~> &unique_ptr(T)  =
+    {
+        d.reset(s.release());
+
+        d
+    };
+
+  }   //- namespace .std
+
+'unit_defn_list'}
+
+
+//---------------------------------------------------------------------
+#define make_unique: (T: v_static_type_t, n = void) ~> .std.unique_ptr(T)  =
+{
+    n_defined = !(v_typeof(n) == v_static_type_t  &&  n == void);
+
+    ns = .std.v_generic_ns(unique_ptr_public, t(T));
+
+    #if (T.is_incomplete_array)
+
+      #if (n_defined)   ns.create(n)
+      #else             #fail ("???")
+      #endif
+
+    #else
+
+      #if (n_defined)   #fail ("???")
+      #else             ns.create()
+      #endif
+
+    #endif
+};
+
+
+//---------------------------------------------------------------------
+}   //- namespace .std
+

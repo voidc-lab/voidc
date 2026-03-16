@@ -18,6 +18,8 @@ v_string_t                                                     │string.void
                                                                │
                                                                │
 ---------------------------------------------------------------│
+unique_ptr                                                     │unique_ptr.void
+                                                               │
 refcnt_ptr                                                     │refcnt_ptr.void
                                                                │
                                                                │

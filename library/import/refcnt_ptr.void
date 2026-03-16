@@ -307,12 +307,24 @@ namespace .std {
 
 
 //---------------------------------------------------------------------
-#define make_refcnt: (T: v_static_type_t, n = 0) ~> .std.refcnt_ptr(T)  =
+#define make_refcnt: (T: v_static_type_t, n = void) ~> .std.refcnt_ptr(T)  =
 {
+    n_defined = !(v_typeof(n) == v_static_type_t  &&  n == void);
+
     ns = .std.v_generic_ns(refcnt_ptr_public, t(T));
 
-    #if (T.is_incomplete_array) ns.create(n)
-    #else                       ns.create()
+    #if (T.is_incomplete_array)
+
+      #if (n_defined)   ns.create(n)
+      #else             #fail ("???")
+      #endif
+
+    #else
+
+      #if (n_defined)   #fail ("???")
+      #else             ns.create()
+      #endif
+
     #endif
 };
 
