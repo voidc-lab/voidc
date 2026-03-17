@@ -634,14 +634,14 @@ byte = uint(8);
 union IntRep
 {
     i: int;
-    r: byte[int.sizeof];
+    r: byte[sizeof(int)];
 };
 
 {   ir: &IntRep := undef;
 
     ir.i := 0xDEADBEEF;
 
-    for (i: &int := 0; i < int.sizeof; ++i)
+    for (i: &int := 0; i < sizeof(int); ++i)
     {
         printf("%02X ", ir.r[i]);
     }
@@ -679,7 +679,7 @@ compare: (a: *const void, b: *const void) ~> int
 
 {   ints: &int[] := { 0, 4, 2, 3, 1 };
 
-    qsort(ints, 5, int.sizeof, compare);
+    qsort(ints, 5, sizeof(int), compare);
 
     for (i: &int := 0; i < 5; ++i)  printf("%d ", ints[i]);
 

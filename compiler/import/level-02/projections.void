@@ -8,7 +8,6 @@
     v_import("level-01");
 
     v_import("llvm-c/Core.void");
-    v_import("llvm-c/Target.void");
 
     v_import("literals.void");
     v_import("loops_etc.void");
@@ -44,9 +43,9 @@
     v_add_symbol("size_t_q", q_ref, q("size_t"));
 
     v_add_symbol("q_static_type_t", q_ref, q("v_static_type_t"));
-
-    v_add_symbol("q_static_type_sizeof",  q_ref, q("v.static_type_sizeof"));
-    v_add_symbol("q_static_type_alignof", q_ref, q("v.static_type_alignof"));
+//
+//    v_add_symbol("q_static_type_sizeof",  q_ref, q("v.static_type_sizeof"));
+//    v_add_symbol("q_static_type_alignof", q_ref, q("v.static_type_alignof"));
 }
 
 
@@ -357,50 +356,6 @@ op_postfix_to_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> 
 
 
 //---------------------------------------------------------------------
-private
-some_static_type_projection_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
-                                        args: **v_ast_expr_t, count: unsigned
-                                        ) ~> void
-{
-    type  = (v_ast_expr_compiled_get_value(args[0]) : *v_type_t);
-    type_ = v_type_get_llvm_type(type);
-
-    q = *(aux: *v_quark_t);
-
-    v: &LLVMValueRef := undef;
-
-    _size_t = v_find_type_q(size_t_q);
-
-    if (dl = v_target_get_data_layout())
-    {
-        u: &size_t := undef;
-
-        if (q == q_static_type_sizeof)
-        {
-            u := (LLVMABISizeOfType(dl, type_) : size_t);
-        }
-        else if (q == q_static_type_alignof)
-        {
-            u := (LLVMABIAlignmentOfType(dl, type_) : size_t);
-        }
-
-        v := LLVMConstInt(v_type_get_llvm_type(_size_t), u, 0);
-    }
-    else
-    {
-        f: &*((LLVMTypeRef) ~> LLVMValueRef) := undef;
-
-        if      (q == q_static_type_sizeof)   f := LLVMSizeOf;
-        else if (q == q_static_type_alignof)  f := LLVMAlignOf;
-
-        v := f(type_);
-    }
-
-    v_adopt_result(_size_t, v);
-}
-
-
-//---------------------------------------------------------------------
 //- Enable projections
 //---------------------------------------------------------------------
 export
@@ -419,15 +374,6 @@ voidc_enable_projections_compiler: () ~> void
     //-------------------------------------------------------------
     v_set_handler(v_compile_op_postfix_dot, op_postfix_dot_helper, 0);
     v_set_handler(v_compile_op_postfix_to,  op_postfix_to_helper,  0);
-
-    //-------------------------------------------------------------
-    static_type_t = v_find_type_q(q_static_type_t);
-
-    v_export_overload_q(q(".sizeof"),  static_type_t, q_static_type_sizeof);
-    v_export_overload_q(q(".alignof"), static_type_t, q_static_type_alignof);
-
-    v_export_intrinsic_q(q_static_type_sizeof,  some_static_type_projection_intrinsic, &q_static_type_sizeof);
-    v_export_intrinsic_q(q_static_type_alignof, some_static_type_projection_intrinsic, &q_static_type_alignof);
 }
 
 

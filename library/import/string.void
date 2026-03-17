@@ -23,7 +23,7 @@
     bool_type  = v_uint_type(1);
     bool_type_ = v_type_get_llvm_type(bool_type);
 
-    ull = uint(long_long.sizeof * 8);         //- ?
+    ull = uint(sizeof(long_long) * 8);          //- ?
 
     .LLVMConstInt: (LLVMTypeRef, ull, int) ~> LLVMValueRef;
 

@@ -51,7 +51,7 @@ namespace .std {
     {
         .memset: (*void, int, size_t) ~> *void;
 
-        .memset(d, 0, n*unique_ptr(T).sizeof);
+        .memset(d, 0, n*sizeof(unique_ptr(T)));
     }
 
     alwaysinline
@@ -165,7 +165,7 @@ namespace .std {
 //---------------------------------------------------------------------
 #define make_unique: (T: v_static_type_t, n = void) ~> .std.unique_ptr(T)  =
 {
-    n_defined = !(v_typeof(n) == v_static_type_t  &&  n == void);
+    n_defined = !(typeof(n) == v_static_type_t  &&  n == void);
 
     ns = .std.v_generic_ns(unique_ptr_public, t(T));
 

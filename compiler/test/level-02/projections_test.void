@@ -168,8 +168,8 @@ foo: &foo_t := { printf };
 
     t1 = t0[2];
 
-    printf("t1.sizeof:  %d\n", (t1.sizeof : int));
-    printf("t1.alignof: %d\n", (t1.alignof : int));
+    printf("sizeof(t1):  %d\n", (sizeof(t1)  : int));
+    printf("alignof(t1): %d\n", (alignof(t1) : int));
 
 
     v: &t1 := {{0, 1, 2, 3, 4}};
@@ -181,13 +181,13 @@ foo: &foo_t := { printf };
 
     t2 = vec(bool, 32*8)[5];
 
-    printf("t2.sizeof:  %d\n", (t2.sizeof : int));
-    printf("t2.alignof: %d\n", (t2.alignof : int));
+    printf("sizeof(t2):  %d\n", (sizeof(t2)  : int));
+    printf("alignof(t2): %d\n", (alignof(t2) : int));
 
     t3 = int(33*8);
 
-    printf("t3.sizeof:  %d\n", (t3.sizeof : int));
-    printf("t3.alignof: %d\n", (t3.alignof : int));
+    printf("sizeof(t3):  %d\n", (sizeof(t3)  : int));
+    printf("alignof(t3): %d\n", (alignof(t3) : int));
 }
 
 //---------------------------------------------------------------------
@@ -198,8 +198,8 @@ foo: &foo_t := { printf };
 
     t1 = t0[2];
 
-    printf("vec(int(3), 5)[2].sizeof:  %d\n", (vec(int(3), 5)[2].sizeof : int));
-    printf("vec(int(3), 5)[2].alignof: %d\n", (vec(int(3), 5)[2].alignof : int));
+    printf("sizeof(vec(int(3), 5)[2]):  %d\n", (sizeof(vec(int(3), 5)[2])  : int));
+    printf("alignof(vec(int(3), 5)[2]): %d\n", (alignof(vec(int(3), 5)[2]) : int));
 }
 
 

@@ -167,7 +167,7 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
     {
         .memset: (s: *void, c: int, n: size_t) ~> *void;
 
-        .memset(sp, 0, N*my.refcnt_ptr(T).sizeof);
+        .memset(sp, 0, N*sizeof(my.refcnt_ptr(T)));
     }
 
     //-------------------------------------------------------------

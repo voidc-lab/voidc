@@ -159,7 +159,7 @@ namespace my
   {
       .memset: (s: *void, c: int, n: size_t) ~> *void;
 
-      .memset(sp, 0, N*my.unique_ptr(T).sizeof);
+      .memset(sp, 0, N*sizeof(my.unique_ptr(T)));
   }
 
   alwaysinline

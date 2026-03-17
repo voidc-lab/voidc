@@ -120,7 +120,7 @@ v_ast_make_expr_union: (ret: *v_ast_expr_t,
 {
     etmp = v_make_object(v_ast_expr_t);
 
-    v_ast_make_generic(etmp, &ast_expr_union_vtable, v_ast_expr_union_t.sizeof);
+    v_ast_make_generic(etmp, &ast_expr_union_vtable, sizeof(v_ast_expr_union_t));
 
     void_obj = v_ast_generic_get_object((etmp: *v_ast_base_t));
 

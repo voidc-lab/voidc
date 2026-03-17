@@ -84,7 +84,7 @@ namespace .std {
     {
         .memset: (*void, int, size_t) ~> *void;
 
-        .memset(d, 0, n*refcnt_ptr(T).sizeof);
+        .memset(d, 0, n*sizeof(refcnt_ptr(T)));
     }
 
     //-------------------------------------------------------------
@@ -192,7 +192,7 @@ namespace .std {
 
             b_size = (&(0: *detail_ns.data_t)->data[n] : size_t);
 
-            align = detail_ns.data_t.alignof;
+            align = alignof(detail_ns.data_t);
 
             b_size = (b_size + (align-1))/align * align;
 
@@ -309,7 +309,7 @@ namespace .std {
 //---------------------------------------------------------------------
 #define make_refcnt: (T: v_static_type_t, n = void) ~> .std.refcnt_ptr(T)  =
 {
-    n_defined = !(v_typeof(n) == v_static_type_t  &&  n == void);
+    n_defined = !(typeof(n) == v_static_type_t  &&  n == void);
 
     ns = .std.v_generic_ns(refcnt_ptr_public, t(T));
 

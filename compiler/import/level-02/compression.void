@@ -257,7 +257,7 @@ dict_enc_expand: (dict: &v_myz_dict_enc_t) ~> &v_myz_enc_t
 {
     item = v_make_object(v_ast_base_t);
 
-    v_ast_make_generic(item, 0, v_myz_enc_t.sizeof);
+    v_ast_make_generic(item, 0, sizeof(v_myz_enc_t));
 
     v_list_append(&dict.list, &dict.list, item);
 
@@ -388,7 +388,7 @@ dict_dec_expand: (dict: &v_myz_dict_dec_t) ~> &v_myz_dec_t
 {
     item = v_make_object(v_ast_base_t);
 
-    v_ast_make_generic(item, 0, v_myz_dec_t.sizeof);
+    v_ast_make_generic(item, 0, sizeof(v_myz_dec_t));
 
     v_list_append(&dict.list, &dict.list, item);
 

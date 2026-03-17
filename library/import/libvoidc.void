@@ -299,9 +299,9 @@ voidc_make_module: (modname: *const char) ~> void
     {
         //- Host-compilation...
 
-        sizes[0] := int.sizeof;
-        sizes[1] := long.sizeof;
-        sizes[2] := intptr_t.sizeof;
+        sizes[0] := sizeof(int);
+        sizes[1] := sizeof(long);
+        sizes[2] := sizeof(intptr_t);
 
         is_win32 := v_defined(_WIN32);
 

@@ -103,7 +103,7 @@ voidc_intrinsic_quarks_ctor: () ~> void
         voidc_intrinsic_quarks[i].quark := v_quark_ptr_from_string(voidc_intrinsic_quarks[i].name);
     }
 
-    qsort(voidc_intrinsic_quarks, l, voidc_intrinsic_quarks_item_t.sizeof, quarks_compare);
+    qsort(voidc_intrinsic_quarks, l, sizeof(voidc_intrinsic_quarks_item_t), quarks_compare);
 }
 
 //---------------------------------------------------------------------
@@ -157,7 +157,7 @@ compute_key_quark_type: (aux: *void,
 {
     key: &voidc_intrinsic_quarks_item_t := { 0, &q };
 
-    if (!bsearch(&key, voidc_intrinsic_quarks, quarks_count, voidc_intrinsic_quarks_item_t.sizeof, quarks_compare))
+    if (!bsearch(&key, voidc_intrinsic_quarks, quarks_count, sizeof(voidc_intrinsic_quarks_item_t), quarks_compare))
     {
         ctx = *(aux: *compute_key_quark_type_t);
 

@@ -98,7 +98,7 @@ inlinehint
 {
     .memcpy: (d: *void, s: *const void, n: size_t) ~> *void;
 
-    .memcpy(d, s, n*some_t.sizeof);
+    .memcpy(d, s, n*sizeof(some_t));
 
     printf("copy some_t %d\n", (n: int));
 }

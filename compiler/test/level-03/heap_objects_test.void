@@ -167,7 +167,7 @@ struct some_t
 
     size = (&(0: *alloc_t)->data[fixed*dynamic] : size_t);
 
-    void_data = v_aligned_alloc(alloc_t.alignof, size);
+    void_data = v_aligned_alloc(alignof(alloc_t), size);
 
     data = (void_data : *alloc_t);
 

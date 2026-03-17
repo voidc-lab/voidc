@@ -596,7 +596,7 @@ is_incomplete_array_predicate: (t: *v_type_t) ~> bool
 //- ...
 //---------------------------------------------------------------------
 private
-v_typeof_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+typeof_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
@@ -892,7 +892,7 @@ v_internal_type_traits_effort: (*void) ~> void
         v_add_intrinsic("my.static_string_string", static_string_string_intrinsic, 0);
     }
 
-    v_add_intrinsic("v_typeof",   v_typeof_intrinsic,   0);
+    v_add_intrinsic("typeof",     typeof_intrinsic,     0);
     v_add_intrinsic("v_eq_types", v_eq_types_intrinsic, 0);
 }
 

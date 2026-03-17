@@ -102,7 +102,7 @@ coe_chain_item_t = struct
     type:  *v_type_t;           //- ...
 };
 
-{   n = (coe_chain_item_t.sizeof + intptr_t.sizeof - 1) / intptr_t.sizeof;
+{   n = (sizeof(coe_chain_item_t) + sizeof(intptr_t) - 1) / sizeof(intptr_t);
 
     v_add_type("coe_chain_item_impl_t", v_array_type(intptr_t, n));
 }
