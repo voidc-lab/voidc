@@ -387,6 +387,8 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
         return;
     }
 
+    sprintf: (*char, *const char, ...) ~> int;
+
     switch(v_kind(a))
     {
     case v_type_generic_arg_kind_number:
@@ -395,14 +397,39 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         {   s: &char[32] := 0;
 
-            sprintf: (*char, *const char, ...) ~> int;
-
             sprintf(s, "%llu", v_type_generic_arg_number_get_number(a));        //- ?
 
             v_std_string_append(str, s);
         }
 
         v_std_string_append(str, ")");
+
+        break;
+
+    case v_type_generic_arg_kind_number_list:
+
+        v_std_string_append(str, "N[");
+
+        {   s: &char[32] := 0;
+
+            if (n = v_type_generic_arg_number_list_get_count(a))
+            {
+                an = v_type_generic_arg_number_list_get_numbers(a);
+
+                sprintf(s, "%llu", an[0]);                      //- ?
+
+                v_std_string_append(str, s);
+
+                for (i: &int := 1; i < n; ++i)
+                {
+                    sprintf(s, ", %llu", an[i]);                //- ?
+
+                    v_std_string_append(str, s);
+                }
+            }
+        }
+
+        v_std_string_append(str, "]");
 
         break;
 
@@ -418,6 +445,31 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         break;
 
+    case v_type_generic_arg_kind_string_list:
+
+        v_std_string_append(str, "S[");
+
+        if (n = v_type_generic_arg_string_list_get_count(a))
+        {
+            sn = v_type_generic_arg_string_list_get_strings(a);
+
+            append_string_repr(str, v_std_string_get(sn+0), v_std_string_get_size(sn+0));
+
+            for (i: &int := 1; i < n; ++i)
+            {
+                v_std_string_append(str, ", ");
+
+                ss = v_std_string_get(sn+i);
+                sz = v_std_string_get_size(sn+i);
+
+                append_string_repr(str, ss, sz);
+            }
+        }
+
+        v_std_string_append(str, "]");
+
+        break;
+
     case v_type_generic_arg_kind_quark:
 
         v_std_string_append(str, "Q(");
@@ -428,6 +480,28 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
 
         break;
 
+    case v_type_generic_arg_kind_quark_list:
+
+        v_std_string_append(str, "Q[");
+
+        if (n = v_type_generic_arg_quark_list_get_count(a))
+        {
+            qn = v_type_generic_arg_quark_list_get_quarks(a);
+
+            append_quark(str, dict, qn[0]);
+
+            for (i: &int := 1; i < n; ++i)
+            {
+                v_std_string_append(str, ", ");
+
+                append_quark(str, dict, qn[i]);
+            }
+        }
+
+        v_std_string_append(str, "]");
+
+        break;
+
     case v_type_generic_arg_kind_type:
 
         v_std_string_append(str, "T(");
@@ -435,6 +509,28 @@ append_type_generic_arg: (str: *v_std_string_t, dict: &v_trp_dict_t, a: *v_type_
         append_type(str, dict, v_type_generic_arg_type_get_type(a));
 
         v_std_string_append(str, ")");
+
+        break;
+
+    case v_type_generic_arg_kind_type_list:
+
+        v_std_string_append(str, "T[");
+
+        if (n = v_type_generic_arg_type_list_get_count(a))
+        {
+            tn = v_type_generic_arg_type_list_get_types(a);
+
+            append_type(str, dict, tn[0]);
+
+            for (i: &int := 1; i < n; ++i)
+            {
+                v_std_string_append(str, ", ");
+
+                append_type(str, dict, tn[i]);
+            }
+        }
+
+        v_std_string_append(str, "]");
 
         break;
 

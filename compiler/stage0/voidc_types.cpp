@@ -480,10 +480,26 @@ voidc_types_ctx_t::make_number_arg(uint64_t num)
     return make_arg_helper(number_args, num);
 }
 
+v_type_generic_t::arg_number_list_t *
+voidc_types_ctx_t::make_number_list_arg(const uint64_t *nums, size_t count)
+{
+    v_type_generic_t::arg_number_list_t::key_t key = {nums, nums+count};
+
+    return make_arg_helper(number_list_args, key);
+}
+
 v_type_generic_t::arg_string_t *
 voidc_types_ctx_t::make_string_arg(const std::string &str)
 {
     return make_arg_helper(string_args, str);
+}
+
+v_type_generic_t::arg_string_list_t *
+voidc_types_ctx_t::make_string_list_arg(const std::string *strs, size_t count)
+{
+    v_type_generic_t::arg_string_list_t::key_t key = {strs, strs+count};
+
+    return make_arg_helper(string_list_args, key);
 }
 
 v_type_generic_t::arg_quark_t *
@@ -492,12 +508,30 @@ voidc_types_ctx_t::make_quark_arg(v_quark_t q)
     return make_arg_helper(quark_args, q);
 }
 
+v_type_generic_t::arg_quark_list_t *
+voidc_types_ctx_t::make_quark_list_arg(const v_quark_t *qs, size_t count)
+{
+    v_type_generic_t::arg_quark_list_t::key_t key = {qs, qs+count};
+
+    return make_arg_helper(quark_list_args, key);
+}
+
 v_type_generic_t::arg_type_t *
 voidc_types_ctx_t::make_type_arg(v_type_t *t)
 {
     assert(&t->context == this);
 
     return make_arg_helper(type_args, t);
+}
+
+v_type_generic_t::arg_type_list_t *
+voidc_types_ctx_t::make_type_list_arg(v_type_t * const *ts, size_t count)
+{
+    assert((std::all_of(ts, ts+count, [this](auto t){ return &t->context == this; })));
+
+    v_type_generic_t::arg_type_list_t::key_t key = {ts, ts+count};
+
+    return make_arg_helper(type_list_args, key);
 }
 
 v_type_generic_t::arg_cons_t *
@@ -647,9 +681,13 @@ void voidc_types_make_voidc_constants(void)
         LLVMConstInt(int_llvm_type, v_type_generic_t::arg_t::k_##kind, 0)});
 
     DEF(number)
+    DEF(number_list)
     DEF(string)
+    DEF(string_list)
     DEF(quark)
+    DEF(quark_list)
     DEF(type)
+    DEF(type_list)
     DEF(cons)
 
 #undef DEF
@@ -1147,6 +1185,33 @@ v_type_generic_arg_number_get_number(v_type_generic_t::arg_t *arg)
 
 //---------------------------------------------------------------------
 v_type_generic_t::arg_t *
+v_type_generic_number_list_arg(const uint64_t *nums, size_t count)
+{
+    auto &gctx = *voidc_global_ctx_t::target;
+
+    return gctx.make_number_list_arg(nums, count);
+}
+
+bool
+v_type_generic_arg_is_number_list(v_type_generic_t::arg_t *arg)
+{
+    return bool(dynamic_cast<v_type_generic_t::arg_number_list_t *>(arg));
+}
+
+size_t
+v_type_generic_arg_number_list_get_count(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_number_list_t *>(arg)->count();
+}
+
+const uint64_t *
+v_type_generic_arg_number_list_get_numbers(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_number_list_t *>(arg)->numbers();
+}
+
+//---------------------------------------------------------------------
+v_type_generic_t::arg_t *
 v_type_generic_string_arg(const std::string *str)
 {
     auto &gctx = *voidc_global_ctx_t::target;
@@ -1164,6 +1229,33 @@ const std::string *
 v_type_generic_arg_string_get_string(v_type_generic_t::arg_t *arg)
 {
     return &static_cast<v_type_generic_t::arg_string_t *>(arg)->string();
+}
+
+//---------------------------------------------------------------------
+v_type_generic_t::arg_t *
+v_type_generic_string_list_arg(const std::string *strs, size_t count)
+{
+    auto &gctx = *voidc_global_ctx_t::target;
+
+    return gctx.make_string_list_arg(strs, count);
+}
+
+bool
+v_type_generic_arg_is_string_list(v_type_generic_t::arg_t *arg)
+{
+    return bool(dynamic_cast<v_type_generic_t::arg_string_list_t *>(arg));
+}
+
+size_t
+v_type_generic_arg_string_list_get_count(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_string_list_t *>(arg)->count();
+}
+
+const std::string *
+v_type_generic_arg_string_list_get_strings(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_string_list_t *>(arg)->strings();
 }
 
 //---------------------------------------------------------------------
@@ -1189,6 +1281,33 @@ v_type_generic_arg_quark_get_quark(v_type_generic_t::arg_t *arg)
 
 //---------------------------------------------------------------------
 v_type_generic_t::arg_t *
+v_type_generic_quark_list_arg(const v_quark_t *qs, size_t count)
+{
+    auto &gctx = *voidc_global_ctx_t::target;
+
+    return gctx.make_quark_list_arg(qs, count);
+}
+
+bool
+v_type_generic_arg_is_quark_list(v_type_generic_t::arg_t *arg)
+{
+    return bool(dynamic_cast<v_type_generic_t::arg_quark_list_t *>(arg));
+}
+
+size_t
+v_type_generic_arg_quark_list_get_count(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_quark_list_t *>(arg)->count();
+}
+
+const v_quark_t *
+v_type_generic_arg_quark_list_get_quarks(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_quark_list_t *>(arg)->quarks();
+}
+
+//---------------------------------------------------------------------
+v_type_generic_t::arg_t *
 v_type_generic_type_arg(v_type_t *t)
 {
     auto &gctx = *voidc_global_ctx_t::target;
@@ -1206,6 +1325,33 @@ v_type_t *
 v_type_generic_arg_type_get_type(v_type_generic_t::arg_t *arg)
 {
     return static_cast<v_type_generic_t::arg_type_t *>(arg)->type();
+}
+
+//---------------------------------------------------------------------
+v_type_generic_t::arg_t *
+v_type_generic_type_list_arg(v_type_t * const *ts, size_t count)
+{
+    auto &gctx = *voidc_global_ctx_t::target;
+
+    return gctx.make_type_list_arg(ts, count);
+}
+
+bool
+v_type_generic_arg_is_type_list(v_type_generic_t::arg_t *arg)
+{
+    return bool(dynamic_cast<v_type_generic_t::arg_type_list_t *>(arg));
+}
+
+size_t
+v_type_generic_arg_type_list_get_count(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_type_list_t *>(arg)->count();
+}
+
+v_type_t * const *
+v_type_generic_arg_type_list_get_types(v_type_generic_t::arg_t *arg)
+{
+    return static_cast<v_type_generic_t::arg_type_list_t *>(arg)->types();
 }
 
 //---------------------------------------------------------------------

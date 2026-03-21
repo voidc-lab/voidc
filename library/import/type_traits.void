@@ -22,6 +22,7 @@
     q = v_quark_ptr_from_string;
 
     v_add_symbol("int_q",      q_ref, q("int"));
+    v_add_symbol("size_t_q",   q_ref, q("size_t"));
     v_add_symbol("unsigned_q", q_ref, q("unsigned"));
 
     v_add_symbol("q_static_type_t",                  q_ref, q("v_static_type_t"));
@@ -46,17 +47,23 @@
     v_add_symbol("q_static_type_generic_t",          q_ref, q("v_static_type_generic_t"));
     v_add_symbol("q_static_type_incomplete_array_t", q_ref, q("v_static_type_incomplete_array_t"));
 
-    v_add_symbol("q_static_generic_arg_t",        q_ref, q("v_static_generic_arg_t"));
-    v_add_symbol("q_static_generic_arg_number_t", q_ref, q("v_static_generic_arg_number_t"));
-    v_add_symbol("q_static_generic_arg_string_t", q_ref, q("v_static_generic_arg_string_t"));
-    v_add_symbol("q_static_generic_arg_quark_t",  q_ref, q("v_static_generic_arg_quark_t"));
-    v_add_symbol("q_static_generic_arg_type_t",   q_ref, q("v_static_generic_arg_type_t"));
-    v_add_symbol("q_static_generic_arg_cons_t",   q_ref, q("v_static_generic_arg_cons_t"));
+    v_add_symbol("q_static_generic_arg_t",             q_ref, q("v_static_generic_arg_t"));
+    v_add_symbol("q_static_generic_arg_number_t",      q_ref, q("v_static_generic_arg_number_t"));
+    v_add_symbol("q_static_generic_arg_number_list_t", q_ref, q("v_static_generic_arg_number_list_t"));
+    v_add_symbol("q_static_generic_arg_string_t",      q_ref, q("v_static_generic_arg_string_t"));
+    v_add_symbol("q_static_generic_arg_string_list_t", q_ref, q("v_static_generic_arg_string_list_t"));
+    v_add_symbol("q_static_generic_arg_quark_t",       q_ref, q("v_static_generic_arg_quark_t"));
+    v_add_symbol("q_static_generic_arg_quark_list_t",  q_ref, q("v_static_generic_arg_quark_list_t"));
+    v_add_symbol("q_static_generic_arg_type_t",        q_ref, q("v_static_generic_arg_type_t"));
+    v_add_symbol("q_static_generic_arg_type_list_t",   q_ref, q("v_static_generic_arg_type_list_t"));
+    v_add_symbol("q_static_generic_arg_cons_t",        q_ref, q("v_static_generic_arg_cons_t"));
 
-    v_add_symbol("q_static_quark_t",                  q_ref, q("v_static_quark_t"));
-    v_add_symbol("q_static_string_t",                 q_ref, q("v_static_string_t"));
-    v_add_symbol("q_static_array_of_types_t",         q_ref, q("v_static_array_of_types_t"));
-    v_add_symbol("q_static_array_of_generic_args_t",  q_ref, q("v_static_array_of_generic_args_t"));
+    v_add_symbol("q_static_quark_t",                 q_ref, q("v_static_quark_t"));
+    v_add_symbol("q_static_string_t",                q_ref, q("v_static_string_t"));
+    v_add_symbol("q_static_array_of_quarks_t",       q_ref, q("v_static_array_of_quarks_t"));
+    v_add_symbol("q_static_array_of_strings_t",      q_ref, q("v_static_array_of_strings_t"));
+    v_add_symbol("q_static_array_of_types_t",        q_ref, q("v_static_array_of_types_t"));
+    v_add_symbol("q_static_array_of_generic_args_t", q_ref, q("v_static_array_of_generic_args_t"));
 
     v_target_set_global_ctx(gctx);
 }
@@ -359,11 +366,15 @@ private
 static_generic_args_table: &(*const char)[][2] :=
 {
     { "", "" },                     //- Sic!
-    { "_number", "" },
-    { "_string", "" },
-    { "_quark", "" },
-    { "_type", "" },
-    { "_cons", "" },
+    { "_number",      "" },
+    { "_number_list", "" },
+    { "_string",      "" },
+    { "_string_list", "" },
+    { "_quark",       "" },
+    { "_quark_list",  "" },
+    { "_type",        "" },
+    { "_type_list",   "" },
+    { "_cons",        "" },
 
     { 0 }
 };
@@ -502,6 +513,108 @@ generic_arg_count_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
 
 //---------------------------------------------------------------------
 private
+generic_arg_list_count_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                   arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                  ) ~> void
+{
+    garg = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_type_generic_arg_t);
+
+    fun = (aux: *((*v_type_generic_arg_t) ~> size_t));
+
+    sz = fun(garg);
+
+    t = v_find_type_q(size_t_q);
+    v = LLVMConstInt(v_type_get_llvm_type(t), sz, 0);
+
+    v_adopt_result(t, v);
+}
+
+//---------------------------------------------------------------------
+private
+generic_arg_list_numbers_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                     arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                    ) ~> void
+{
+    garg = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_type_generic_arg_t);
+
+    n = v_type_generic_arg_number_list_get_count(garg);
+
+    v: &LLVMValueRef := undef;
+
+    t  = v_uint_type(64);
+    t_ = v_type_get_llvm_type(t);
+
+    if (n)
+    {
+        ns = v_type_generic_arg_number_list_get_numbers(garg);
+
+        val = new LLVMValueRef[n];
+        defer delete[] val;
+
+        for (i: &int := 0; i < n; ++i)
+        {
+            val[i] := LLVMConstInt(t_, ns[i], 0);
+        }
+
+        v := LLVMConstArray(t_, val, (n: unsigned));
+    }
+    else
+    {
+        v := LLVMConstArray(t_, 0, 0);          //- ?
+    }
+
+    t = v_array_type(t, n);
+
+    v_adopt_result(t, v);
+}
+
+//---------------------------------------------------------------------
+private
+generic_arg_list_strings_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                     arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                    ) ~> void
+{
+    garg = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_type_generic_arg_t);
+
+    ss = v_type_generic_arg_string_list_get_strings(garg);
+
+    static_array_of_strings_t = v_find_type_q(q_static_array_of_strings_t);
+
+    v_adopt_result(static_array_of_strings_t, (ss: LLVMValueRef));
+}
+
+//---------------------------------------------------------------------
+private
+generic_arg_list_quarks_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                    arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                   ) ~> void
+{
+    garg = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_type_generic_arg_t);
+
+    qs = v_type_generic_arg_quark_list_get_quarks(garg);
+
+    static_array_of_quarks_t = v_find_type_q(q_static_array_of_quarks_t);
+
+    v_adopt_result(static_array_of_quarks_t, (qs: LLVMValueRef));
+}
+
+//---------------------------------------------------------------------
+private
+generic_arg_list_types_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                   arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                  ) ~> void
+{
+    garg = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_type_generic_arg_t);
+
+    ts = v_type_generic_arg_type_list_get_types(garg);
+
+    static_array_of_types_t = v_find_type_q(q_static_array_of_types_t);
+
+    v_adopt_result(static_array_of_types_t, (ts: LLVMValueRef));
+}
+
+//---------------------------------------------------------------------
+private
 generic_args_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
                          arg_ptrs: **v_ast_expr_t, arg_count: unsigned
                         ) ~> void
@@ -513,6 +626,60 @@ generic_args_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
     array_of_args_t = v_find_type_q(q_static_array_of_generic_args_t);
 
     v_adopt_result(array_of_args_t, (args: LLVMValueRef));
+}
+
+//---------------------------------------------------------------------
+private
+static_array_of_quarks_index_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                         arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                        ) ~> void
+{
+    qs = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_quark_t);
+
+    v_push_result();
+
+    v_set_result_type(v_find_type_q(size_t_q));
+
+    v_ast_accept_visitor(arg_ptrs[1], vis);
+
+    i = v_get_result_value();
+
+    i = LLVMConstIntGetZExtValue(i);
+
+    q = qs[i];
+
+    static_quark_t = v_find_type_q(q_static_quark_t);
+
+    v_pop_result();
+
+    v_adopt_result(static_quark_t, (q: LLVMValueRef));
+}
+
+//---------------------------------------------------------------------
+private
+static_array_of_strings_index_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                                          arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                                         ) ~> void
+{
+    ss = (v_ast_expr_compiled_get_value(arg_ptrs[0]) : *v_std_string_t);
+
+    v_push_result();
+
+    v_set_result_type(v_find_type_q(size_t_q));
+
+    v_ast_accept_visitor(arg_ptrs[1], vis);
+
+    i = v_get_result_value();
+
+    i = LLVMConstIntGetZExtValue(i);
+
+    s = ss+i;
+
+    static_string_t = v_find_type_q(q_static_string_t);
+
+    v_pop_result();
+
+    v_adopt_result(static_string_t, (s: LLVMValueRef));
 }
 
 //---------------------------------------------------------------------
@@ -680,11 +847,15 @@ v_internal_type_traits_effort: (*void) ~> void
         mk_kind("v_type_kind_svector",   v_type_kind_svector);
         mk_kind("v_type_kind_generic",   v_type_kind_generic);
 
-        mk_kind("v_type_generic_arg_kind_number", v_type_generic_arg_kind_number);
-        mk_kind("v_type_generic_arg_kind_string", v_type_generic_arg_kind_string);
-        mk_kind("v_type_generic_arg_kind_quark",  v_type_generic_arg_kind_quark);
-        mk_kind("v_type_generic_arg_kind_type",   v_type_generic_arg_kind_type);
-        mk_kind("v_type_generic_arg_kind_cons",   v_type_generic_arg_kind_cons);
+        mk_kind("v_type_generic_arg_kind_number",      v_type_generic_arg_kind_number);
+        mk_kind("v_type_generic_arg_kind_number_list", v_type_generic_arg_kind_number_list);
+        mk_kind("v_type_generic_arg_kind_string",      v_type_generic_arg_kind_string);
+        mk_kind("v_type_generic_arg_kind_string_list", v_type_generic_arg_kind_string_list);
+        mk_kind("v_type_generic_arg_kind_quark",       v_type_generic_arg_kind_quark);
+        mk_kind("v_type_generic_arg_kind_quark_list",  v_type_generic_arg_kind_quark_list);
+        mk_kind("v_type_generic_arg_kind_type",        v_type_generic_arg_kind_type);
+        mk_kind("v_type_generic_arg_kind_type_list",   v_type_generic_arg_kind_type_list);
+        mk_kind("v_type_generic_arg_kind_cons",        v_type_generic_arg_kind_cons);
     }
 
     generic_arg_t = v_generic_type(q_static_generic_arg_t, 0, 0);
@@ -833,13 +1004,21 @@ v_internal_type_traits_effort: (*void) ~> void
         v_add_intrinsic("my.static_type_is_special", static_type_is_special_intrinsic, 0);
     }
 
+    static_array_of_quarks_t       = v_generic_type(q_static_array_of_quarks_t,       0, 0);
+    static_array_of_strings_t      = v_generic_type(q_static_array_of_strings_t,      0, 0);
     static_array_of_generic_args_t = v_generic_type(q_static_array_of_generic_args_t, 0, 0);
 
+    v_add_type_q(q_static_array_of_quarks_t,       static_array_of_quarks_t);
+    v_add_type_q(q_static_array_of_strings_t,      static_array_of_strings_t);
     v_add_type_q(q_static_array_of_generic_args_t, static_array_of_generic_args_t);
 
-    {   v_add_overload("v.op_postfix_index", static_array_of_generic_args_t, "my.static_array_of_generic_args_index");
+    {   v_add_overload("v.op_postfix_index", static_array_of_quarks_t,       "my.static_array_of_quarks_index");
+        v_add_overload("v.op_postfix_index", static_array_of_strings_t,      "my.static_array_of_strings_index");
+        v_add_overload("v.op_postfix_index", static_array_of_generic_args_t, "my.static_array_of_generic_args_index");
 
-        v_add_intrinsic("my.static_array_of_generic_args_index", static_array_of_generic_args_index_intrinsic,  0);
+        v_add_intrinsic("my.static_array_of_quarks_index",       static_array_of_quarks_index_intrinsic,       0);
+        v_add_intrinsic("my.static_array_of_strings_index",      static_array_of_strings_index_intrinsic,      0);
+        v_add_intrinsic("my.static_array_of_generic_args_index", static_array_of_generic_args_index_intrinsic, 0);
     }
 
     {   v_add_overload(".kind", generic_arg_t, "my.generic_arg_kind");
@@ -847,26 +1026,38 @@ v_internal_type_traits_effort: (*void) ~> void
         v_add_intrinsic("my.generic_arg_kind", generic_arg_kind_intrinsic, 0);
     }
 
-    {   v_add_overload(".is_number", generic_arg_t, "my.static_arg_is_number");
-        v_add_overload(".is_string", generic_arg_t, "my.static_arg_is_string");
-        v_add_overload(".is_quark",  generic_arg_t, "my.static_arg_is_quark");
-        v_add_overload(".is_type",   generic_arg_t, "my.static_arg_is_type");
-        v_add_overload(".is_cons",   generic_arg_t, "my.static_arg_is_cons");
+    {   v_add_overload(".is_number",      generic_arg_t, "my.static_arg_is_number");
+        v_add_overload(".is_number_list", generic_arg_t, "my.static_arg_is_number_list");
+        v_add_overload(".is_string",      generic_arg_t, "my.static_arg_is_string");
+        v_add_overload(".is_string_list", generic_arg_t, "my.static_arg_is_string_list");
+        v_add_overload(".is_quark",       generic_arg_t, "my.static_arg_is_quark");
+        v_add_overload(".is_quark_list",  generic_arg_t, "my.static_arg_is_quark_list");
+        v_add_overload(".is_type",        generic_arg_t, "my.static_arg_is_type");
+        v_add_overload(".is_type_list",   generic_arg_t, "my.static_arg_is_type_list");
+        v_add_overload(".is_cons",        generic_arg_t, "my.static_arg_is_cons");
 
         f = generic_arg_predicate_intrinsic;
 
-        v_add_intrinsic("my.static_arg_is_number", f, v_type_generic_arg_is_number);
-        v_add_intrinsic("my.static_arg_is_string", f, v_type_generic_arg_is_string);
-        v_add_intrinsic("my.static_arg_is_quark",  f, v_type_generic_arg_is_quark);
-        v_add_intrinsic("my.static_arg_is_type",   f, v_type_generic_arg_is_type);
-        v_add_intrinsic("my.static_arg_is_cons",   f, v_type_generic_arg_is_cons);
+        v_add_intrinsic("my.static_arg_is_number",      f, v_type_generic_arg_is_number);
+        v_add_intrinsic("my.static_arg_is_number_list", f, v_type_generic_arg_is_number_list);
+        v_add_intrinsic("my.static_arg_is_string",      f, v_type_generic_arg_is_string);
+        v_add_intrinsic("my.static_arg_is_string_list", f, v_type_generic_arg_is_string_list);
+        v_add_intrinsic("my.static_arg_is_quark",       f, v_type_generic_arg_is_quark);
+        v_add_intrinsic("my.static_arg_is_quark_list",  f, v_type_generic_arg_is_quark_list);
+        v_add_intrinsic("my.static_arg_is_type",        f, v_type_generic_arg_is_type);
+        v_add_intrinsic("my.static_arg_is_type_list",   f, v_type_generic_arg_is_type_list);
+        v_add_intrinsic("my.static_arg_is_cons",        f, v_type_generic_arg_is_cons);
     }
 
-    generic_arg_number_t = v_find_type_q(q_static_generic_arg_number_t);
-    generic_arg_string_t = v_find_type_q(q_static_generic_arg_string_t);
-    generic_arg_quark_t  = v_find_type_q(q_static_generic_arg_quark_t);
-    generic_arg_type_t   = v_find_type_q(q_static_generic_arg_type_t);
-    generic_arg_cons_t   = v_find_type_q(q_static_generic_arg_cons_t);
+    generic_arg_number_t      = v_find_type_q(q_static_generic_arg_number_t);
+    generic_arg_number_list_t = v_find_type_q(q_static_generic_arg_number_list_t);
+    generic_arg_string_t      = v_find_type_q(q_static_generic_arg_string_t);
+    generic_arg_string_list_t = v_find_type_q(q_static_generic_arg_string_list_t);
+    generic_arg_quark_t       = v_find_type_q(q_static_generic_arg_quark_t);
+    generic_arg_quark_list_t  = v_find_type_q(q_static_generic_arg_quark_list_t);
+    generic_arg_type_t        = v_find_type_q(q_static_generic_arg_type_t);
+    generic_arg_type_list_t   = v_find_type_q(q_static_generic_arg_type_list_t);
+    generic_arg_cons_t        = v_find_type_q(q_static_generic_arg_cons_t);
 
     {   v_add_overload(".number",    generic_arg_number_t, "my.static_generic_arg_number");
         v_add_overload(".string",    generic_arg_string_t, "my.static_generic_arg_string");
@@ -883,6 +1074,30 @@ v_internal_type_traits_effort: (*void) ~> void
         v_add_intrinsic("my.static_generic_arg_cons",   generic_arg_cons_intrinsic,   0);
         v_add_intrinsic("my.static_generic_arg_count",  generic_arg_count_intrinsic,  0);
         v_add_intrinsic("my.static_generic_args",       generic_args_intrinsic,       0);
+    }
+
+    {   v_add_overload(".count", generic_arg_number_list_t, "my.static_generic_arg_number_list_count");
+        v_add_overload(".count", generic_arg_string_list_t, "my.static_generic_arg_string_list_count");
+        v_add_overload(".count", generic_arg_quark_list_t,  "my.static_generic_arg_quark_list_count");
+        v_add_overload(".count", generic_arg_type_list_t,   "my.static_generic_arg_type_list_count");
+
+        f = generic_arg_list_count_intrinsic;
+
+        v_add_intrinsic("my.static_generic_arg_number_list_count", f, v_type_generic_arg_number_list_get_count);
+        v_add_intrinsic("my.static_generic_arg_string_list_count", f, v_type_generic_arg_string_list_get_count);
+        v_add_intrinsic("my.static_generic_arg_quark_list_count",  f, v_type_generic_arg_quark_list_get_count);
+        v_add_intrinsic("my.static_generic_arg_type_list_count",   f, v_type_generic_arg_type_list_get_count);
+    }
+
+    {   v_add_overload(".numbers", generic_arg_number_list_t, "my.static_generic_arg_list_numbers");
+        v_add_overload(".strings", generic_arg_string_list_t, "my.static_generic_arg_list_strings");
+        v_add_overload(".quarks",  generic_arg_quark_list_t,  "my.static_generic_arg_list_quarks");
+        v_add_overload(".types",   generic_arg_type_list_t,   "my.static_generic_arg_list_types");
+
+        v_add_intrinsic("my.static_generic_arg_list_numbers", generic_arg_list_numbers_intrinsic, 0);
+        v_add_intrinsic("my.static_generic_arg_list_strings", generic_arg_list_strings_intrinsic, 0);
+        v_add_intrinsic("my.static_generic_arg_list_quarks",  generic_arg_list_quarks_intrinsic,  0);
+        v_add_intrinsic("my.static_generic_arg_list_types",   generic_arg_list_types_intrinsic,   0);
     }
 
     {   v_add_overload(".string", static_quark_t,  "my.static_quark_string");
@@ -968,11 +1183,15 @@ v_internal_type_traits_effort: (*void) ~> void
 
 
 //---------------------------------------------------------------------
-#define (_.as_number): (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_number_t);
-#define (_.as_string): (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_string_t);
-#define (_.as_quark):  (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_quark_t);
-#define (_.as_type):   (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_type_t);
-#define (_.as_cons):   (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_cons_t);
+#define (_.as_number):      (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_number_t);
+#define (_.as_number_list): (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_number_list_t);
+#define (_.as_string):      (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_string_t);
+#define (_.as_string_list): (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_string_list_t);
+#define (_.as_quark):       (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_quark_t);
+#define (_.as_quark_list):  (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_quark_list_t);
+#define (_.as_type):        (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_type_t);
+#define (_.as_type_list):   (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_type_list_t);
+#define (_.as_cons):        (t: v_static_generic_arg_t)  =  (t: v_static_generic_arg_cons_t);
 
 //---------------------------------------------------------------------
 #define (_.element_type): (t: v_static_type_incomplete_array_t) ~> v_static_type_t
@@ -1250,6 +1469,64 @@ v_internal_type_traits_effort: (*void) ~> void
     #endif
 
     aa.type
+};
+
+//---------------------------------------------------------------------
+#define (_.count): (a: v_static_generic_arg_t) ~> size_t  =
+{
+    #if   (a.is_number_list)  aa = a.as_number_list;
+    #elif (a.is_string_list)  aa = a.as_string_list;
+    #elif (a.is_quark_list)   aa = a.as_quark_list;
+    #elif (a.is_type_list)    aa = a.as_type_list;
+    #else
+        #error ("???")
+    #endif
+
+    aa.count
+};
+
+//---------------------------------------------------------------------
+#define (_.numbers): (a: v_static_generic_arg_t)  =
+{
+    #if (a.is_number_list)  aa = a.as_number_list;
+    #else
+        #error ("???")
+    #endif
+
+    aa.numbers
+};
+
+//---------------------------------------------------------------------
+#define (_.strings): (a: v_static_generic_arg_t) ~> v_static_array_of_strings_t  =
+{
+    #if (a.is_string_list)  aa = a.as_string_list;
+    #else
+        #error ("???")
+    #endif
+
+    aa.strings
+};
+
+//---------------------------------------------------------------------
+#define (_.quarks): (a: v_static_generic_arg_t) ~> v_static_array_of_quarks_t  =
+{
+    #if (a.is_quark_list)   aa = a.as_quark_list;
+    #else
+        #error ("???")
+    #endif
+
+    aa.quarks
+};
+
+//---------------------------------------------------------------------
+#define (_.types): (a: v_static_generic_arg_t) ~> v_static_array_of_types_t  =
+{
+    #if (a.is_type_list)    aa = a.as_type_list;
+    #else
+        #error ("???")
+    #endif
+
+    aa.types
 };
 
 //---------------------------------------------------------------------

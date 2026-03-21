@@ -47,6 +47,8 @@
 
     v_add_symbol("q_type_generic_implementation_map", q_ref, q("v.type_generic_implementation_map"));
 
+    v_add_symbol("q_op_postfix_index", q_ref, q("v.op_postfix_index"));
+
     //-------------------------------------------------------------
     v_add_symbol("voidc_compile_quark_q", q_ref, q("voidc.compile_quark"));
     v_add_symbol("voidc_compile_type_q",  q_ref, q("voidc.compile_type"));
@@ -478,37 +480,133 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
 
     args = v_ast_expr_call_get_arg_list(call);
 
-    switch((v_ast_expr_identifier_get_name(fexpr)[0] | 0x20 : char32_t))
+    kind: &char := undef;
+
+    list: &*v_ast_expr_list_t := 0;
+
+    qname = v_ast_expr_identifier_get_name_q(fexpr);
+
+    if (qname == q_op_postfix_index)
     {
-    case 'n':       //- Number
+        agg = v_list_get_item(args, 1);
 
-        v_push_result();
+        v_assert(v_ast_base_get_tag(agg) == v_ast_expr_identifier_tag);
 
-        v_set_result_type(v_uint_type(64));
+        kind := v_ast_expr_identifier_get_name(agg)[0];
 
-        v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+        op = v_list_get_item(args, 0);
 
-        n = v_get_result_value();
+        void_obj = v_ast_generic_get_object(op);
 
-        n = LLVMConstIntGetZExtValue(n);
+        obj = *(void_obj: *v_ast_operator_unary_t);
 
-        v_pop_result();
+        list := (&obj[2] : *v_ast_expr_list_t);
+    }
+    else
+    {
+        kind := v_quark_to_string(qname)[0];
+    }
 
-        return  v_type_generic_number_arg(n);
+    switch((kind | 0x20 : char32_t))
+    {
+    case 'n':       //- Number(s)
 
-    case 's':       //- String
+        if (list)
+        {
+            if (n = v_list_get_size(list))
+            {
+                nums = new uint64_t[n];
+                defer delete[] nums;
 
-        v_push_result();
+                v_push_result();
 
-//      v_set_result_type(INVIOLABLE_TAG);          //- ?
+                typ = v_uint_type(64);
 
-        v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+                for (i: &int := 0; i < n; ++i)
+                {
+                    v_set_result_type(typ);
 
-        l: &size_t := undef;
+                    v_ast_accept_visitor(v_list_get_item(list, i), vis);
 
-        s = LLVMGetAsString(v_get_result_value(), &l);
+                    v = v_get_result_value();
 
-        {   sstr: &v_std_string_t := {};
+                    v = LLVMConstIntGetZExtValue(v);
+
+                    nums[i] := v;
+                }
+
+                v_pop_result();
+
+                return  v_type_generic_number_list_arg(nums, n);
+            }
+            else
+            {
+                return  v_type_generic_number_list_arg(0, 0);
+            }
+        }
+        else        //- single
+        {
+            v_push_result();
+
+            v_set_result_type(v_uint_type(64));
+
+            v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+
+            n = v_get_result_value();
+
+            n = LLVMConstIntGetZExtValue(n);
+
+            v_pop_result();
+
+            return  v_type_generic_number_arg(n);
+        }
+
+    case 's':       //- String(s)
+
+        if (list)
+        {
+            if (n = v_list_get_size(list))
+            {
+                strs = new v_std_string_t[n];
+                defer delete[] strs;
+
+                v_push_result();
+
+                for (i: &int := 0; i < n; ++i)
+                {
+                    v_set_result_type(INVIOLABLE_TAG);          //- ?
+
+                    v_ast_accept_visitor(v_list_get_item(list, i), vis);
+
+                    l: &size_t := undef;
+
+                    s = LLVMGetAsString(v_get_result_value(), &l);
+
+                    v_std_string_set_data(strs+i, s, l-1);      //- ?
+                }
+
+                v_pop_result();
+
+                return  v_type_generic_string_list_arg(strs, n);
+            }
+            else
+            {
+                return  v_type_generic_string_list_arg(0, 0);
+            }
+        }
+        else        //- single
+        {
+            v_push_result();
+
+//          v_set_result_type(INVIOLABLE_TAG);          //- ?
+
+            v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+
+            l: &size_t := undef;
+
+            s = LLVMGetAsString(v_get_result_value(), &l);
+
+            sstr: &v_std_string_t := {};
 
             v_std_string_set_data(&sstr, s, l-1);       //- ?
 
@@ -517,36 +615,103 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
             return  v_type_generic_string_arg(&sstr);
         }
 
-    case 'q':       //- Quark
+    case 'q':       //- Quark(s)
 
-        s = v_list_get_item(args, 0);
-
-        if (v_ast_base_get_tag(s) == v_ast_expr_identifier_tag)
+        if (list)
         {
-            q = v_ast_expr_identifier_get_name_q(s);
+            if (n = v_list_get_size(list))
+            {
+                qs = new v_quark_t[n];
+                defer delete[] qs;
+
+                for (i: &int := 0; i < n; ++i)
+                {
+                    s = v_list_get_item(list, i);
+
+                    tag = v_ast_base_get_tag(s);
+
+                    if (tag == v_ast_expr_identifier_tag)
+                    {
+                        qs[i] := v_ast_expr_identifier_get_name_q(s);
+                    }
+                    else
+                    {
+                        v_assert(tag == v_ast_expr_string_tag);
+
+                        qs[i] := v_quark_from_string(v_ast_expr_string_get_string(s));
+                    }
+                }
+
+                return  v_type_generic_quark_list_arg(qs, n);
+            }
+            else
+            {
+                return  v_type_generic_quark_list_arg(0, 0);
+            }
+        }
+        else        //- single
+        {
+            s = v_list_get_item(args, 0);
+
+            if (v_ast_base_get_tag(s) == v_ast_expr_identifier_tag)
+            {
+                q = v_ast_expr_identifier_get_name_q(s);
+
+                return  v_type_generic_quark_arg(q);
+            }
+
+            v_assert(v_ast_base_get_tag(s) == v_ast_expr_string_tag);
+
+            q = v_quark_from_string(v_ast_expr_string_get_string(s));
 
             return  v_type_generic_quark_arg(q);
         }
 
-        v_assert(v_ast_base_get_tag(s) == v_ast_expr_string_tag);
+    case 't':       //- Type(s)
 
-        q = v_quark_from_string(v_ast_expr_string_get_string(s));
+        if (list)
+        {
+            if (n = v_list_get_size(list))
+            {
+                ts = new (*v_type_t)[n];
+                defer delete[] ts;
 
-        return  v_type_generic_quark_arg(q);
+                v_push_result();
 
-    case 't':       //- Type
+                static_type_t = v_find_type_q(q_static_type_t);
 
-        v_push_result();
+                for (i: &int := 0; i < n; ++i)
+                {
+                    v_set_result_type(static_type_t);
 
-        v_set_result_type(v_find_type_q(q_static_type_t));
+                    v_ast_accept_visitor(v_list_get_item(list, i), vis);
 
-        v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+                    ts[i] := (v_get_result_value() : *v_type_t);
+                }
 
-        t = (v_get_result_value() : *v_type_t);
+                v_pop_result();
 
-        v_pop_result();
+                return  v_type_generic_type_list_arg(ts, n);
+            }
+            else
+            {
+                return  v_type_generic_type_list_arg(0, 0);
+            }
+        }
+        else        //- single
+        {
+            v_push_result();
 
-        return  v_type_generic_type_arg(t);
+            v_set_result_type(v_find_type_q(q_static_type_t));
+
+            v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+
+            t = (v_get_result_value() : *v_type_t);
+
+            v_pop_result();
+
+            return  v_type_generic_type_arg(t);
+        }
 
     case 'c':       //- Cons
 

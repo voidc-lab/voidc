@@ -325,6 +325,30 @@
     v_export_symbol_type("v_type_generic_arg_number_get_number", ft);
 
     //-------------------------------------------------------------
+    uint64_ptr = v_pointer_type(uint64_t, 0);
+
+    v_store(uint64_ptr,             typ0);      //- numbers
+    v_store(size_t,                 typ1);      //- count
+
+    ft = v_function_type(v_type_generic_arg_ptr, typ0, 2, false);
+    v_export_symbol_type("v_type_generic_number_list_arg", ft);
+
+    v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(bool, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_is_number_list", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(size_t, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_number_list_get_count", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(uint64_ptr, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_number_list_get_numbers", ft);
+
+    //-------------------------------------------------------------
     v_store(v_std_string_ptr,       typ0);      //- string
 
     ft = v_function_type(v_type_generic_arg_ptr, typ0, 1, false);
@@ -339,6 +363,28 @@
 
     ft = v_function_type(v_std_string_ptr, typ0, 1, false);
     v_export_symbol_type("v_type_generic_arg_string_get_string", ft);
+
+    //-------------------------------------------------------------
+    v_store(v_std_string_ptr,       typ0);      //- strings
+    v_store(size_t,                 typ1);      //- count
+
+    ft = v_function_type(v_type_generic_arg_ptr, typ0, 2, false);
+    v_export_symbol_type("v_type_generic_string_list_arg", ft);
+
+    v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(bool, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_is_string_list", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(size_t, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_string_list_get_count", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(v_std_string_ptr, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_string_list_get_strings", ft);
 
     //-------------------------------------------------------------
     v_store(v_quark_t,              typ0);      //- quark
@@ -357,6 +403,30 @@
     v_export_symbol_type("v_type_generic_arg_quark_get_quark", ft);
 
     //-------------------------------------------------------------
+    quark_ptr = v_pointer_type(v_quark_t, 0);
+
+    v_store(quark_ptr,              typ0);      //- quarks
+    v_store(size_t,                 typ1);      //- count
+
+    ft = v_function_type(v_type_generic_arg_ptr, typ0, 2, false);
+    v_export_symbol_type("v_type_generic_quark_list_arg", ft);
+
+    v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(bool, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_is_quark_list", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(size_t, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_quark_list_get_count", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(quark_ptr, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_quark_list_get_quarks", ft);
+
+    //-------------------------------------------------------------
     v_store(v_type_ptr,             typ0);      //- type
 
     ft = v_function_type(v_type_generic_arg_ptr, typ0, 1, false);
@@ -371,6 +441,28 @@
 
     ft = v_function_type(v_type_ptr, typ0, 1, false);
     v_export_symbol_type("v_type_generic_arg_type_get_type", ft);
+
+    //-------------------------------------------------------------
+    v_store(type_ptr,               typ0);      //- types
+    v_store(size_t,                 typ1);      //- count
+
+    ft = v_function_type(v_type_generic_arg_ptr, typ0, 2, false);
+    v_export_symbol_type("v_type_generic_type_list_arg", ft);
+
+    v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(bool, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_is_type_list", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(size_t, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_type_list_get_count", ft);
+
+//  v_store(v_type_generic_arg_ptr, typ0);      //-
+
+    ft = v_function_type(type_ptr, typ0, 1, false);
+    v_export_symbol_type("v_type_generic_arg_type_list_get_types", ft);
 
     //-------------------------------------------------------------
     v_store(v_quark_t,              typ0);      //- cons
