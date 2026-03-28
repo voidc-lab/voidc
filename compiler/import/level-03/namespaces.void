@@ -92,7 +92,10 @@ NAMESPACE_SEPARATOR: char32_t = 0x1F;       //- "Unit Separator"...
 export
 struct v_namespace_t
 {
-    name:   v_quark_t;              //- Own "global" name...
+    name:   v_quark_t;              //- Own "global" name
+    local:  v_quark_t;              //- Own "local" name
+
+    parent: *v_namespace_t;         //- ...
 
     prefix: v_std_string_t;         //- ...
 
@@ -142,6 +145,73 @@ namespace_cleaner: (void_ctx: *void) ~> void
 
 //---------------------------------------------------------------------
 export
+v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
+{
+//printf("v_make_namespace_q: start\n");
+//defer printf("v_make_namespace_q: stop\n");
+
+    ns = new v_namespace_t;
+
+    v_add_local_cleaner(namespace_cleaner, ns);
+
+    pref = &ns->prefix;
+
+    if (parent)
+    {
+        v_copy(pref, &parent->prefix);
+
+        v_std_string_append_char(pref, NAMESPACE_SEPARATOR);
+
+        v_std_string_append(pref, v_quark_to_string(qname));
+
+        sstr: &v_std_string_t := {};
+
+        v_std_string_set(&sstr, "v__");
+
+        voidc_internal_std_string_append_mangle(&sstr, pref);
+
+        qm = v_quark_from_string(v_std_string_get(&sstr));
+
+        a: &v_std_any_t := {};
+
+        v_std_any_set_value(&a, qname);
+
+        v_list_append(&parent->list, &parent->list, &a);
+
+        v_std_any_set_value(&a, qm);
+
+        v_map_insert(&parent->map, &parent->map, (qname: intptr_t), &a);
+
+        ns->name   := qm;
+        ns->local  := qname;
+        ns->parent := parent;
+    }
+    else    //- Kinda "root"
+    {
+        v_std_string_set(pref, v_quark_to_string(qname));
+
+        ns->name   := qname;
+        ns->local  := qname;
+        ns->parent := 0;
+    }
+
+    static_namespace_t = v_find_type_q(q_static_namespace_t);
+
+    v_add_constant_q(qname, static_namespace_t, (ns: LLVMValueRef));
+
+    return  ns;
+}
+
+//---------------------------------------------------------------------
+export
+v_make_namespace: (parent: *v_namespace_t, name: *const char) ~> *v_namespace_t
+{
+    return  v_make_namespace_q(parent, v_quark_from_string(name));
+}
+
+
+//---------------------------------------------------------------------
+export
 v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 {
 //printf("v_obtain_namespace_q: start %s\n", v_quark_to_string(qname));
@@ -180,11 +250,7 @@ v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 
     if (!ns)
     {
-        ns := new v_namespace_t;
-
-        v_add_local_cleaner(namespace_cleaner, ns);
-
-        pref = &ns->prefix;
+        parent: &*v_namespace_t := 0;
 
         if (!is_root)
         {
@@ -196,48 +262,11 @@ v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
             {
                 c = v_list_get_item(l, s-1);
 
-                cur_ns = (v_std_any_get_value(intptr_t, c): *v_namespace_t);
-
-                v_copy(pref, &cur_ns->prefix);
-
-                v_std_string_append_char(pref, NAMESPACE_SEPARATOR);
-
-                v_std_string_append(pref, v_quark_to_string(qns));
-
-                sstr: &v_std_string_t := {};
-
-                v_std_string_set(&sstr, "v__");
-
-                voidc_internal_std_string_append_mangle(&sstr, pref);
-
-                qm = v_quark_from_string(v_std_string_get(&sstr));
-
-                a: &v_std_any_t := {};
-
-                v_std_any_set_value(&a, qns);
-
-                v_list_append(&cur_ns->list, &cur_ns->list, &a);
-
-                v_std_any_set_value(&a, qm);
-
-                v_map_insert(&cur_ns->map, &cur_ns->map, (qns: intptr_t), &a);
-
-                ns->name := qm;
-            }
-            else
-            {
-                is_root := true;
+                parent := (v_std_any_get_value(intptr_t, c): *v_namespace_t);
             }
         }
 
-        if (is_root)
-        {
-            v_std_string_set(pref, v_quark_to_string(qns));
-
-            ns->name := qns;
-        }
-
-        v_add_constant_q(qns, static_namespace_t, (ns: LLVMValueRef));
+        ns := v_make_namespace_q(parent, qns);
     }
 
     return  ns;
@@ -772,7 +801,7 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
                 if (t == static_namespace_t  ||  v_try_to_convert(t, v, static_namespace_t, v))
                 {
-                    quark := (v: *v_namespace_t)->name;
+                    quark := (v: *v_namespace_t)->local;
 
                     qsi.qname := quark;             //- Sic !!!
 

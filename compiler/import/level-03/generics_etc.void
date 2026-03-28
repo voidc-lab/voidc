@@ -844,15 +844,21 @@ v_generic_ns_projection_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
     ns_name = compute_generic_ns_name(vis, &list);
 
-    a = v_map_find(&ns->map, (ns_name: intptr_t));
-    v_assert(a);
-
-    q = v_std_any_get_value(v_quark_t, a);
-
     t: &*v_type_t    := undef;
     v: &LLVMValueRef := undef;
 
-    v_find_constant_q(q, &t, &v);
+    if (a = v_map_find(&ns->map, (ns_name: intptr_t)))
+    {
+        q = v_std_any_get_value(v_quark_t, a);
+
+        v_find_constant_q(q, &t, &v);
+    }
+    else
+    {
+        t := v_find_type_q(q_static_namespace_t);
+
+        v := (v_make_namespace_q(ns, ns_name) : LLVMValueRef);
+    }
 
     v_pop_result();
 
