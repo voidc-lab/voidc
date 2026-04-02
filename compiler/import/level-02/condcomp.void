@@ -275,9 +275,9 @@ v_defined_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
-    name = v_ast_expr_identifier_get_name(v_list_get_item(args, 0));
+    qname = v_ast_expr_identifier_get_name_q(v_list_get_item(args, 0));
 
-    ok = v_find_constant(name, 0, 0);
+    ok = v_find_constant_q(qname, 0, 0);
 
     bool_ = v_uint_type(1);
 
