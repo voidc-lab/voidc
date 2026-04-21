@@ -185,8 +185,8 @@ print_trace: () ~> void
             pps = v_std_any_get_pointer(size_t, v_ast_get_property(item->ast, pos_start_q));
             ppe = v_std_any_get_pointer(size_t, v_ast_get_property(item->ast, pos_end_q));
 
-            line:   &size_t := v_undef();
-            column: &size_t := v_undef();
+            line:   &size_t := undef;
+            column: &size_t := undef;
 
             if (pps)
             {
@@ -248,7 +248,7 @@ print_trace: () ~> void
 
             printf("  #%d: %s", i, tag);
 
-            column: &size_t := v_undef();
+            column: &size_t := undef;
 
             line = v_peg_get_line_column(item[1], &column);
 
@@ -261,8 +261,8 @@ print_trace: () ~> void
 
 
 //---------------------------------------------------------------------
-ctx_g: &my_trace_grammar_ctx_t := v_undef();
-ctx_v: &my_trace_visitor_ctx_t := v_undef();
+ctx_g: &my_trace_grammar_ctx_t := undef;
+ctx_v: &my_trace_visitor_ctx_t := undef;
 
 enabled: &bool := false;
 
