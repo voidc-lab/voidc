@@ -43,9 +43,6 @@
     v_add_symbol("size_t_q", q_ref, q("size_t"));
 
     v_add_symbol("q_static_type_t", q_ref, q("v_static_type_t"));
-//
-//    v_add_symbol("q_static_type_sizeof",  q_ref, q("v.static_type_sizeof"));
-//    v_add_symbol("q_static_type_alignof", q_ref, q("v.static_type_alignof"));
 }
 
 

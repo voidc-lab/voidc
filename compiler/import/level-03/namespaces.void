@@ -197,7 +197,7 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 
     static_namespace_t = v_find_type_q(q_static_namespace_t);
 
-    v_add_constant_q(qname, static_namespace_t, (ns: LLVMValueRef));
+    v_add_constant_q(ns->name, static_namespace_t, (ns: LLVMValueRef));
 
     return  ns;
 }

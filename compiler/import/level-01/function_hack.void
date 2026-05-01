@@ -716,23 +716,6 @@
     else_bv = LLVMBuildCall2(builder, llvm_append_bblock_in_context_ft_, llvm_append_bblock_in_context_f, val0, 3, "else_bv");
 
 
-//    llvm_append_basic_block_f   = v_obtain_function("LLVMAppendBasicBlock", lltyp);
-//    llvm_append_basic_block_ft_ = v_load(lltyp);
-//
-//    then_b_str = LLVMBuildGlobalStringPtr(builder, "then_b", "then_b_str");
-//    else_b_str = LLVMBuildGlobalStringPtr(builder, "else_b", "else_b_str");
-//
-//    v_store(cur_fv,     val0);
-//    v_store(then_b_str, val1);
-//
-//    then_bv = LLVMBuildCall2(builder, llvm_append_basic_block_ft_, llvm_append_basic_block_f, val0, 2, "then_bv");
-//
-////  v_store(cur_fv,     val0);
-//    v_store(else_b_str, val1);
-//
-//    else_bv = LLVMBuildCall2(builder, llvm_append_basic_block_ft_, llvm_append_basic_block_f, val0, 2, "else_bv");
-
-
     llvm_build_cond_br_f   = v_obtain_function("LLVMBuildCondBr", lltyp);
     llvm_build_cond_br_ft_ = v_load(lltyp);
 
@@ -819,11 +802,14 @@
     //-
     //-         v_pop_temporaries();
     //-
-    //-         ret = v_get_result_value();
+    //-         if (ret_type)           //- if not void
+    //-         {
+    //-             ret = v_get_result_value();
     //-
-    //-         ret_var_v = v_get_variable_value_q(voidc_internal_return_value_q);
+    //-             ret_var_v = v_get_variable_value_q(voidc_internal_return_value_q);
     //-
-    //-         LLVMBuildStore(builder, ret, ret_var_v);
+    //-             LLVMBuildStore(builder, ret, ret_var_v);
+    //-         }
     //-     }
     //-
     //-     leave_bv = v_get_variable_value_q(voidc_internal_branch_target_leave_q);
@@ -917,6 +903,17 @@
     pop_temps_ft_ = v_load(lltyp);
 
     LLVMBuildCall2(builder, pop_temps_ft_, pop_temps_f, 0, 0, "");
+
+
+    then_b2 = LLVMAppendBasicBlockInContext(llvm_ctx, return_f, "then_b2");
+
+
+    ok_v2 = LLVMBuildIsNotNull(builder, ret_type_v, "ok_v2");
+
+    LLVMBuildCondBr(builder, ok_v2, then_b2, else_b);
+
+
+    LLVMPositionBuilderAtEnd(builder, then_b2);
 
 
     ret_v = LLVMBuildCall2(builder, get_res_value_ft_, get_res_value_f, 0, 0, "ret_v");
