@@ -38,12 +38,10 @@ README                                                         │README.md
 ───────────────────────────────────────────────────────────────│
 GNU LGPL 3.0                                                   │LICENSE
 ═══════════════════════════════════════════════════════════════│
-.hgignore                                                      │.hgignore
 .gitignore                                                     │.gitignore
 .gitattributes                                                 │.gitattributes
 .mailmap                                                       │.mailmap
                                                                │
-hg bookmark -f master                   WTF?                   │hg bookmark -f master
 cloc ...                                                       │cloc --force-lang=C,void .
 ───────────────────────────────────────────────────────────────│
 void.doit                                                      │void.doit
