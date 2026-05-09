@@ -70,20 +70,17 @@ struct gr_trace_item_t
     pos:  size_t;
 };
 
-(v_initialize(_)): (p: *gr_trace_item_t, n: size_t) ~> void
+(v_initialize(_)): (p: *gr_trace_item_t) ~> void
 {
-    for (i: &int := 0; i < n; ++i)
-    {
-        v_initialize(&p[i].path);
+    v_initialize(&p->path);
 
-        v_make_list_nil(&p[i].path);
+    v_make_list_nil(&p->path);
 
-        p[i].pos := 0;
-    }
+    p->pos := 0;
 }
 
-(v_terminate(_)):  (*gr_trace_item_t, size_t) ~> void  =  derive;
-(v_copy(_)):       (*gr_trace_item_t, *const gr_trace_item_t, size_t) ~> void  =  derive;
+(v_terminate(_)):  (*gr_trace_item_t) ~> void  =  derive;
+(v_copy(_)):       (*gr_trace_item_t, *const gr_trace_item_t) ~> void  =  derive;
 
 grti_current: &gr_trace_item_t := {};
 grti_best:    &gr_trace_item_t := {};

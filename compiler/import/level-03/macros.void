@@ -209,10 +209,10 @@ macro_defn_ctx_t = struct
 };
 
 private
-(v_initialize(_)): (*macro_defn_ctx_t, size_t) ~> void  =  derive;
+(v_initialize(_)): (*macro_defn_ctx_t) ~> void  =  derive;
 
 private
-(v_terminate(_)):  (*macro_defn_ctx_t, size_t) ~> void  =  derive;
+(v_terminate(_)):  (*macro_defn_ctx_t) ~> void  =  derive;
 
 private
 macro_defn_ctx_cleaner: (void_ctx: *void) ~> void
@@ -231,10 +231,10 @@ macro_expr_identifier_ctx_t = struct
 };
 
 private
-(v_initialize(_)): (*macro_expr_identifier_ctx_t, size_t) ~> void  =  derive;
+(v_initialize(_)): (*macro_expr_identifier_ctx_t) ~> void  =  derive;
 
 private
-(v_terminate(_)):  (*macro_expr_identifier_ctx_t, size_t) ~> void  =  derive;
+(v_terminate(_)):  (*macro_expr_identifier_ctx_t) ~> void  =  derive;
 
 private
 macro_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void

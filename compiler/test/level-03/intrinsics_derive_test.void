@@ -21,30 +21,28 @@ struct unique_ptr_int
 };
 
 alwaysinline
-(v_initialize(_)): (sp: *unique_ptr_int, N: size_t) ~> void
+(v_initialize(_)): (sp: *unique_ptr_int, n: size_t) ~> void
 {
-    for (i: &int := 0; i < N; ++i)  sp[i].ptr := 0;
+    memset: (*void, int, size_t) ~> *void;
+
+    memset(sp, 0, n*sizeof(unique_ptr_int));
 }
 
 alwaysinline
-(v_terminate(_)): (sp: *unique_ptr_int, N: size_t) ~> void
+(v_terminate(_)): (sp: *unique_ptr_int) ~> void
 {
-    for (i: &int := 0; i < N; ++i)  v_free(sp[i].ptr);
+    v_free(sp->ptr);
 }
 
 alwaysinline
-(v_move(_)): (dst: *unique_ptr_int, src: *unique_ptr_int, N: size_t) ~> void
+(v_move(_)): (dst: *unique_ptr_int, src: *unique_ptr_int) ~> void
 {
-    for (i: &int := 0; i < N; ++i)
-    {
-        v_free(dst[i].ptr);
+    v_free(dst->ptr);
 
-        dst[i].ptr := src[i].ptr;
+    dst->ptr := src->ptr;
 
-        src[i].ptr := 0;
-    }
+    src->ptr := 0;
 }
-
 
 alwaysinline
 (*_): (sp: &unique_ptr_int) ~> &int  =  *sp.ptr;
@@ -119,8 +117,8 @@ struct qwe_t
     r: v_ast_expr_t[5][4][3];
 };
 
-(v_initialize(_)): (*qwe_t, size_t) ~> void = derive;
-(v_terminate(_)):  (*qwe_t, size_t) ~> void = derive;
+(v_initialize(_)): (*qwe_t) ~> void  =  derive;
+(v_terminate(_)):  (*qwe_t) ~> void  =  derive;
 
 
 //---------------------------------------------------------------------
@@ -133,9 +131,9 @@ struct asd_t
 
 zxc_t = struct { z: int; x: qwe_t; };
 
-(v_initialize(_)): (*zxc_t, size_t) ~> void = derive;
+(v_initialize(_)): (*zxc_t) ~> void  =  derive;
 
-(v_initialize(_)): (*asd_t, size_t) ~> void = derive;
+(v_initialize(_)): (*asd_t) ~> void  =  derive;
 
 
 //---------------------------------------------------------------------

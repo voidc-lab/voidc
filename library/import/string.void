@@ -103,94 +103,82 @@ USE_STRING_IMPL  =  !IS_VOIDC  ||  v_defined(BOOTSTRAP);
 #if (!IS_VOIDC)
 
   inlinehint
-  (v_initialize(_)): (dst: *v_string_t, count: size_t) ~> void
+  (v_initialize(_)): (dst: *v_string_t) ~> void
   {
-      for (i: &size_t := 0; i < count; ++i)
-      {
-          di = dst[i].impl;
+      di = dst->impl;
 
+      di._data := di[2].local;
+      di._size := 0;
+      di[2].local[0] := 0;
+  }
+
+  inlinehint
+  (v_terminate(_)): (dst: *v_string_t) ~> void
+  {
+      di = dst->impl;
+
+      if (di.is_long) v_free(di._data);
+  }
+
+  inlinehint
+  (v_copy(_)): (dst: *v_string_t, src: *const v_string_t) ~> void
+  {
+      di = dst->impl;
+      si = src->impl;
+
+      if (di.is_long) v_free(di._data);
+
+      sz = si._size;
+
+      di._size := sz;
+
+      sz1 = sz + 1;
+
+      if (si.is_long)
+      {
+          csz = (sz1 + 15) & ~15;
+
+          di._data := v_malloc(char, csz);
+
+          di[2].capacity := csz - 1;
+      }
+      else
+      {
           di._data := di[2].local;
-          di._size := 0;
-          di[2].local[0] := 0;
       }
+
+      memcpy(di._data, si._data, sz1);
   }
 
   inlinehint
-  (v_terminate(_)): (dst: *v_string_t, count: size_t) ~> void
+  (v_move(_)): (dst: *v_string_t, src: *v_string_t) ~> void
   {
-      for (i: &size_t := 0; i < count; ++i)
+      di = dst->impl;
+      si = src->impl;
+
+      if (di.is_long) v_free(di._data);
+
+      sz = si._size;
+
+      di._size := sz;
+
+      if (si.is_long)
       {
-          di = dst[i].impl;
+          di._data := si._data;
 
-          if (di.is_long) v_free(di._data);
+          di[2].capacity := si[2].capacity;
+
+          si._data := si[2].local;
       }
-  }
-
-  inlinehint
-  (v_copy(_)): (dst: *v_string_t, src: *const v_string_t, count: size_t) ~> void
-  {
-      for (i: &size_t := 0; i < count; ++i)
+      else
       {
-          di = dst[i].impl;
-          si = src[i].impl;
+          di._data := di[2].local;
 
-          if (di.is_long) v_free(di._data);
-
-          sz = si._size;
-
-          di._size := sz;
-
-          sz1 = sz + 1;
-
-          if (si.is_long)
-          {
-              csz = (sz1 + 15) & ~15;
-
-              di._data := v_malloc(char, csz);
-
-              di[2].capacity := csz - 1;
-          }
-          else
-          {
-              di._data := di[2].local;
-          }
-
-          memcpy(di._data, si._data, sz1);
+          memcpy(di._data, si._data, sz+1);
       }
-  }
 
-  inlinehint
-  (v_move(_)): (dst: *v_string_t, src: *v_string_t, count: size_t) ~> void
-  {
-      for (i: &size_t := 0; i < count; ++i)
-      {
-          di = dst[i].impl;
-          si = src[i].impl;
-
-          if (di.is_long) v_free(di._data);
-
-          sz = si._size;
-
-          di._size := sz;
-
-          if (si.is_long)
-          {
-              di._data := si._data;
-
-              di[2].capacity := si[2].capacity;
-
-              si._data := si[2].local;
-          }
-          else
-          {
-              di._data := di[2].local;
-
-              memcpy(di._data, si._data, sz+1);
-          }
-
-          si._size := 0;
-          si[2].local[0] := 0;
-      }
+      si._size := 0;
+      si[2].local[0] := 0;
   }
 
 #endif

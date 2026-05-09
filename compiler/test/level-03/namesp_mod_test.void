@@ -82,10 +82,8 @@ yans.print_b: () ~> void
 export
 struct ns1111;
 
-{ printf("here 0\n"); }
-
 export
-namespace (ns1111)
+namespace ns1111
 {
     a = 111;
 
@@ -94,9 +92,6 @@ namespace (ns1111)
 
 export
 (_+_): (*ns1111, *ns1111) ~> int  =  printf("Hello!\n");
-
-
-{ printf("here 1\n"); }
 
 
 //=====================================================================

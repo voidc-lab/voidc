@@ -117,34 +117,29 @@ struct voidc_ast_generator_t
 };
 
 //---------------------------------------------------------------------
-(v_initialize(_)): (d: *voidc_ast_generator_t, n: size_t) ~> void
+(v_initialize(_)): (d: *voidc_ast_generator_t) ~> void
 {
-    for (i: &int := 0; i < n; ++i)
-    {
-        di = d[i];
+    v_initialize(&d->visitor);
 
-        v_initialize(&di.visitor);
+    v_get_ast_generator_visitor: () ~> *voidc_visitor_t;
 
-        v_get_ast_generator_visitor: () ~> *voidc_visitor_t;
+    v_copy(&d->visitor, v_get_ast_generator_visitor());
 
-        v_copy(&di.visitor, v_get_ast_generator_visitor());
+    v_initialize(&d->gen_list);
 
-        v_initialize(&di.gen_list);
+    v_make_list_nil(&d->gen_list);
 
-        v_make_list_nil(&di.gen_list);
+    d->max_var := -1;
+    d->cur_var := -1;
 
-        di.max_var := -1;
-        di.cur_var := -1;
+    v_initialize(&d->var_map);
 
-        v_initialize(&di.var_map);
-
-        v_make_map(&di.var_map);
-    }
+    v_make_map(&d->var_map);
 }
 
-(v_terminate(_)): (*voidc_ast_generator_t, size_t) ~> void  =  derive;
+(v_terminate(_)): (*voidc_ast_generator_t) ~> void  =  derive;
 
-(v_copy(_)): (*voidc_ast_generator_t, *const voidc_ast_generator_t, size_t) ~> void  =  derive;
+(v_copy(_)): (*voidc_ast_generator_t, *const voidc_ast_generator_t) ~> void  =  derive;
 
 
 //---------------------------------------------------------------------

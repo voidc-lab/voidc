@@ -273,3 +273,21 @@ namespace void[].zaq        //- ... qaz ?!?!?!?!?!?!?
 }
 
 
+//---------------------------------------------------------------------
+namespace zzz
+{
+    xxx = 222;
+}
+
+namespace zzz.zzz
+{
+    yyy = xxx + 333;
+}
+
+{
+    printf("zzz.xxx: %d\n", zzz.xxx);
+
+    printf("zzz.zzz.yyy: %d\n", zzz.zzz.yyy);
+}
+
+

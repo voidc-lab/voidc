@@ -182,10 +182,10 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
       };
 
       inlinehint
-      (v_initialize(_)): (*data_t, size_t) ~> void  =  derive;
+      (v_initialize(_)): (*data_t) ~> void  =  derive;
 
       inlinehint
-      (v_terminate(_)): (*data_t, size_t) ~> void  =  derive;
+      (v_terminate(_)): (*data_t) ~> void  =  derive;
 
       alwaysinline
       (_.impl): (p: &refcnt_ptr(T)) ~> &*T  =  *(&p: **T);
@@ -244,37 +244,27 @@ instantiate_ast: v_ast_generic_list_t =         //- T - type parameter ...
 
     //-------------------------------------------------------------
     inlinehint
-    (v_terminate(_)): (sp: *refcnt_ptr(T), N: size_t) ~> void
+    (v_terminate(_)): (sp: *refcnt_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < N; ++i)
-        {
-            detail_ns.dec(sp[i]);
-        }
+        detail_ns.dec(*sp);
     }
 
     inlinehint
-    (v_copy(_)): (dst: *refcnt_ptr(T), src: *const refcnt_ptr(T), N: size_t) ~> void
+    (v_copy(_)): (dst: *refcnt_ptr(T), src: *const refcnt_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < N; ++i)
-        {
-            di = dst[i];    detail_ns.dec(di);
-            si = src[i];    detail_ns.inc(si);
+        detail_ns.dec(*dst);
+        detail_ns.inc(*src);
 
-            di.impl := si.impl;
-        }
+        dst->impl := src->impl;
     }
 
     inlinehint
-    (v_move(_)): (dst: *refcnt_ptr(T), src: *refcnt_ptr(T), N: size_t) ~> void
+    (v_move(_)): (dst: *refcnt_ptr(T), src: *refcnt_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < N; ++i)
-        {
-            di = dst[i];    detail_ns.dec(di);
-            si = src[i];
+        detail_ns.dec(*dst);
 
-            di.impl := si.impl;
-            si.impl := 0;
-        }
+        dst->impl := src->impl;
+        src->impl := 0;
     }
 
     //-------------------------------------------------------------

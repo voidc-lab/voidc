@@ -124,10 +124,10 @@ namespace .std {
         };
 
         inlinehint
-        (v_initialize(_)): (*data_t, size_t) ~> void  =  derive;
+        (v_initialize(_)): (*data_t) ~> void  =  derive;
 
         inlinehint
-        (v_terminate(_)): (*data_t, size_t) ~> void  =  derive;
+        (v_terminate(_)): (*data_t) ~> void  =  derive;
 
       #endif
 
@@ -233,37 +233,27 @@ namespace .std {
 
     //-------------------------------------------------------------
     inlinehint
-    (v_terminate(_)): (d: *refcnt_ptr(T), n: size_t) ~> void
+    (v_terminate(_)): (d: *refcnt_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < n; ++i)
-        {
-            detail_ns.dec(d[i]);
-        }
+        detail_ns.dec(*d);
     }
 
     inlinehint
-    (v_copy(_)): (d: *refcnt_ptr(T), s: *const refcnt_ptr(T), n: size_t) ~> void
+    (v_copy(_)): (d: *refcnt_ptr(T), s: *const refcnt_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < n; ++i)
-        {
-            di = d[i];  detail_ns.dec(di);
-            si = s[i];  detail_ns.inc(si);
+        detail_ns.dec(*d);
+        detail_ns.inc(*s);
 
-            di.impl := si.impl;
-        }
+        d->impl := s->impl;
     }
 
     inlinehint
-    (v_move(_)): (d: *refcnt_ptr(T), s: *refcnt_ptr(T), n: size_t) ~> void
+    (v_move(_)): (d: *refcnt_ptr(T), s: *refcnt_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < n; ++i)
-        {
-            di = d[i];  detail_ns.dec(di);
-            si = s[i];
+        detail_ns.dec(*d);
 
-            di.impl := si.impl;
-            si.impl := 0;
-        }
+        d->impl := s->impl;
+        s->impl := 0;
     }
 
     alwaysinline

@@ -166,12 +166,9 @@ namespace my
   (_.get()): (sp: unique_ptr(T)) ~> *T  =  *(&sp: **T);
 
   inlinehint
-  (v_terminate(_)): (sp: *unique_ptr(T), N: size_t) ~> void
+  (v_terminate(_)): (sp: *unique_ptr(T)) ~> void
   {
-      for (i: &int := 0; i < N; ++i)
-      {
-          if (p = sp[i].get())  delete p;
-      }
+      if (p = sp->get())  delete p;
   }
 
 
@@ -195,9 +192,9 @@ namespace my
 
 
   inlinehint
-  (v_move(_)): (dst: *unique_ptr(T), src: *unique_ptr(T), N: size_t) ~> void
+  (v_move(_)): (dst: *unique_ptr(T), src: *unique_ptr(T)) ~> void
   {
-      for (i: &int := 0; i < N; ++i)  dst[i].reset(src[i].release());
+      dst->reset(src->release());
   }
 
 

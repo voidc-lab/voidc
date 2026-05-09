@@ -31,6 +31,8 @@
     v_add_symbol("int_q", q_ref, q("int"));
 
     v_add_symbol("derive_q", q_ref, q("derive"));
+
+    v_add_symbol("unit_spec_fun_defn_q", q_ref, q("unit_spec_fun_defn"));
 }
 
 
@@ -48,7 +50,7 @@ voidc_intrinsic_quarks: &voidc_intrinsic_quarks_item_t[] :=
     { "v_terminate" },                  //- Derivable
 
     { "v_copy" },                       //- Derivable
-    { "v_move" },                       //- ? ...
+    { "v_move" },                       //- Derivable, kinda...
 
     { "v_empty" },                      //- ? ...
     { "v_kind" },                       //- ? ...
@@ -255,9 +257,9 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
     //-------------------------------------------------------------
     quark = v_ast_expr_identifier_get_name_q(arg0);
 
-    is_copy = quark == q_copy;
+    is_copy_move =   quark == q_copy  ||  quark == q_move;
 
-    v_assert(is_copy  ||  quark == q_initialize  ||  quark == q_terminate);
+    v_assert(is_copy_move  ||  quark == q_initialize  ||  quark == q_terminate);
 
     //-------------------------------------------------------------
     builder = v_target_get_builder();
@@ -275,7 +277,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
         i: &int := 1;
 
-        if (is_copy)
+        if (is_copy_move)
         {
             v_add_parameter_name(fun, 1, "v.src", params[1]);
 
@@ -352,7 +354,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
         v_copy(expr_list+2, expr_list+0);
 
-        if (is_copy)
+        if (is_copy_move)
         {
             v_ast_make_expr_identifier(expr+0, "v.src");
 
@@ -375,7 +377,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
             v_list_append(expr_list+0, expr_list+0, expr+0, 1);
 
-            if (is_copy) v_list_append(expr_list+1, expr_list+1, expr+0, 1);
+            if (is_copy_move) v_list_append(expr_list+1, expr_list+1, expr+0, 1);
 
             et := v_type_array_get_element_type(et);
         }
@@ -388,7 +390,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
         {
             v_ast_make_expr_call(expr+0, expr+2, expr_list+0);
 
-            if (is_copy)
+            if (is_copy_move)
             {
                 v_ast_make_expr_call(expr+1, expr+2, expr_list+1);
 
@@ -405,7 +407,7 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
         }
         else
         {
-            if (!is_copy)  continue;
+            if (!is_copy_move)  continue;
 
             v_ast_make_expr_call(expr+1, expr+2, expr_list+2);
             v_ast_make_expr_call(expr+0, expr+2, expr_list+3);
@@ -462,13 +464,277 @@ spec_fun_derive_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base
 
 
 //---------------------------------------------------------------------
+private
+my_compile_unit_spec_fun_defn_ctx_t = struct
+{
+    fun: *((*void, *voidc_visitor_t, *v_ast_base_t) ~> void);
+    aux: *void;
+};
+
+//---------------------------------------------------------------------
+private
+my_compile_unit_spec_fun_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+//printf("my_compile_unit_spec_fun_defn: start\n");
+//defer printf("my_compile_unit_spec_fun_defn: stop\n");
+
+    ctx = *(aux: *my_compile_unit_spec_fun_defn_ctx_t);
+
+    list = (self: *v_ast_generic_list_t);
+
+    ast1 = v_list_get_item(list, 1);
+
+    quark = v_ast_expr_identifier_get_name_q((ast1: *v_ast_expr_t));
+
+    params = v_list_get_item(list, 2);
+
+    pars = v_ast_expr_call_get_arg_list((params: *v_ast_expr_t));
+
+    args = (v_list_get_item(pars, 1) : *v_ast_generic_list_t);
+
+    block
+    {
+        got: &bool := false;
+
+        block
+        {
+            if (quark == q_initialize  ||  quark == q_terminate)
+            {
+                got :=  v_list_get_size(args) == 1;
+
+                break;
+            }
+
+            if (quark == q_copy  ||  quark == q_move)
+            {
+                got :=  v_list_get_size(args) == 2;
+
+                break;
+            }
+        }
+
+        if (got)  break;
+
+        ctx.fun(ctx.aux, vis, self);
+
+        return;
+    }
+
+    //-------------------------------------------------------------
+    ast0 = v_list_get_item(list, 0);        //- qualif
+    ast3 = v_list_get_item(list, 3);        //- ret_type
+    body = v_list_get_item(list, 4);        //- ...
+
+    //-------------------------------------------------------------
+    new_params = v_make_object(v_ast_expr_t);
+
+    {   expr = v_make_object(v_ast_expr_t, 2);
+        elst = v_make_object(v_ast_expr_list_t);
+        glst = v_make_object(v_ast_generic_list_t);
+
+        v_ast_make_expr_identifier(expr+0, "v.count");
+        v_ast_make_expr_identifier(expr+1, "size_t");
+
+        v_make_list(elst, expr, 2);
+
+        v_list_append(glst, args, (elst: *v_ast_base_t));
+
+        //-------------------------------------------------------------
+        op = v_list_get_item(pars, 0);
+
+        v_ast_make_expr_op_unary(new_params, op, (glst: *v_ast_expr_t));
+    }
+
+    //-------------------------------------------------------------
+    new_body = v_make_object(v_ast_stmt_list_t);
+
+    block
+    {
+        if (v_empty(body))  break;          //- Declaration...
+
+        got_derive: &bool := false;
+
+        block
+        {
+            if (v_list_get_size((body: *v_ast_stmt_list_t)) != 1)  break;
+
+            stmt = v_list_get_item((body: *v_ast_stmt_list_t), 0);
+
+            if (v_ast_base_get_tag((stmt: *v_ast_base_t)) != v_ast_stmt_tag)  break;
+
+            if (v_ast_stmt_get_name_q(stmt) != 0)  break;
+
+            etmp = v_ast_stmt_get_expr(stmt);
+
+            if (v_ast_base_get_tag((etmp: *v_ast_base_t)) != v_ast_expr_call_tag)  break;
+
+            fexp = v_ast_expr_call_get_fun_expr(etmp);
+
+            if (v_ast_base_get_tag((fexp: *v_ast_base_t)) != v_ast_expr_identifier_tag)  break;
+
+            qname = v_ast_expr_identifier_get_name_q(fexp);
+
+            if (qname != q_internal_spec_fun_derive)  break;
+
+            got_derive := true;         //- Sic!
+
+            v_copy(new_body, (body: *v_ast_stmt_list_t));
+        }
+
+        if (got_derive)  break;
+
+        //-----------------------------------------------------
+        //- Got "normal" body - generate the new one...
+
+        qdst: &v_quark_t := 0;
+        qsrc: &v_quark_t := 0;
+
+        arg0 = v_list_get_item(args, 0);
+
+        enm0 = v_list_get_item((arg0: *v_ast_expr_list_t), 0);
+
+        if (!v_empty(enm0)) qdst := v_ast_expr_identifier_get_name_q(enm0);
+
+        is_copy_move =  quark == q_copy  ||  quark == q_move;
+
+        if (is_copy_move)
+        {
+            arg1 = v_list_get_item(args, 1);
+
+            enm1 = v_list_get_item((arg1: *v_ast_expr_list_t), 0);
+
+            if (!v_empty(enm1)) qsrc := v_ast_expr_identifier_get_name_q(enm1);
+        }
+
+        //-----------------------------------------------------
+        expr      = v_make_object(v_ast_expr_t, 4);
+        stmt      = v_make_object(v_ast_stmt_t, 2);
+        expr_list = v_make_object(v_ast_expr_list_t, 2);
+        stmt_list = v_make_object(v_ast_stmt_list_t);
+
+        v_make_list_nil(new_body);
+        v_make_list_nil(stmt_list);
+
+        v_ast_make_expr_identifier(expr+0, "size_t");
+
+        v_ast_make_stmt_call(stmt+0, q_idx, q_alloca, expr+0, 1);
+        v_list_append(new_body, new_body, stmt+0);
+
+        v_ast_make_expr_integer(expr+0, 0);
+        v_ast_make_expr_identifier_q(expr+1, q_idx);
+
+        v_ast_make_stmt_call(stmt+0, 0, q_store, expr, 2);
+        v_list_append(new_body, new_body, stmt+0);
+
+        //-----------------------------------------------------
+        v_ast_make_expr_identifier_q(expr+0, q_idx);
+
+        v_ast_make_stmt_call(stmt+0, q_idx_v, q_load, expr+0, 1);
+        v_list_append(stmt_list, stmt_list, stmt+0);
+
+        //-----------------------------------------------------
+        v_ast_make_expr_identifier(expr+0, "LLVMIntSGE");
+
+        v_ast_make_expr_identifier_q(expr+1, q_idx_v);
+
+        v_ast_make_expr_identifier(expr+2, "v.count");
+
+        v_make_list(expr_list+0, expr, 3);
+
+        v_ast_make_expr_identifier_q(expr+0, q_icmp);
+
+        v_ast_make_expr_call(expr+0, expr+0, expr_list+0);
+
+        v_ast_make_stmt_call(stmt+0, 0, q_break, 0, 0);
+
+        v_assert(v_empty(stmt+1));
+
+        v_ast_make_stmt_if_then_else(stmt+0, expr+0, stmt+0, stmt+1);
+        v_list_append(stmt_list, stmt_list, stmt+0);
+
+        //-----------------------------------------------------
+        v_ast_make_expr_identifier_q(expr+1, q_idx_v);
+
+        if (qdst)       //- ...
+        {
+            v_ast_make_expr_identifier_q(expr+0, qdst);
+
+            v_ast_make_stmt_call(stmt+0, qdst, q_getelementptr, expr, 2);
+            v_list_append(stmt_list, stmt_list, stmt+0);
+        }
+
+        if (is_copy_move  &&  qsrc)         //- ...
+        {
+            v_ast_make_expr_identifier_q(expr+0, qsrc);
+
+            v_ast_make_stmt_call(stmt+0, qsrc, q_getelementptr, expr, 2);
+            v_list_append(stmt_list, stmt_list, stmt+0);
+        }
+
+        //-----------------------------------------------------
+        v_ast_make_stmt_block(stmt+0, (body: *v_ast_stmt_list_t), false);
+
+        v_list_append(stmt_list, stmt_list, stmt+0);
+
+        //-----------------------------------------------------
+        v_ast_make_expr_identifier(expr+0, "LLVMAdd");
+
+        v_ast_make_expr_identifier_q(expr+1, q_idx_v);
+
+        v_ast_make_expr_integer(expr+2, 1);
+
+        v_ast_make_expr_identifier(expr+3, "size_t");
+
+        v_make_list(expr_list+1, expr+2, 2);
+
+        v_ast_make_expr_identifier(expr+2, "v_cast");
+
+        v_ast_make_expr_call(expr+2, expr+2, expr_list+1);
+
+        v_make_list(expr_list+0, expr, 3);
+
+        v_ast_make_expr_identifier(expr+0, "v_binop");
+
+        v_ast_make_expr_call(expr+0, expr+0, expr_list+0);
+
+        v_ast_make_expr_identifier_q(expr+1, q_idx);
+
+        v_ast_make_stmt_call(stmt+0, 0, q_store, expr+0, 2);
+
+        v_list_append(stmt_list, stmt_list, stmt+0);
+
+        //-----------------------------------------------------
+        v_ast_make_stmt_block(stmt+0, stmt_list, false);
+
+        v_ast_make_stmt_loop(stmt+0, stmt+0);
+
+        v_list_append(new_body, new_body, stmt+0);
+    }
+
+    //-------------------------------------------------------------
+    new_self = v_make_object(v_ast_generic_list_t);
+
+    v_make_list(new_self, unit_spec_fun_defn_q, ast0);
+
+    v_list_append(new_self, new_self, ast1);
+
+    v_list_append(new_self, new_self, (new_params: *v_ast_base_t));
+
+    v_list_append(new_self, new_self, ast3);
+
+    v_list_append(new_self, new_self, (new_body: *v_ast_base_t));
+
+    //-------------------------------------------------------------
+    ctx.fun(ctx.aux, vis, (new_self: *v_ast_base_t));
+}
+
+
+//---------------------------------------------------------------------
 //- Enable intrinsics derive
 //---------------------------------------------------------------------
 export
 voidc_enable_intrinsics_derive_compiler: () ~> void
 {
-    vis = v_get_compiler();
-
     v_return_if(v_get_intrinsic_q(q_internal_spec_fun_derive, 0));
 
     {   gctx = v_target_get_global_ctx();
@@ -519,6 +785,17 @@ voidc_enable_intrinsics_derive_compiler: () ~> void
 
     //-----------------------------------------------------------------
     v_add_intrinsic_q(q_internal_spec_fun_derive, spec_fun_derive_intrinsic, 0);
+
+    //-----------------------------------------------------------------
+    vis = v_get_compiler();
+
+    ctx = *v_malloc(my_compile_unit_spec_fun_defn_ctx_t);
+
+    ctx.fun := voidc_visitor_get_method(vis, unit_spec_fun_defn_q, &ctx.aux);
+
+    v_add_local_cleaner(free, &ctx);
+
+    voidc_visitor_set_method(vis, vis, unit_spec_fun_defn_q, my_compile_unit_spec_fun_defn, &ctx);
 }
 
 //---------------------------------------------------------------------

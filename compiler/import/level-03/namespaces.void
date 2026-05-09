@@ -110,30 +110,25 @@ struct v_namespace_t
 
 //---------------------------------------------------------------------
 export
-(v_initialize(_)): (p: *v_namespace_t, n: size_t) ~> void
+(v_initialize(_)): (p: *v_namespace_t) ~> void
 {
-    for (i: &size_t := 0; i < n; ++i)
-    {
-        p_i = p[i];
+    v_initialize(&p->prefix);
+    v_initialize(&p->list);
+    v_initialize(&p->map);
+    v_initialize(&p->used);
+    v_initialize(&p->privates);
 
-        v_initialize(&p_i.prefix);
-        v_initialize(&p_i.list);
-        v_initialize(&p_i.map);
-        v_initialize(&p_i.used);
-        v_initialize(&p_i.privates);
-
-        v_make_list_nil(&p_i.list);
-        v_make_map(&p_i.map);
-        v_make_list_nil(&p_i.used);
-        v_make_map(&p_i.privates);
-    }
+    v_make_list_nil(&p->list);
+    v_make_map(&p->map);
+    v_make_list_nil(&p->used);
+    v_make_map(&p->privates);
 }
 
 export
-(v_terminate(_)): (p: *v_namespace_t, n: size_t) ~> void  =  derive;
+(v_terminate(_)): (*v_namespace_t) ~> void  =  derive;
 
 export
-(v_copy(_)): (d: *v_namespace_t, s: *const v_namespace_t, n: size_t) ~> void  =  derive;        //- ?
+(v_copy(_)): (*v_namespace_t, *const v_namespace_t) ~> void  =  derive;         //- ?
 
 //---------------------------------------------------------------------
 private
@@ -147,8 +142,8 @@ namespace_cleaner: (void_ctx: *void) ~> void
 export
 v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 {
-//printf("v_make_namespace_q: start\n");
-//defer printf("v_make_namespace_q: stop\n");
+//printf("v_make_namespace_q: start %p %s\n", parent, v_quark_to_string(qname));
+//defer printf("v_make_namespace_q: stop %p\n", v_get_return_value());
 
     ns = new v_namespace_t;
 
@@ -211,6 +206,10 @@ v_make_namespace: (parent: *v_namespace_t, name: *const char) ~> *v_namespace_t
 
 
 //---------------------------------------------------------------------
+private
+lookup_in_namespace: (cache: *v_util_map_t, ns: *v_namespace_t, q: v_quark_t) ~> v_quark_t;
+
+//---------------------------------------------------------------------
 export
 v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 {
@@ -221,15 +220,13 @@ v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 
     strncmp: (*const char, *const char, size_t) ~> int;
 
-    qns: &v_quark_t := undef;
+    qns: &v_quark_t := qname;
 
     nm: &*const char := v_quark_to_string(qname);
 
     if (strncmp(nm, "v__", 3) == 0)
     {
         is_root := true;
-
-        qns := qname;
     }
     else if (strncmp(nm, "v..", 3) == 0)
     {
@@ -237,35 +234,57 @@ v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 
         qns := v_quark_from_string(nm += 3);            //- Skip "v.."
     }
-    else
+
+    parent: &*v_namespace_t := 0;
+
+    if (!is_root)
     {
-        qns := v_lookup_alias_q(qname);
+        a = v_get_property_q(q_current_namespace_list);
+
+        l = v_std_any_get_pointer(v_util_list_t, a);
+
+        if (s = v_list_get_size(l))
+        {
+            c = v_list_get_item(l, s-1);
+
+            parent := (v_std_any_get_value(intptr_t, c): *v_namespace_t);
+        }
     }
 
-    ns: &*v_namespace_t := (v_find_constant_value_q(qns) : *v_namespace_t);
+    ns: &*v_namespace_t := 0;
 
-    static_namespace_t = v_find_type_q(q_static_namespace_t);
-
-    v_assert(!ns  ||  v_find_constant_type_q(qns) == static_namespace_t);
-
-    if (!ns)
+    if (parent)
     {
-        parent: &*v_namespace_t := 0;
+        cache: &v_util_map_t := {};
 
-        if (!is_root)
+        v_make_map(&cache);
+
+        if (q = lookup_in_namespace(&cache, parent, qns))
         {
-            a = v_get_property_q(q_current_namespace_list);
+            qns := q;           //- Sic!
 
-            l = v_std_any_get_pointer(v_util_list_t, a);
+            ns := (v_find_constant_value_q(qns) : *v_namespace_t);
 
-            if (s = v_list_get_size(l))
-            {
-                c = v_list_get_item(l, s-1);
-
-                parent := (v_std_any_get_value(intptr_t, c): *v_namespace_t);
-            }
+            v_assert(ns);
         }
+    }
+    else
+    {
+        ns := (v_find_constant_value_q(qns) : *v_namespace_t);
+    }
 
+    if (ns)
+    {
+        #if (!v_defined(NDEBUG))
+
+            static_namespace_t = v_find_type_q(q_static_namespace_t);
+
+            v_assert(v_find_constant_type_q(qns) == static_namespace_t);
+
+        #endif
+    }
+    else
+    {
         ns := v_make_namespace_q(parent, qns);
     }
 
@@ -722,6 +741,10 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     static_namespace_t = v_find_type_q(q_static_namespace_t);
 
+    open_list: &v_util_list_t := {};
+
+    v_make_list_nil(&open_list);
+
     {   is_namespace: &bool := true;
 
         t: &*v_type_t    := undef;
@@ -731,7 +754,7 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
         {
             qsi = qs[i];
 
-            quark: &v_quark_t := qsi.qname;
+            quark = v_load(&qsi.qname);
 
             v_reset_result();
 
@@ -739,11 +762,11 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
             {
                 if (qsi.args)
                 {
-                    if (qsi.qname != 0)             //- ...
+                    if (quark != 0)                 //- ...
                     {
                         expr: &v_ast_expr_t := {};
 
-                        v_ast_make_expr_identifier_q(&expr, qsi.qname);
+                        v_ast_make_expr_identifier_q(&expr, quark);
 
                         v_ast_make_expr_call(&expr, &expr, qsi.args);
 
@@ -751,18 +774,51 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
                     }
                     else                            //- Hack...
                     {
+                        v_assert(i == 0);
+
                         v_ast_accept_visitor(qsi.args, vis);
                     }
                 }
                 else    //- !qsi.args
                 {
-                    v_assert(qsi.qname);
+                    v_assert(quark);
 
-                    if (v_lookup_identifier_q(qsi.qname, 0, 0))
+                    found: &bool := false;
+
+                    if (i == 0)
+                    {
+                        found :=  v_lookup_identifier_q(quark, 0, 0) != 0;
+                    }
+                    else    //- i != 0
+                    {
+                        parent: &*v_namespace_t := 0;
+
+                        {   a = v_get_property_q(q_current_namespace_list);
+
+                            l = v_std_any_get_pointer(v_util_list_t, a);
+
+                            if (s = v_list_get_size(l))
+                            {
+                                c = v_list_get_item(l, s-1);
+
+                                parent := (v_std_any_get_value(intptr_t, c): *v_namespace_t);
+                            }
+                        }
+
+                        v_assert(parent);
+
+                        cache: &v_util_map_t := {};
+
+                        v_make_map(&cache);
+
+                        found :=  lookup_in_namespace(&cache, parent, quark) != 0;
+                    }
+
+                    if (found)
                     {
                         expr: &v_ast_expr_t := {};
 
-                        v_ast_make_expr_identifier_q(&expr, qsi.qname);
+                        v_ast_make_expr_identifier_q(&expr, quark);
 
                         v_ast_accept_visitor(&expr, vis);
                     }
@@ -770,11 +826,11 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
             }
             else    //- !is_namespace
             {
-                v_assert(qsi.qname);
+                v_assert(quark);
 
                 id: &v_ast_expr_t := {};
 
-                v_ast_make_expr_identifier_q(&id, qsi.qname);
+                v_ast_make_expr_identifier_q(&id, quark);
 
                 pay: &v_ast_generic_list_t := {};
 
@@ -799,28 +855,86 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
             {
                 v := v_get_result_value();
 
-                if (t == static_namespace_t  ||  v_try_to_convert(t, v, static_namespace_t, v))
+                is_namespace :=  (t == static_namespace_t  ||  v_try_to_convert(t, v, static_namespace_t, v));
+
+                if (is_namespace)
                 {
-                    quark := (v: *v_namespace_t)->local;
+                    cur_ns: &*v_namespace_t := 0;
 
-                    qsi.qname := quark;             //- Sic !!!
+                    {   a = v_get_property_q(q_current_namespace_list);
 
-                    is_namespace := true;
+                        l = v_std_any_get_pointer(v_util_list_t, a);
+
+                        if (s = v_list_get_size(l))
+                        {
+                            c = v_list_get_item(l, s-1);
+
+                            cur_ns := (v_std_any_get_value(intptr_t, c): *v_namespace_t);
+                        }
+                    }
+
+                    qlist: &v_util_list_t := {};
+
+                    v_make_list_nil(&qlist);
+
+                    ns: &*v_namespace_t := (v: *v_namespace_t);
+
+                    any: &v_std_any_t := {};
+
+                    while(ns  &&  ns != cur_ns)
+                    {
+                        v_std_any_set_value(&any, ns->local);
+
+                        v_list_append(&qlist, &qlist, &any);
+
+                        ns := ns->parent;
+                    }
+
+                    for (s = v_list_get_size(&qlist)-1, j: &int := (s: int); j >= 0; --j)
+                    {
+                        a = v_list_get_item(&qlist, j);
+
+                        q: &v_quark_t := v_std_any_get_value(v_quark_t, a);
+
+                        if (j == s  &&  ns == 0)
+                        {
+                            sstr: &v_std_string_t := {};
+
+                            v_std_string_set(&sstr, "v..");
+
+                            v_std_string_append(&sstr, v_quark_to_string(q));
+
+                            q := v_quark_from_string(v_std_string_get(&sstr));
+
+                            v_std_any_set_value(&any, q);
+
+                            v_list_append(&open_list, &open_list, &any);
+                        }
+                        else
+                        {
+                            v_list_append(&open_list, &open_list, a);
+                        }
+
+                        //- if (i == N  &&  private)  check_private_thing((q: intptr_t));           ????
+
+                        q = (q: *void);
+
+                        if (export) v_export_effort(voidc_unit_namespace_open_item_effort, q);
+                        else        v_add_effort(voidc_unit_namespace_open_item_effort, q);
+                    }
                 }
-                else
-                {
-                    is_namespace := false;
-                }
-            }
-
-            if (!is_namespace)
-            {
-                qsi.qname := 0;                 //- Sic !!!
 
                 continue;
             }
 
-            q = (quark : *void);
+            {   any: &v_std_any_t := {};
+
+                v_std_any_set_value(&any, quark);
+
+                v_list_append(&open_list, &open_list, &any);
+            }
+
+            q = (quark: *void);
 
             if (i == N  &&  private)  check_private_thing((q: intptr_t));
 
@@ -855,11 +969,12 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     v_ast_make_expr_identifier(expr+0, "voidc_unit_namespace_open_item_effort");
 
-    for (i: &int := 0; i <= N; ++i)
+    for (i: &int := 0, sz = v_list_get_size(&open_list); i < sz; ++i)
     {
-        qname = qs[i].qname;
+        a = v_list_get_item(&open_list, i);
 
-        if (!qname) continue;
+        qname = v_std_any_get_value(v_quark_t, a);
+
 
         v_ast_make_expr_integer(expr+1, qname);
 

@@ -58,16 +58,13 @@ namespace .std {
     (_.get()): (p: unique_ptr(T)) ~> *ET  =  (&p)->impl;
 
     inlinehint
-    (v_terminate(_)): (sp: *unique_ptr(T), n: size_t) ~> void
+    (v_terminate(_)): (sp: *unique_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < n; ++i)
+        if (p = sp->get())
         {
-            if (p = sp[i].get())
-            {
-                #if (is_incomplete_array)   delete[] p;
-                #else                       delete p;
-                #endif
-            }
+            #if (is_incomplete_array)   delete[] p;
+            #else                       delete p;
+            #endif
         }
     }
 
@@ -101,9 +98,9 @@ namespace .std {
     'stmt'}
 
     inlinehint
-    (v_move(_)): (d: *unique_ptr(T), s: *unique_ptr(T), n: size_t) ~> void
+    (v_move(_)): (d: *unique_ptr(T), s: *unique_ptr(T)) ~> void
     {
-        for (i: &int := 0; i < n; ++i)  d[i].reset(s[i].release());
+        d->reset(s->release());
     }
 
     alwaysinline
