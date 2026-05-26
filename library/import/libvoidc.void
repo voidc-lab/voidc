@@ -87,7 +87,7 @@ my_enable_mainline: () ~> void
 
     if (gctx != vctx) v_target_set_global_ctx(gctx);
 
-    if (f_03) f_03();  else  return;
+    if (f_03) f_03();
 }
 
 

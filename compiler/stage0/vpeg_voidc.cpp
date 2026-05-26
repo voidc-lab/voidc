@@ -607,11 +607,8 @@ vpeg::grammar_data_t create_level_0_voidc_grammar(void)
     gr = gr.set_parser("identifier",
     mk_sequence_parser(
     {
-        mk_sequence_parser(
-        {
-            ip_ident_start,
-            mk_star_parser(ip_ident_cont)
-        }),
+        ip_ident_start,
+        mk_star_parser(ip_ident_cont),
 
         mk_action_parser(
             mk_return_action(mk_backref_argument(0))
