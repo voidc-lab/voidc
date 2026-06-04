@@ -126,12 +126,24 @@ mk_macro_hdr_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
 {
     l_id = v_std_any_get_pointer(v_ast_generic_list_t, any+0);
 
-    pars = v_std_any_get_pointer(v_ast_expr_t, any+1);
-    type = v_std_any_get_pointer(v_ast_expr_t, any+2);
+    caps = v_std_any_get_pointer(v_ast_expr_list_t, any+1);
+    pars = v_std_any_get_pointer(v_ast_expr_t,      any+2);
+    type = v_std_any_get_pointer(v_ast_expr_t,      any+3);
 
     list: &v_ast_generic_list_t := {};
 
-    v_list_append(&list, l_id, pars);
+    if (caps)
+    {
+        v_list_append(&list, l_id, caps);
+    }
+    else
+    {
+        ltmp: &v_ast_expr_list_t := {};
+
+        v_list_append(&list, l_id, &ltmp);
+    }
+
+    v_list_append(&list, &list, pars);
 
     if (type)
     {
@@ -183,9 +195,10 @@ mk_macro_define_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, si
     v_make_list(&list, tag, &expr);                             //- qual
 
     v_list_append(&list, &list, v_list_get_item(glst, 0));      //- name
-    v_list_append(&list, &list, v_list_get_item(glst, 1));      //- pars
-    v_list_append(&list, &list, v_list_get_item(glst, 2));      //- type
-    v_list_append(&list, &list, v_list_get_item(glst, 3));      //- body
+    v_list_append(&list, &list, v_list_get_item(glst, 1));      //- caps
+    v_list_append(&list, &list, v_list_get_item(glst, 2));      //- pars
+    v_list_append(&list, &list, v_list_get_item(glst, 3));      //- type
+    v_list_append(&list, &list, v_list_get_item(glst, 4));      //- body
 
     v_ast_make_expr_integer(&expr, kind);
 
@@ -202,6 +215,8 @@ mk_macro_define_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, si
 private
 macro_defn_ctx_t = struct
 {
+    caps: v_util_map_t;             //- Captures ...
+
     pars: v_ast_generic_list_t;     //- Parameters ...
     type: v_ast_expr_t;             //- Return type (if any) ...
 
@@ -292,7 +307,8 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
 
     bmap = &bind.map;
 
-    v_make_map(bmap);
+    if (v_empty(&ctx.caps)) v_make_map(bmap);
+    else                    v_copy(bmap, &ctx.caps);
 
     np = v_list_get_size(&ctx.pars);
     na = v_list_get_size(args);
@@ -434,7 +450,8 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     bmap = &bind.map;
 
-    v_make_map(bmap);
+    if (v_empty(&ctx.caps)) v_make_map(bmap);
+    else                    v_copy(bmap, &ctx.caps);
 
     static_type_t = v_find_type_q(q_static_type_t);
 
@@ -532,19 +549,65 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
 
 //---------------------------------------------------------------------
+private
+collect_captures: (caps: *v_ast_expr_list_t, map: *v_util_map_t) ~> void
+{
+    if (v_empty(caps))  return;
+
+    v_make_map(map);
+
+    n = v_list_get_size(caps);
+
+    if (n == 0) return;
+
+    expr: &v_ast_expr_t := {};
+
+    any: &v_std_any_t := {};
+
+    vis = v_get_compiler();
+
+    v_push_result();
+
+    for (i: &int := 0; i < n; ++i)
+    {
+        e = v_list_get_item(caps, i);
+
+        q = v_ast_expr_identifier_get_name_q(e);
+
+        if (i)  v_reset_result();
+
+        v_ast_accept_visitor(e, vis);
+
+        t = v_get_result_type();
+        v = v_get_result_value();
+
+        v_ast_make_expr_compiled(&expr, t, v);
+
+        v_std_any_set_pointer(&any, &expr);
+
+        v_map_insert(map, map, (q: intptr_t), &any);
+    }
+
+    v_pop_result();
+}
+
+//---------------------------------------------------------------------
 export
 voidc_internal_define_macro_helper: (q: v_quark_t, t: *v_type_t, ast: *v_ast_base_t) ~> void
 {
 //printf("voidc_internal_define_macro_helper: start %s\n", v_quark_to_string(q));
 //defer printf("voidc_internal_define_macro_helper: stop\n");
 
+    body =  ast+0;
     pars = (ast+1 : *v_ast_generic_list_t);
     type = (ast+2 : *v_ast_expr_t);
-    body = ast+0;
+    caps = (ast+3 : *v_ast_expr_list_t);
 
     ctx = new macro_defn_ctx_t;
 
     v_add_cleaner(macro_defn_ctx_cleaner, ctx);
+
+    collect_captures(caps, &ctx->caps);
 
     v_copy(&ctx->pars, pars);
     v_copy(&ctx->type, type);
@@ -590,7 +653,9 @@ voidc_internal_define_macro_helper: (q: v_quark_t, t: *v_type_t, ast: *v_ast_bas
 
 //---------------------------------------------------------------------
 private
-gen_macro_definition: (ret: *v_ast_stmt_t, q: v_quark_t, t: *v_type_t, ctx: &const macro_defn_ctx_t) ~> void
+gen_macro_definition: (ret: *v_ast_stmt_t, q: v_quark_t, t: *v_type_t,
+                       ctx: &const macro_defn_ctx_t, caps: *v_ast_expr_list_t
+                      ) ~> void
 {
 //printf("gen_macro_definition: start\n");
 //defer printf("gen_macro_definition: stop\n");
@@ -605,6 +670,9 @@ gen_macro_definition: (ret: *v_ast_stmt_t, q: v_quark_t, t: *v_type_t, ctx: &con
 
     gen.visit(&ctx.type);
     v_assert(gen.cur_var == 2 <= gen.max_var);          //- 2 - type
+
+    gen.visit(caps);
+    v_assert(gen.cur_var == 3 <= gen.max_var);          //- 3 - caps
 
     slst: &v_ast_stmt_list_t[2] := {};
 
@@ -703,10 +771,11 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     qfl  = (v_list_get_item(list, 0) : *v_ast_expr_t);
     name = (v_list_get_item(list, 1) : *v_ast_expr_t);
-    pars = (v_list_get_item(list, 2) : *v_ast_expr_t);      //- ...
-    type = (v_list_get_item(list, 3) : *v_ast_expr_t);
-    body = (v_list_get_item(list, 4) : *v_ast_base_t);
-    kind = (v_list_get_item(list, 5) : *v_ast_expr_t);
+    caps = (v_list_get_item(list, 2) : *v_ast_expr_list_t);
+    pars = (v_list_get_item(list, 3) : *v_ast_expr_t);          //- ...
+    type = (v_list_get_item(list, 4) : *v_ast_expr_t);
+    body = (v_list_get_item(list, 5) : *v_ast_base_t);
+    kind = (v_list_get_item(list, 6) : *v_ast_expr_t);
 
     qfl  = v_ast_expr_integer_get_number(qfl);
 
@@ -729,6 +798,8 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     if (export) v_add_cleaner(macro_defn_ctx_cleaner, ctx);
     else        v_add_local_cleaner(macro_defn_ctx_cleaner, ctx);
+
+    collect_captures(caps, &ctx->caps);
 
     {   ctx_pars = &ctx->pars;
 
@@ -962,7 +1033,7 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     stmt: &v_ast_stmt_t := {};
 
-    gen_macro_definition(&stmt, quark, ktype, *ctx);
+    gen_macro_definition(&stmt, quark, ktype, *ctx, caps);
 
     v_list_append(stmt_list, stmt_list, &stmt);
 }
@@ -1022,7 +1093,21 @@ voidc_enable_macros: () ~> void
         macro_id = si:spec_ident    { mk_macro_id(0, si) }
                  / id:expr          { mk_macro_id(1, id) };
 
-        macro_hdr = id:macro_id _':'_ b:bracketed r:(_"~>"_ expr)?      { mk_macro_hdr(id, b, r) };
+
+        macro_caps = '['_ l:macro_cap_list _']'         { l };
+
+        macro_cap_list = macro_cap_list_lr
+                       /                        { mk_expr_list(0, 0) };
+
+        macro_cap_list_lr = l:macro_cap_list_lr _','_ i:macro_cap_item      { mk_expr_list(l, i) }
+                          / i:macro_cap_item                                { mk_expr_list(0, i) };
+
+        macro_cap_list_lr is left-recursive;
+
+        macro_cap_item = i:identifier       { mk_expr_identifier(i) };
+
+
+        macro_hdr = id:macro_id _':'_ c:macro_caps? _ b:bracketed r:(_"~>"_ expr)?      { mk_macro_hdr(id, c, b, r) };
 
         macro_stmt = "#define" !ident_cont _ h:macro_hdr _
                          ('='_ e:expr _';'      { mk_macro_stmt(h, e) }
