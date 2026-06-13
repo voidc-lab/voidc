@@ -434,6 +434,45 @@ my_type_generic_obtain_llvm_type: (aux: *void, type: *v_type_t) ~> LLVMTypeRef
 //- ...
 //---------------------------------------------------------------------
 private
+compute_generic_string: (ret: *v_std_string_t, vis: *voidc_visitor_t, arg: *v_ast_expr_t) ~> void
+{
+//printf("compute_generic_string: start\n");
+//defer printf("compute_generic_string: stop\n");
+
+    v_push_result();
+
+    v_ast_accept_visitor(arg, vis);
+
+    l: &size_t := undef;
+
+    s = LLVMGetAsString(v_get_result_value(), &l);
+
+    v_std_string_set_data(ret, s, l-1);
+
+    v_pop_result();
+}
+
+//---------------------------------------------------------------------
+private
+compute_generic_quark: (vis: *voidc_visitor_t, arg: *v_ast_expr_t) ~> v_quark_t
+{
+//printf("compute_generic_quark: start\n");
+//defer printf("compute_generic_quark: stop\n");
+
+    if (v_ast_base_get_tag(arg) == v_ast_expr_identifier_tag)
+    {
+        return  v_ast_expr_identifier_get_name_q(arg);
+    }
+
+    sstr: &v_std_string_t := {};
+
+    compute_generic_string(&sstr, vis, arg);
+
+    return  v_quark_from_string(v_std_string_get(&sstr));
+}
+
+//---------------------------------------------------------------------
+private
 compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_generic_arg_t;
 
 //---------------------------------------------------------------------
@@ -442,21 +481,6 @@ compute_generic_arg_cons: (vis: *voidc_visitor_t, args: *v_ast_expr_list_t,
                            res: **v_type_generic_arg_t
                           ) ~> v_quark_t
 {
-    s = v_list_get_item(args, 0);
-
-    q: &v_quark_t := undef;
-
-    if (v_ast_base_get_tag(s) == v_ast_expr_identifier_tag)
-    {
-        q := v_ast_expr_identifier_get_name_q(s);
-    }
-    else
-    {
-        v_assert(v_ast_base_get_tag(s) == v_ast_expr_string_tag);
-
-        q := v_quark_from_string(v_ast_expr_string_get_string(s));
-    }
-
     if (n = v_list_get_size(args) - 1)
     {
         for (i: &int := 0; i < n; ++i)
@@ -465,7 +489,7 @@ compute_generic_arg_cons: (vis: *voidc_visitor_t, args: *v_ast_expr_list_t,
         }
     }
 
-    return  q;
+    return  compute_generic_quark(vis, v_list_get_item(args, 0));
 }
 
 //---------------------------------------------------------------------
@@ -570,22 +594,10 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
                 strs = new v_std_string_t[n];
                 defer delete[] strs;
 
-                v_push_result();
-
                 for (i: &int := 0; i < n; ++i)
                 {
-                    v_set_result_type(INVIOLABLE_TAG);          //- ?
-
-                    v_ast_accept_visitor(v_list_get_item(list, i), vis);
-
-                    l: &size_t := undef;
-
-                    s = LLVMGetAsString(v_get_result_value(), &l);
-
-                    v_std_string_set_data(strs+i, s, l-1);      //- ?
+                    compute_generic_string(strs+i, vis, v_list_get_item(list, i));
                 }
-
-                v_pop_result();
 
                 return  v_type_generic_string_list_arg(strs, n);
             }
@@ -596,21 +608,9 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
         }
         else        //- single
         {
-            v_push_result();
-
-//          v_set_result_type(INVIOLABLE_TAG);          //- ?
-
-            v_ast_accept_visitor(v_list_get_item(args, 0), vis);
-
-            l: &size_t := undef;
-
-            s = LLVMGetAsString(v_get_result_value(), &l);
-
             sstr: &v_std_string_t := {};
 
-            v_std_string_set_data(&sstr, s, l-1);       //- ?
-
-            v_pop_result();
+            compute_generic_string(&sstr, vis, v_list_get_item(args, 0));
 
             return  v_type_generic_string_arg(&sstr);
         }
@@ -628,18 +628,7 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
                 {
                     s = v_list_get_item(list, i);
 
-                    tag = v_ast_base_get_tag(s);
-
-                    if (tag == v_ast_expr_identifier_tag)
-                    {
-                        qs[i] := v_ast_expr_identifier_get_name_q(s);
-                    }
-                    else
-                    {
-                        v_assert(tag == v_ast_expr_string_tag);
-
-                        qs[i] := v_quark_from_string(v_ast_expr_string_get_string(s));
-                    }
+                    qs[i] := compute_generic_quark(vis, s);
                 }
 
                 return  v_type_generic_quark_list_arg(qs, n);
@@ -653,16 +642,7 @@ compute_generic_arg: (vis: *voidc_visitor_t, self: *v_ast_base_t) ~> *v_type_gen
         {
             s = v_list_get_item(args, 0);
 
-            if (v_ast_base_get_tag(s) == v_ast_expr_identifier_tag)
-            {
-                q = v_ast_expr_identifier_get_name_q(s);
-
-                return  v_type_generic_quark_arg(q);
-            }
-
-            v_assert(v_ast_base_get_tag(s) == v_ast_expr_string_tag);
-
-            q = v_quark_from_string(v_ast_expr_string_get_string(s));
+            q = compute_generic_quark(vis, s);
 
             return  v_type_generic_quark_arg(q);
         }
