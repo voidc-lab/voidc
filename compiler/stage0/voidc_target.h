@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include <set>
-#include <map>
+//#include <map>
 #include <forward_list>
 #include <deque>
 #include <utility>
@@ -105,7 +105,7 @@ public:
     using export_data_t = std::pair<declarations_t, effort_list_t>;
 
 public:
-    std::map<v_quark_t, LLVMValueRef> constant_values;
+    std::unordered_map<v_quark_t, LLVMValueRef> constant_values;
 
 public:
     virtual void add_symbol_value(v_quark_t raw_name, void *value) = 0;
@@ -150,7 +150,7 @@ public:
     ~base_global_ctx_t() override;
 
 public:
-    std::map<std::string, export_data_t> imported;
+    std::unordered_map<std::string, export_data_t> imported;
 
 public:
     LLVMBuilderRef builder;
@@ -519,7 +519,7 @@ public:
     void add_symbol_value(v_quark_t raw_name, void *value) override;
 
 protected:
-    std::map<v_quark_t, void *> symbol_values;
+    std::unordered_map<v_quark_t, void *> symbol_values;
 };
 
 extern template class target_template_ctx_t<base_global_ctx_t, LLVMContextRef, size_t, size_t, size_t>;
