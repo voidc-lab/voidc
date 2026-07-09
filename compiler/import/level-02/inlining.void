@@ -59,6 +59,8 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
 //---------------------------------------------------------------------
 qf_inlinehint:   intptr_t = 1 << 2;                     //- Sic!
 qf_alwaysinline: intptr_t = 1 << 3;                     //- Sic!
+qf_linkonce:     intptr_t = 1 << 4;                     //- Sic!
+qf_linkonce_odr: intptr_t = 1 << 5;                     //- Sic!
 
 
 //---------------------------------------------------------------------
@@ -178,7 +180,7 @@ compile_unit_inline_fun_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_b
 
     qualif = v_ast_expr_integer_get_number((ast0: *v_ast_expr_t));
 
-    if (!(qualif & (qf_inlinehint | qf_alwaysinline)))
+    if (!(qualif & (qf_inlinehint | qf_alwaysinline | qf_linkonce | qf_linkonce_odr)))
     {
         //- No inlining... --------------------------------------------
 
@@ -300,7 +302,7 @@ compile_unit_inline_fun_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_b
         LLVMSetLinkage(f, LLVMExternalLinkage);         //- Sic!
     }
 
-    flags: &intptr_t := qualif & (qf_inlinehint | qf_alwaysinline);
+    flags: &intptr_t := qualif & (qf_inlinehint | qf_alwaysinline | qf_linkonce | qf_linkonce_odr);
 
     if (export)  flags |= qf_export;
 
@@ -440,9 +442,17 @@ finish_module_inlining: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
             iname = v_std_string_get(sstr);
 
-            if (v_get_intrinsic(iname, 0))
+            if (void_data = v_get_intrinsic(iname, 0))
             {
-                LLVMSetLinkage(f, LLVMPrivateLinkage);
+                linkage: &LLVMLinkage := undef;
+
+                data = *(void_data: *v_inline_function_data_t);
+
+                if      (data.flags & qf_linkonce_odr)  linkage := LLVMLinkOnceODRLinkage;
+                else if (data.flags & qf_linkonce)      linkage := LLVMLinkOnceAnyLinkage;
+                else                                    linkage := LLVMPrivateLinkage;
+
+                LLVMSetLinkage(f, linkage);
             }
         }
     }
@@ -515,13 +525,17 @@ voidc_enable_inlining: () ~> void
     v_return_if(v_peg_grammar_get_value(gr0, "qf_alwaysinline"));
 
 
-    any = v_make_object(v_std_any_t, 2);
+    any = v_make_object(v_std_any_t, 4);
 
     any_qf_inlinehint   = any + 0;
     any_qf_alwaysinline = any + 1;
+    any_qf_linkonce     = any + 2;
+    any_qf_linkonce_odr = any + 3;
 
     v_std_any_set_value(any_qf_inlinehint,   qf_inlinehint);
     v_std_any_set_value(any_qf_alwaysinline, qf_alwaysinline);
+    v_std_any_set_value(any_qf_linkonce,     qf_linkonce);
+    v_std_any_set_value(any_qf_linkonce_odr, qf_linkonce_odr);
 
 
     grammar gr0
@@ -530,11 +544,15 @@ voidc_enable_inlining: () ~> void
 
         qf_inlinehint   = any_qf_inlinehint;
         qf_alwaysinline = any_qf_alwaysinline;
+        qf_linkonce     = any_qf_linkonce;
+        qf_linkonce_odr = any_qf_linkonce_odr;
 
     parsers:
 
         qualif_flag += "inlinehint"   !ident_cont   {qf_inlinehint}
                      / "alwaysinline" !ident_cont   {qf_alwaysinline}
+                     / "linkonce_odr" !ident_cont   {qf_linkonce_odr}
+                     / "linkonce"     !ident_cont   {qf_linkonce}
                      ;
     }
 }

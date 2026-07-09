@@ -277,6 +277,8 @@ v_defined_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     qname = v_ast_expr_identifier_get_name_q(v_list_get_item(args, 0));
 
+    qname = v_lookup_alias_q(qname);            //- ?
+
     ok = v_find_constant_q(qname, 0, 0);
 
     bool_ = v_uint_type(1);

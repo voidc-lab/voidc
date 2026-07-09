@@ -70,4 +70,16 @@ alwaysinline
 }
 
 
+//---------------------------------------------------------------------
+linkonce_odr
+some: () ~> void
+{
+    printf("some\n");
+}
+
+{ v_debug_print_module(2); }
+{
+    some();
+}
+
 
