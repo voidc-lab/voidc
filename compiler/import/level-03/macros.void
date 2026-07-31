@@ -70,6 +70,8 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
     v_add_symbol("q_static_type_t",      q_ref, q("v_static_type_t"));
     v_add_symbol("q_static_namespace_t", q_ref, q("v_static_namespace_t"));
 
+    v_add_symbol("q_current_namespace_list", q_ref, q("v.current_namespace_list"));
+
     v_add_symbol("q_object_intrinsic_t", q_ref, q("v_object_intrinsic_t"));
 }
 
@@ -310,6 +312,34 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
     if (v_empty(&ctx.caps)) v_make_map(bmap);
     else                    v_copy(bmap, &ctx.caps);
 
+    ns_capture: &bool := false;
+
+    if (a = v_map_find(bmap, 0))
+    {
+        ns_capture := true;
+
+        qns = v_std_any_get_value(v_quark_t, a);
+
+        ns = (v_find_constant_value_q(qns) : *v_namespace_t);
+
+        any: &v_std_any_t := {};
+
+        v_std_any_set_value(&any, (ns: intptr_t));
+
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        v_list_append(lst, lst, &any);
+    }
+
+    defer if (ns_capture)
+    {
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        i = v_list_get_size(lst) - 1;
+
+        v_list_erase(lst, lst, i, 1);
+    }
+
     np = v_list_get_size(&ctx.pars);
     na = v_list_get_size(args);
 
@@ -453,6 +483,34 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
     if (v_empty(&ctx.caps)) v_make_map(bmap);
     else                    v_copy(bmap, &ctx.caps);
 
+    ns_capture: &bool := false;
+
+    if (a = v_map_find(bmap, 0))
+    {
+        ns_capture := true;
+
+        qns = v_std_any_get_value(v_quark_t, a);
+
+        ns = (v_find_constant_value_q(qns) : *v_namespace_t);
+
+        any: &v_std_any_t := {};
+
+        v_std_any_set_value(&any, (ns: intptr_t));
+
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        v_list_append(lst, lst, &any);
+    }
+
+    defer if (ns_capture)
+    {
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        i = v_list_get_size(lst) - 1;
+
+        v_list_erase(lst, lst, i, 1);
+    }
+
     static_type_t = v_find_type_q(q_static_type_t);
 
     for(i: &int := 0; i < arg_count; ++i)
@@ -558,7 +616,25 @@ collect_captures: (caps: *v_ast_expr_list_t, map: *v_util_map_t) ~> void
 
     n = v_list_get_size(caps);
 
-    if (n == 0) return;
+    if (n == 0)
+    {
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        if (s = v_list_get_size(lst))
+        {
+            r = v_list_get_item(lst, s-1);
+
+            cur_ns = (v_std_any_get_value(intptr_t, r) : *v_namespace_t);
+
+            any: &v_std_any_t := {};
+
+            v_std_any_set_value(&any, cur_ns->name);
+
+            v_map_insert(map, map, 0, &any);        //- Sic!
+        }
+
+        return;
+    }
 
     expr: &v_ast_expr_t := {};
 

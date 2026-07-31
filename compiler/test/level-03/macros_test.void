@@ -199,12 +199,14 @@
 
 
 //---------------------------------------------------------------------
-#define instantiate_list_plus: (T)
+namespace my {
+
+#define instantiate_list_plus: [](T)
 {'unit_defn_list'
 
-    (_+_): (a: my.list(T), b: my.list(T)) ~> my.list(T)  =
+    (_+_): (a: list(T), b: list(T)) ~> list(T)  =
     {
-        tmp: &my.list(T) := a;
+        tmp: &list(T) := a;
 
         for (i: &int := 0, n = b.size; i < n; ++i)
         {
@@ -216,8 +218,10 @@
 
 'unit_defn_list'}
 
+}   //- namespace my
 
-#do (instantiate_list_plus(long))
+
+#do (my.instantiate_list_plus(long))
 
 
 //{ voidc_verify_jit_module_optimized(true); }

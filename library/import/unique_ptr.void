@@ -92,7 +92,7 @@ namespace .std {
     }
 
     #define
-    (v_copy(_)): (d: * .std.unique_ptr(T), s: *const .std.unique_ptr(T), n: size_t)
+    (v_copy(_)): [](d: *unique_ptr(T), s: *const unique_ptr(T), n: size_t)
     {'stmt'
         #error ("Not supported!")
     'stmt'}
@@ -160,7 +160,7 @@ namespace .std {
 
 
 //---------------------------------------------------------------------
-#define make_unique: (T: v_static_type_t, n = void) ~> .std.unique_ptr(T)  =
+#define make_unique: [](T: v_static_type_t, n = void) ~> unique_ptr(T)  =
 {
     n_defined = !(typeof(n) == v_static_type_t  &&  n == void);
 

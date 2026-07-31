@@ -17,6 +17,7 @@ hello_jit.void                                                 │hello_jit.void
 ---------------------------------------------------------------│
 shebang test                                                   │try_shebang.void
                                                                │
+Fruits...                                                      │compiler/test/try_fruits.void -T
                                                                │
 ───────────────────────────────────────────────────────────────│
 CMakeLists.txt                                                 │CMakeLists.txt

@@ -297,7 +297,7 @@ namespace .std {
 
 
 //---------------------------------------------------------------------
-#define make_refcnt: (T: v_static_type_t, n = void) ~> .std.refcnt_ptr(T)  =
+#define make_refcnt: [](T: v_static_type_t, n = void) ~> refcnt_ptr(T)  =
 {
     n_defined = !(typeof(n) == v_static_type_t  &&  n == void);
 

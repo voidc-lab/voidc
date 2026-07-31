@@ -1312,9 +1312,17 @@ lookup_in_namespace: (cache: *v_util_map_t, ns: *v_namespace_t, q: v_quark_t) ~>
         return  v_std_any_get_value(v_quark_t, a);
     }
 
-    a: &v_std_any_t := {};
+    {   a: &v_std_any_t := {};
 
-    v_map_insert(cache, cache, (ns: intptr_t), &a);
+        v_map_insert(cache, cache, (ns: intptr_t), &a);
+    }
+
+    if (ns->parent)
+    {
+        qr = lookup_in_namespace(cache, ns->parent, q);
+
+        if (qr) return qr;
+    }
 
     s = v_list_get_size(&ns->used);
 
