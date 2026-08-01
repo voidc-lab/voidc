@@ -164,7 +164,7 @@ namespace .std {
 {
     n_defined = !(typeof(n) == v_static_type_t  &&  n == void);
 
-    ns = .std.v_generic_ns(unique_ptr_public, t(T));
+    ns = v_generic_ns(unique_ptr_public, t(T));
 
     #if (T.is_incomplete_array)
 
