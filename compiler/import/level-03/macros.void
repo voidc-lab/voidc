@@ -733,10 +733,11 @@ gen_macro_definition: (ret: *v_ast_stmt_t, q: v_quark_t, t: *v_type_t,
                        ctx: &const macro_defn_ctx_t, caps: *v_ast_expr_list_t
                       ) ~> void
 {
-//printf("gen_macro_definition: start\n");
+//printf("gen_macro_definition: start %s\n", v_quark_to_string(q));
 //defer printf("gen_macro_definition: stop\n");
 
     gen: &voidc_ast_generator_t := {};
+
 
     gen.visit(&ctx.body);
     v_assert(gen.cur_var == 0 <= gen.max_var);          //- 0 - body

@@ -170,6 +170,8 @@ struct voidc_ast_generator_t
 //---------------------------------------------------------------------
 (_.cast_var()): (gen: &voidc_ast_generator_t, vn: int, qt: v_quark_t) ~> v_quark_t
 {
+    if (gen.max_var < vn)  gen.max_var := vn;           //- Sic !!!
+
     sstr: &v_std_string_t := {};
 
     v_std_string_set(&sstr, "v.var.");
@@ -346,24 +348,27 @@ gen_generic_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     v_ast_make_stmt_call(&stmt, 0, q_make_list_nil, expr, 2);
     gen.add_stmt(&stmt);
 
-    v_copy(expr+1, expr+0);
-
-    qi = gen.cast_var(nvar+1, q_base);
-
-    v_ast_make_expr_identifier_q(expr+2, qi);
-
     lst = (self: *v_ast_generic_list_t);
 
-    for (N = v_list_get_size(lst), i: &int := 0; i < N; ++i)
+    if (N = v_list_get_size(lst))
     {
-        item = v_list_get_item(lst, i);
+        v_copy(expr+1, expr+0);
 
-        gen.visit(item);
+        qi = gen.cast_var(nvar+1, q_base);
 
-        v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
-        gen.add_stmt(&stmt);
+        v_ast_make_expr_identifier_q(expr+2, qi);
 
-        gen.pop_var();
+        for (i: &int := 0; i < N; ++i)
+        {
+            item = v_list_get_item(lst, i);
+
+            gen.visit(item);
+
+            v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
+            gen.add_stmt(&stmt);
+
+            gen.pop_var();
+        }
     }
 
     gen.ret_var := qr;
@@ -452,24 +457,27 @@ gen_stmt_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     v_ast_make_stmt_call(&stmt, 0, q_make_list_nil, expr, 1);
     gen.add_stmt(&stmt);
 
-    v_copy(expr+1, expr+0);
-
-    qi = gen.cast_var(nvar+1, q_stmt);
-
-    v_ast_make_expr_identifier_q(expr+2, qi);
-
     lst = (self: *v_ast_expr_list_t);
 
-    for (N = v_list_get_size(lst), i: &int := 0; i < N; ++i)
+    if (N = v_list_get_size(lst))
     {
-        item = v_list_get_item(lst, i);
+        v_copy(expr+1, expr+0);
 
-        gen.visit(item);
+        qi = gen.cast_var(nvar+1, q_stmt);
 
-        v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
-        gen.add_stmt(&stmt);
+        v_ast_make_expr_identifier_q(expr+2, qi);
 
-        gen.pop_var();
+        for (i: &int := 0; i < N; ++i)
+        {
+            item = v_list_get_item(lst, i);
+
+            gen.visit(item);
+
+            v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
+            gen.add_stmt(&stmt);
+
+            gen.pop_var();
+        }
     }
 
     gen.ret_var := qr;
@@ -750,24 +758,27 @@ gen_expr_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     v_ast_make_stmt_call(&stmt, 0, q_make_list_nil, expr, 1);
     gen.add_stmt(&stmt);
 
-    v_copy(expr+1, expr+0);
-
-    qi = gen.cast_var(nvar+1, q_expr);
-
-    v_ast_make_expr_identifier_q(expr+2, qi);
-
     lst = (self: *v_ast_stmt_list_t);
 
-    for (N = v_list_get_size(lst), i: &int := 0; i < N; ++i)
+    if (N = v_list_get_size(lst))
     {
-        item = v_list_get_item(lst, i);
+        v_copy(expr+1, expr+0);
 
-        gen.visit(item);
+        qi = gen.cast_var(nvar+1, q_expr);
 
-        v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
-        gen.add_stmt(&stmt);
+        v_ast_make_expr_identifier_q(expr+2, qi);
 
-        gen.pop_var();
+        for (i: &int := 0; i < N; ++i)
+        {
+            item = v_list_get_item(lst, i);
+
+            gen.visit(item);
+
+            v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
+            gen.add_stmt(&stmt);
+
+            gen.pop_var();
+        }
     }
 
     gen.ret_var := qr;
