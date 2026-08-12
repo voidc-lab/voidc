@@ -1607,12 +1607,19 @@ my_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t)
 //printf("my_op_braces_intrinsic: start\n");
 //defer printf("my_op_braces_intrinsic: stop\n");
 
+    tr: &*v_type_t := v_get_result_type();
+
+    if (tr == INVIOLABLE_TAG  ||  tr == UNREFERENCE_TAG)
+    {
+        (aux: *local_objects_ctx_t)->op_braces(vis, self);
+
+        return;
+    }
+
+
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
     N = v_list_get_size(args);
-
-
-    tr: &*v_type_t := v_get_result_type();
 
 
     {   ctx: &*void := undef;

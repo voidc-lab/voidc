@@ -176,11 +176,42 @@ ww: &int[][4][3][2] := W;   //- ?
 uu: &int[] := { 0, 1, 2, 3 };
 
 
+//---------------------------------------------------------------------
+{ voidc_verify_jit_module_optimized(true); }
+{ v_debug_print_module(2); }
+{
+    u = {};
+
+    p = &u;
+
+    n = (p+1 : *char) - (p: *char);
+
+    printf("n: %zd\n", n);
+
+
+    v = { 7i8, "ЫЫЫ" };
+
+    printf("v: (%d, %s)\n", v[0], v[1]);
+
+
+    q = &v;
+
+    m = (q+1 : *char) - (q: *char);
+
+    printf("m: %zd\n", m);
+
+
+    w: int[0] = {};
+
+    p = &w;
+
+    n = (p+1 : *char) - (p: *char);
+
+    printf("n: %zd\n", n);
 
 
 
-
-
+}
 
 
 

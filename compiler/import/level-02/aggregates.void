@@ -10,6 +10,7 @@
     v_import("llvm-c/Core.void");
 
     v_import("loops_etc.void");
+    v_import("condcomp.void");
 
 //  v_import("printf.void");
 }
@@ -17,6 +18,7 @@
 {   v_enable_level_01();
 
     voidc_enable_loops_etc();
+    voidc_enable_condcomp();
 }
 
 
@@ -58,7 +60,69 @@ v_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
     N = v_list_get_size(args);
 
 
+    builder = v_target_get_builder();
+
     t: &*v_type_t := v_get_result_type();
+
+    if (t == INVIOLABLE_TAG  ||  t == UNREFERENCE_TAG)
+    {
+        if (N == 0)
+        {
+            t = v_struct_type(0, 0, false);
+            v = LLVMConstStructInContext(v_target_get_llvm_ctx(), 0, 0, false);
+
+            v_set_result_type(t);
+            v_set_result_value(v);
+
+            return;
+        }
+
+        ets = v_malloc(*v_type_t, N);
+        defer v_free(ets);
+
+        evs = v_malloc(LLVMValueRef, N);
+        defer v_free(evs);
+
+        for (i: &int := 0; i < N; ++i)
+        {
+            expr = v_list_get_item(args, i);
+
+            v_reset_result();
+
+            v_ast_accept_visitor((expr: *v_ast_base_t), vis);
+
+            et = ets[i] := v_get_result_type();
+            ev = evs[i] := v_get_result_value();
+
+            if (v_type_is_reference(et))
+            {
+                //- Unreference!
+
+                v_reset_result();
+
+                v_set_result_type(v_type_refptr_get_element_type(et));
+
+                v_adopt_result(et, ev);
+
+                ets[i] := v_get_result_type();
+                evs[i] := v_get_result_value();
+            }
+        }
+
+        t := v_struct_type(ets, (N: unsigned), false);
+
+        v: &LLVMValueRef := LLVMGetUndef(v_type_get_llvm_type(t));
+
+        for (i: &int := 0; i < N; ++i)
+        {
+            v := LLVMBuildInsertValue(builder, v, evs[i], i, "");
+        }
+
+        v_set_result_type(t);
+        v_set_result_value(v);
+
+        return;
+    }
 
     is_reference = v_type_is_reference(t);
 
@@ -87,8 +151,6 @@ v_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
     v: &LLVMValueRef := LLVMGetUndef(v_type_get_llvm_type(t));
 
 
-    builder = v_target_get_builder();
-
     if (v_type_is_vector(t))
     {
         et = v_type_vector_get_element_type(t);
@@ -113,13 +175,39 @@ v_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
         }
     }
     else
+    block
     {
         ets: &**v_type_t := 0;
 
         et: &*v_type_t := undef;
 
-        if (v_type_is_struct(t))  ets := v_type_struct_get_element_types(t);
-        if (v_type_is_array(t))   et  := v_type_array_get_element_type(t);
+        if (v_type_is_struct(t))
+        {
+            if (v_type_struct_get_element_count(t) == 0)
+            {
+                v_assert(N == 0);       //- ?
+
+                v := LLVMConstNull(v_type_get_llvm_type(t));
+
+                break;
+            }
+
+            ets := v_type_struct_get_element_types(t);
+        }
+
+        if (v_type_is_array(t))
+        {
+            if (v_type_array_get_length(t) == 0)
+            {
+                v_assert(N == 0);       //- ?
+
+                v := LLVMConstNull(v_type_get_llvm_type(t));
+
+                break;
+            }
+
+            et := v_type_array_get_element_type(t);
+        }
 
         for (i: &int := 0; i < N; ++i)
         {
