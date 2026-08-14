@@ -744,9 +744,9 @@ base_local_ctx_t::finish_function(void)
 
     LLVMClearInsertionPosition(global_ctx.builder);
 
-    pop_variables();            //- Sic !!!
+    pop_variables();                    //- Sic !!!
 
-    vars = variables_t();       //- Sic!
+    assert(vars.size() == 0);           //- Sic!
 }
 
 
@@ -2198,7 +2198,7 @@ voidc_local_ctx_t::finish_unit_action(void)
     //-------------------------------------------------------------
     LLVMDisposeModule(module);
 
-    vars = variables_t();       //- ?
+    assert(vars.size() == 0);       //- Sic!
 }
 
 //---------------------------------------------------------------------

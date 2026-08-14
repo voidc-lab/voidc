@@ -134,6 +134,8 @@ export
 private
 namespace_cleaner: (void_ctx: *void) ~> void
 {
+//printf("namespace_cleaner: %s\n", v_quark_to_string((void_ctx: *v_namespace_t)->name));
+
     delete (void_ctx: *v_namespace_t);
 }
 
@@ -143,7 +145,7 @@ export
 v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 {
 //printf("v_make_namespace_q: start %p %s\n", parent, v_quark_to_string(qname));
-//defer printf("v_make_namespace_q: stop %p\n", v_get_return_value());
+//defer printf("v_make_namespace_q: stop %s\n", v_quark_to_string(v_get_return_value()->name));
 
     ns = new v_namespace_t;
 
@@ -159,23 +161,32 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 
         v_std_string_append(pref, v_quark_to_string(qname));
 
-        sstr: &v_std_string_t := {};
+        qm: &v_quark_t := undef;
 
-        v_std_string_set(&sstr, "v__");
+        if (a = v_map_find(&parent->map, (qname: intptr_t)))
+        {
+            qm := v_std_any_get_value(v_quark_t, a);
+        }
+        else
+        {
+            sstr: &v_std_string_t := {};
 
-        voidc_internal_std_string_append_mangle(&sstr, pref);
+            v_std_string_set(&sstr, "v__");
 
-        qm = v_quark_from_string(v_std_string_get(&sstr));
+            voidc_internal_std_string_append_mangle(&sstr, pref);
 
-        a: &v_std_any_t := {};
+            qm := v_quark_from_string(v_std_string_get(&sstr));
 
-        v_std_any_set_value(&a, qname);
+            a: &v_std_any_t := {};
 
-        v_list_append(&parent->list, &parent->list, &a);
+            v_std_any_set_value(&a, qname);
 
-        v_std_any_set_value(&a, qm);
+            v_list_append(&parent->list, &parent->list, &a);
 
-        v_map_insert(&parent->map, &parent->map, (qname: intptr_t), &a);
+            v_std_any_set_value(&a, qm);
+
+            v_map_insert(&parent->map, &parent->map, (qname: intptr_t), &a);
+        }
 
         ns->name   := qm;
         ns->local  := qname;
@@ -261,11 +272,9 @@ v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 
         if (q = lookup_in_namespace(&cache, parent, qns))
         {
-            qns := q;           //- Sic!
+            ns := (v_find_constant_value_q(q) : *v_namespace_t);
 
-            ns := (v_find_constant_value_q(qns) : *v_namespace_t);
-
-            v_assert(ns);
+            if (ns)  qns := q;          //- !?!
         }
     }
     else

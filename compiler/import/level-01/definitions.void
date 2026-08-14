@@ -1285,6 +1285,9 @@
     v_add_parameter_name(f, 5, "fun_body", v_ast_base_ptr);
 }
 {
+//printf("voidc_compile_unit_fun_defn_helper: start\n");
+//defer printf("voidc_compile_unit_fun_defn_helper: stop\n");
+
     def_ctx = *get_definitions_context();
 
     hidden_flag = def_ctx[ctx_hidden_flag];
@@ -1369,8 +1372,8 @@
     v_add_parameter_name(f, 2, "self",    v_ast_base_ptr);
 }
 {
-//  printf("compile_unit_fun_defn\n");
-//  defer printf("compile_unit_fun_defn leave\n");
+//printf("compile_unit_fun_defn: start\n");
+//defer printf("compile_unit_fun_defn: stop\n");
 
     list = v_cast(self, v_ast_generic_list_ptr);
 
@@ -1576,12 +1579,6 @@
     v_reset_result();
 
     static_type_t = v_find_type_q(q_static_type_t);
-
-//    if (v_empty(type))
-//    {
-//        v_set_result_type(INVIOLABLE_TAG);
-//    }
-//    else
 
     if (!v_empty(type))
     {

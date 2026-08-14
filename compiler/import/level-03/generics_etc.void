@@ -918,22 +918,7 @@ my_object_intrinsic_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_
 
     arg0 = v_list_get_item(args, 0);
 
-    tag = v_ast_base_get_tag(arg0);
-
-    quark: &v_quark_t := undef;
-
-    if (tag == v_ast_expr_string_tag)
-    {
-        str = v_ast_expr_string_get_string(arg0);
-
-        quark := v_quark_from_string(str);
-    }
-    else
-    {
-        v_assert(tag == v_ast_expr_identifier_tag);
-
-        quark := v_ast_expr_identifier_get_name_q(arg0);
-    }
+    quark = compute_generic_quark(vis, arg0);
 
     v_set_result_type(v_find_type_q(q_object_intrinsic_t));
     v_set_result_value((quark: LLVMValueRef));

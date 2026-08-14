@@ -1135,6 +1135,9 @@ cdtors: &(*const char)[2] :=
 private
 my_finish_module_globals: (void_ctx: *void, module: LLVMModuleRef) ~> void
 {
+//printf("my_finish_module_globals: start %p\n", module);
+//defer printf("my_finish_module_globals: stop\n");
+
     ctx = *(void_ctx: *my_finish_module_globals_ctx_t);
 
     global_ctx = *ctx.global_ctx;
@@ -1325,6 +1328,9 @@ prefs: &(*const char)[2] :=
 private
 voidc_finish_module_cdtors: (void_ctx: *void, module: LLVMModuleRef) ~> void
 {
+//printf("voidc_finish_module_cdtors: start %p\n", module);
+//defer printf("voidc_finish_module_cdtors: stop\n");
+
     llvm_ctx = v_target_get_llvm_ctx();
 
     builder = v_target_get_builder();
