@@ -52,6 +52,9 @@
     v_add_symbol("voidc_function_hack_visitor_method",   voidc_visitor_method_t, 0);
     v_add_symbol("voidc_function_hack_intrinsic",        voidc_intrinsic_t,      0);
     v_add_symbol("voidc_function_hack_return_intrinsic", voidc_intrinsic_t,      0);
+
+    v_add_symbol("method_fun", v_pointer_type(voidc_visitor_method_t, 0), 0);
+    v_add_symbol("method_aux", void_ptr,                                  0);
 }
 
 //---------------------------------------------------------------------
@@ -82,6 +85,7 @@
     bool_ = v_type_get_llvm_type(bool);
 
     false_ = LLVMConstInt(bool_, 0, 0);
+    true_  = LLVMConstInt(bool_, 1, 0);
 
     LLVMValueRef_ = v_type_get_llvm_type(LLVMValueRef);
 
@@ -97,8 +101,12 @@
     //-----------------------------------------------------------------
     //- Saved global variables
     //-----------------------------------------------------------------
-    //- saved_module_g:   LLVMModuleRef;
-    //- saved_compiler_g: voidc_visitor_t;
+    //- saved_module_g: LLVMModuleRef;
+    //-
+    //- method_fun: *voidc_visitor_method_t;    //- Saved 'unit' method
+    //- method_aux: *void;                      //- ...
+    //-
+    //- enable_hack: bool;                      //- Enable "function hack"
     //-----------------------------------------------------------------
     LLVMModuleRef_ = v_type_get_llvm_type(LLVMModuleRef);
 
@@ -110,25 +118,50 @@
     LLVMSetInitializer(saved_module_g, saved_module_u);
 
 
-    voidc_visitor_t_ = v_type_get_llvm_type(voidc_visitor_t);
+    method_fun_ptr_ = v_type_get_llvm_type(v_pointer_type(voidc_visitor_method_t, 0));
 
-    saved_compiler_g = LLVMAddGlobal(module, voidc_visitor_t_, "saved_compiler_g");
-    LLVMSetLinkage(saved_compiler_g, LLVMPrivateLinkage);
+    method_fun = LLVMAddGlobal(module, method_fun_ptr_, "method_fun");
+//  LLVMSetLinkage(method_fun, LLVMPrivateLinkage);
 
-    saved_compiler_z = LLVMConstNull(voidc_visitor_t_);
+    method_fun_u = LLVMGetUndef(method_fun_ptr_);
 
-    LLVMSetInitializer(saved_compiler_g, saved_compiler_z);         //- Sic !!!
+    LLVMSetInitializer(method_fun, method_fun_u);
+
+
+    method_aux = LLVMAddGlobal(module, void_ptr_, "method_aux");
+//  LLVMSetLinkage(method_aux, LLVMPrivateLinkage);
+
+    method_aux_u = LLVMGetUndef(void_ptr_);
+
+    LLVMSetInitializer(method_aux, method_aux_u);
+
+
+    enable_hack = LLVMAddGlobal(module, bool_, "enable_hack");
+    LLVMSetLinkage(enable_hack, LLVMPrivateLinkage);
+
+    LLVMSetInitializer(enable_hack, false_);        //- Sic!
 
 
     //-----------------------------------------------------------------
     //- "Function hack" compiler visitor method
     //-----------------------------------------------------------------
-    //- private
     //- voidc_function_hack_visitor_method: (aux:     void_ptr,
     //-                                      visitor: voidc_visitor_ptr,
     //-                                      self:    v_ast_base_ptr
     //-                                     ) ~> void
     //- {
+    //-     if (v_load(enable_hack)) ;
+    //-     {
+    //-         fun = v_load(method_fun);
+    //-         aux = v_load(method_aux);
+    //-
+    //-         fun(aux, visitor, self);
+    //-
+    //-         v_return();
+    //-     }
+    //-
+    //-     v_store(false, enable_hack);
+    //-
     //-     unit = v_cast(self, v_ast_unit_ptr);
     //-
     //-     stmt_list = v_ast_unit_get_stmt_list(unit);
@@ -147,17 +180,13 @@
     //-
     //-     v_set_module(old_module);
     //-
-    //-     compiler = v_get_compiler();
-    //-
-    //-     v_move(compiler, saved_compiler_g);
-    //-
     //-     if (old_module) v_return();
     //-
     //-     voidc_unit_load_local_module_to_jit(fun_module, false);
     //- }
     //-----------------------------------------------------------------
     method_f = v_obtain_function("voidc_function_hack_visitor_method", 0);
-    LLVMSetLinkage(method_f, LLVMPrivateLinkage);
+//  LLVMSetLinkage(method_f, LLVMPrivateLinkage);
 
     aux     = LLVMGetParam(method_f, 0);
     visitor = LLVMGetParam(method_f, 1);
@@ -165,6 +194,38 @@
 
     entry = LLVMAppendBasicBlockInContext(llvm_ctx, method_f, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
+
+
+
+    enable_hack_v = LLVMBuildLoad2(builder, bool_, enable_hack, "enable_hack_v");
+
+    else0_b = LLVMAppendBasicBlockInContext(llvm_ctx, method_f, "else0_b");
+    then0_b = LLVMAppendBasicBlockInContext(llvm_ctx, method_f, "then0_b");
+
+    LLVMBuildCondBr(builder, enable_hack_v, then0_b, else0_b);
+
+
+    LLVMPositionBuilderAtEnd(builder, else0_b);
+
+
+    fun_v = LLVMBuildLoad2(builder, method_fun_ptr_, method_fun, "fun_v");
+    aux_v = LLVMBuildLoad2(builder, void_ptr_,       method_aux, "aux_v");
+
+    v_store(aux_v,   val0);
+    v_store(visitor, val1);
+    v_store(self,    val2);
+
+    LLVMBuildCall2(builder, v_type_get_llvm_type(voidc_visitor_method_t), fun_v, val0, 3, "");
+
+
+    LLVMBuildRetVoid(builder);
+
+
+    LLVMPositionBuilderAtEnd(builder, then0_b);
+
+
+    LLVMBuildStore(builder, false_, enable_hack);
+
 
 
     v_ast_unit_ptr_ = v_type_get_llvm_type(v_ast_unit_ptr);
@@ -220,22 +281,6 @@
     set_module_ft_ = v_load(lltyp);
 
     LLVMBuildCall2(builder, set_module_ft_, set_module_f, val0, 1, "");
-
-
-    get_comp_f   = v_obtain_function("v_get_compiler", lltyp);
-    get_comp_ft_ = v_load(lltyp);
-
-    compiler_v = LLVMBuildCall2(builder, get_comp_ft_, get_comp_f, val0, 0, "compiler_v");
-
-
-    v_store(compiler_v,       val0);
-    v_store(saved_compiler_g, val1);
-    v_store(sz1,              val2);
-
-    vis_move_f   = v_obtain_function("voidc_move_visitor_impl", lltyp);
-    vis_move_ft_ = v_load(lltyp);
-
-    LLVMBuildCall2(builder, vis_move_ft_, vis_move_f, val0, 3, "");
 
 
     old_mod_not_null_v = LLVMBuildIsNotNull(builder, old_module_v, "old_mod_not_null_v");
@@ -298,12 +343,7 @@
     //-
     //-     fun_value = v_prepare_function(raw_name, fun_type);
     //-
-    //-     compiler = v_get_compiler();
-    //-
-    //-     v_copy(saved_compiler_g, compiler);
-    //-
-    //-     voidc_visitor_set_method(compiler, compiler, v_ast_unit_tag,
-    //-                                   voidc_function_hack_visitor_method, 0);
+    //-     v_store(true, enable_hack);
     //-
     //-     v_return(fun_value);
     //- }
@@ -408,40 +448,7 @@
     fun_value = LLVMBuildCall2(builder, prepare_function_ft_, prepare_function_f, val0, 2, "fun_value");
 
 
-    compiler_v = LLVMBuildCall2(builder, get_comp_ft_, get_comp_f, val0, 0, "compiler_v");
-
-
-    v_store(saved_compiler_g, val0);
-    v_store(compiler_v,       val1);
-    v_store(sz1,              val2);
-
-    vis_copy_f   = v_obtain_function("voidc_copy_visitor_impl", lltyp);
-    vis_copy_ft_ = v_load(lltyp);
-
-    LLVMBuildCall2(builder, vis_copy_ft_, vis_copy_f, val0, 3, "");
-
-
-    quark_g  = v_obtain_global("v_ast_unit_tag", 0);
-    quark_t_ = v_type_get_llvm_type(v_quark_t);
-
-    quark_v = LLVMBuildLoad2(builder, quark_t_, quark_g, "quark_v");
-
-
-    void_method_f = LLVMBuildBitCast(builder, method_f, void_ptr_, "void_method_f");
-
-
-    null_void_ptr_v = LLVMConstNull(void_ptr_);
-
-    v_store(compiler_v,      val0);
-//  v_store(compiler_v,      val1);
-    v_store(quark_v,         val2);
-    v_store(void_method_f,   val3);
-    v_store(null_void_ptr_v, val4);
-
-    set_method_f   = v_obtain_function("voidc_visitor_set_method", lltyp);
-    set_method_ft_ = v_load(lltyp);
-
-    LLVMBuildCall2(builder, set_method_ft_, set_method_f, val0, 5, "");
+    LLVMBuildStore(builder, true_, enable_hack);
 
 
     LLVMBuildRet(builder, fun_value);
@@ -866,6 +873,8 @@
 
     ret_var_q_g = v_obtain_global("voidc_internal_return_value_q", 0);
 
+    quark_t_ = v_type_get_llvm_type(v_quark_t);
+
     ret_var_q = LLVMBuildLoad2(builder, quark_t_, ret_var_q_g, "ret_var_q");
 
 
@@ -988,6 +997,15 @@
 
 {   v_export_intrinsic("v_function_hack", voidc_function_hack_intrinsic, 0);
     v_export_intrinsic("v_return",        voidc_function_hack_return_intrinsic, 0);
+
+    compiler = v_get_compiler();
+
+    fun = voidc_visitor_get_method(compiler, v_ast_unit_tag, method_aux);
+
+    v_store(fun, method_fun);
+
+    voidc_visitor_set_method(compiler, compiler, v_ast_unit_tag,
+                              voidc_function_hack_visitor_method, 0);
 }
 
 
@@ -1199,6 +1217,20 @@
 
 
 //---------------------------------------------------------------------
+{   ft = v_function_type(void, 0, 0, false);
+
+    //-----------------------------------------------------------------
+    f = v_function_hack("voidc_enable_function_hack", ft);
+}
+{
+    compiler = v_get_compiler();
+
+    voidc_visitor_set_method(compiler, compiler, v_ast_unit_tag,
+                              voidc_function_hack_visitor_method, 0);
+}
+
+
+//---------------------------------------------------------------------
 //- ...
 //---------------------------------------------------------------------
 {
@@ -1225,6 +1257,7 @@
     v_export_intrinsic("v_return_if_not",  v_return_if_not_intrinsic, 0);
 
     v_make_export_symbol("v_add_parameter_name");
+    v_make_export_symbol("voidc_enable_function_hack");
 }
 
 

@@ -12,7 +12,8 @@
     v_import("if_then_else.void");
 }
 
-{   voidc_enable_statement_if_then_else();
+{   voidc_enable_function_hack();
+    voidc_enable_statement_if_then_else();
 }
 
 

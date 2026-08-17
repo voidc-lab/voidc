@@ -11,7 +11,11 @@
     v_import("function_hack.void");
 }
 
+{   voidc_enable_function_hack();
+}
 
+
+//---------------------------------------------------------------------
 {   v_add_type("void_ptr", v_pointer_type(void, 0));
 }
 

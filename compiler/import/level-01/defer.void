@@ -15,7 +15,8 @@
     v_import("expression.void");
 }
 
-{   voidc_enable_statement_if_then_else();
+{   voidc_enable_function_hack();
+    voidc_enable_statement_if_then_else();
     voidc_enable_statement_block();
     voidc_enable_statement_grammar();
     voidc_enable_expression();
