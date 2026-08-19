@@ -554,15 +554,28 @@ get_hook(voidc_types_ctx_t *tctx, v_quark_t quark, void **paux)
 
     if (!gctx->is_initialized)  return nullptr;
 
-    auto *intrinsics = &gctx->decls.intrinsics;
-
-    if (lctx) intrinsics = &lctx->decls.intrinsics;
-
-    if (auto *p = intrinsics->find(quark))
+    if (!lctx)
     {
-        if (paux) *paux = p->second;
+        if (auto *p = gctx->decls.intrinsics.find(quark))
+        {
+            if (paux) *paux = p->second;
 
-        return  p->first;
+            return  p->first;
+        }
+
+        return nullptr;
+    }
+
+    for (auto &di : {lctx->decls.intrinsics, lctx->outer_decls.intrinsics})
+    {
+        if (auto *p = di.find(quark))
+        {
+            if (paux) *paux = p->second;
+
+            return  p->first;
+        }
+
+        if (!lctx->use_outer)  break;
     }
 
     return nullptr;

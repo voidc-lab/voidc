@@ -488,8 +488,6 @@
     v_export_symbol_type("voidc_run_unit_action", ft);
     v_export_symbol_type("voidc_flush_unit_symbols", ft);
     v_export_symbol_type("v_clear_variables", ft);
-    v_export_symbol_type("v_save_variables", ft);
-    v_export_symbol_type("v_restore_variables", ft);
     v_export_symbol_type("v_push_temporaries", ft);
     v_export_symbol_type("v_pop_temporaries", ft);
     v_export_symbol_type("v_erase_temporary", ft);
@@ -579,10 +577,10 @@
     v_export_symbol_type("v_push_result", ft);
     v_export_symbol_type("v_pop_result", ft);
     v_export_symbol_type("v_reset_result", ft);
+    v_export_symbol_type("v_hide_variables", ft);
+    v_export_symbol_type("v_show_variables", ft);
     v_export_symbol_type("v_push_variables", ft);
     v_export_symbol_type("v_pop_variables", ft);
-    v_export_symbol_type("v_push_temporaries", ft);
-    v_export_symbol_type("v_pop_temporaries", ft);
 
     v_store(void_ptr, typ0);                //-
 
@@ -596,6 +594,8 @@
     v_export_symbol_type("v_get_push_result_hook", ft);
     v_export_symbol_type("v_get_pop_result_hook", ft);
     v_export_symbol_type("v_get_reset_result_hook", ft);
+    v_export_symbol_type("v_get_hide_variables_hook", ft);
+    v_export_symbol_type("v_get_show_variables_hook", ft);
     v_export_symbol_type("v_get_push_variables_hook", ft);
     v_export_symbol_type("v_get_pop_variables_hook", ft);
     v_export_symbol_type("v_get_push_temporaries_hook", ft);
@@ -608,6 +608,8 @@
     v_export_symbol_type("v_set_push_result_hook", ft);
     v_export_symbol_type("v_set_pop_result_hook", ft);
     v_export_symbol_type("v_set_reset_result_hook", ft);
+    v_export_symbol_type("v_set_hide_variables_hook", ft);
+    v_export_symbol_type("v_set_show_variables_hook", ft);
     v_export_symbol_type("v_set_push_variables_hook", ft);
     v_export_symbol_type("v_set_pop_variables_hook", ft);
     v_export_symbol_type("v_set_push_temporaries_hook", ft);

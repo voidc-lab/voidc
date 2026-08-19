@@ -219,7 +219,7 @@ mk_macro_define_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, si
 export
 struct v_macro_definition_t
 {
-    caps: v_util_map_t;             //- Captures ...
+    caps: v_ast_stmt_list_t;        //- Captures ...
 
     pars: v_ast_generic_list_t;     //- Parameters ...
     type: v_ast_expr_t;             //- Return type (if any) ...
@@ -259,6 +259,12 @@ private
 (v_terminate(_)):  (*macro_expr_identifier_ctx_t) ~> void  =  derive;
 
 private
+macro_expr_identifier_ctx_cleaner: (aux: *void) ~> void
+{
+    delete  (aux: *macro_expr_identifier_ctx_t);
+}
+
+private
 macro_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
 //printf("macro_compile_expr_identifier start\n");
@@ -294,38 +300,63 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
     v_push_result();
 
     //-------------------------------------------------------------
-    v_assert(vis == v_get_compiler());
+    bmap_old: &v_util_map_t := {};
+    bmap_new: &v_util_map_t := {};
 
-    vis_old: &voidc_visitor_t := {};
-    vis_new: &voidc_visitor_t := {};
-
-    v_copy(&vis_old, vis);
-    defer v_copy(vis, &vis_old);
-
-    bind: &macro_expr_identifier_ctx_t := {};
-
-    q = expr_identifier_q;
-
-    bind.fun := voidc_visitor_get_method(vis, q, &bind.aux);
-
-    voidc_visitor_set_method(vis, vis, q, macro_compile_expr_identifier, &bind);
-
-    v_copy(&vis_new, vis);
-
-    bmap = &bind.map;
-
-    if (v_empty(&ctx.caps)) v_make_map(bmap);
-    else                    v_copy(bmap, &ctx.caps);
-
-    ns_capture: &bool := false;
-
-    if (a = v_map_find(bmap, 0))
+    bmap =
     {
-        ns_capture := true;
+        q = expr_identifier_q;
 
-        qns = v_std_any_get_value(v_quark_t, a);
+        a: &*macro_expr_identifier_ctx_t := undef;
 
-        ns = (v_find_constant_value_q(qns) : *v_namespace_t);
+        f = voidc_visitor_get_method(vis, q, (&a: **void));
+
+        v_assert(f == macro_compile_expr_identifier);
+
+        &a->map
+    };
+
+    v_copy(&bmap_old, bmap);
+
+    defer  v_copy(bmap, &bmap_old);         //- Sic!
+
+    ns_capture: &v_quark_t := 0;
+
+    block
+    {
+        if (v_empty(&ctx.caps))  break;
+
+        n = v_list_get_size(&ctx.caps);
+
+        for (i: &int := 0; i < n; ++i)
+        {
+            item = v_list_get_item(&ctx.caps, i);
+
+            name = v_ast_stmt_get_name_q(item);
+            expr = v_ast_stmt_get_expr(item);
+
+            if (name == star_q)
+            {
+                v_assert(ns_capture == 0);
+
+                ns_capture := v_ast_expr_identifier_get_name_q(expr);
+
+                continue;
+            }
+
+            any: &v_std_any_t := {};
+
+            v_std_any_set_pointer(&any, expr);
+
+            v_map_insert(bmap, bmap, (name: intptr_t), &any);
+        }
+    }
+
+    v_copy(&bmap_new, bmap);
+
+    if (ns_capture)
+    {
+        ns = (v_find_constant_value_q(ns_capture) : *v_namespace_t);
 
         any: &v_std_any_t := {};
 
@@ -382,11 +413,12 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
         {
             arg = v_list_get_item(args, i);
 
-            v_copy(vis, &vis_old);
+            v_copy(&bmap_new, bmap);
+            v_copy(bmap, &bmap_old);
 
             v_ast_accept_visitor(arg, vis);
 
-            v_copy(vis, &vis_new);
+            v_copy(bmap, &bmap_new);
         }
 
         t = v_get_result_type();
@@ -465,38 +497,59 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
     v_push_result();
 
     //-------------------------------------------------------------
-    v_assert(vis == v_get_compiler());
+    bmap_old: &v_util_map_t := {};
+    bmap_new: &v_util_map_t := {};
 
-    vis_old: &voidc_visitor_t := {};
-    vis_new: &voidc_visitor_t := {};
-
-    v_copy(&vis_old, vis);
-    defer v_copy(vis, &vis_old);
-
-    bind: &macro_expr_identifier_ctx_t := {};
-
-    q = expr_identifier_q;
-
-    bind.fun := voidc_visitor_get_method(vis, q, &bind.aux);
-
-    voidc_visitor_set_method(vis, vis, q, macro_compile_expr_identifier, &bind);
-
-    v_copy(&vis_new, vis);
-
-    bmap = &bind.map;
-
-    if (v_empty(&ctx.caps)) v_make_map(bmap);
-    else                    v_copy(bmap, &ctx.caps);
-
-    ns_capture: &bool := false;
-
-    if (a = v_map_find(bmap, 0))
+    bmap =
     {
-        ns_capture := true;
+        q = expr_identifier_q;
 
-        qns = v_std_any_get_value(v_quark_t, a);
+        a: &*macro_expr_identifier_ctx_t := undef;
 
-        ns = (v_find_constant_value_q(qns) : *v_namespace_t);
+        f = voidc_visitor_get_method(vis, q, (&a: **void));
+
+        v_assert(f == macro_compile_expr_identifier);
+
+        &a->map
+    };
+
+    v_copy(&bmap_old, bmap);
+
+    defer  v_copy(bmap, &bmap_old);         //- Sic!
+
+    ns_capture: &v_quark_t := 0;
+
+    block
+    {
+        if (v_empty(&ctx.caps))  break;
+
+        n = v_list_get_size(&ctx.caps);
+
+        for (i: &int := 0; i < n; ++i)
+        {
+            item = v_list_get_item(&ctx.caps, i);
+
+            name = v_ast_stmt_get_name_q(item);
+            expr = v_ast_stmt_get_expr(item);
+
+            if (name == star_q)
+            {
+                ns_capture := v_ast_expr_identifier_get_name_q(expr);
+
+                continue;
+            }
+
+            any: &v_std_any_t := {};
+
+            v_std_any_set_pointer(&any, expr);
+
+            v_map_insert(bmap, bmap, (name: intptr_t), &any);
+        }
+    }
+
+    if (ns_capture)
+    {
+        ns = (v_find_constant_value_q(ns_capture) : *v_namespace_t);
 
         any: &v_std_any_t := {};
 
@@ -516,16 +569,17 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
         v_list_erase(lst, lst, i, 1);
     }
 
+    np = v_list_get_size(&ctx.pars);
+    na = arg_count;
+
     static_type_t = v_find_type_q(q_static_type_t);
 
-    for(i: &int := 0; i < arg_count; ++i)
+    for(i: &int := 0; i < np; ++i)
     {
         par = (v_list_get_item(&ctx.pars, i) : *v_ast_expr_list_t);
 
         qpar = v_ast_expr_identifier_get_name_q(v_list_get_item(par, 0));
         tpar = v_list_get_item(par, 1);
-
-        arg = arg_ptrs[i];
 
         v_reset_result();
 
@@ -542,11 +596,23 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
             v_set_result_type(t);
         }
 
-        v_copy(vis, &vis_old);
+        if (i >= na)
+        {
+            vpar = v_list_get_item(par, 2);
 
-        v_ast_accept_visitor(arg, vis);
+            v_ast_accept_visitor(vpar, vis);
+        }
+        else
+        {
+            arg = arg_ptrs[i];
 
-        v_copy(vis, &vis_new);
+            v_copy(&bmap_new, bmap);
+            v_copy(bmap, &bmap_old);
+
+            v_ast_accept_visitor(arg, vis);
+
+            v_copy(bmap, &bmap_new);
+        }
 
         t = v_get_result_type();
         v = v_get_result_value();
@@ -613,22 +679,23 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
 //---------------------------------------------------------------------
 private
-collect_captures: (caps: *v_ast_expr_list_t, map: *v_util_map_t) ~> void
+collect_captures: (caps: *v_ast_expr_list_t, list: *v_ast_stmt_list_t) ~> void
 {
+    v_assert(v_empty(list));
+
     if (v_empty(caps))  return;
 
-    v_make_map(map);
+    v_make_list_nil(list);
 
     n = v_list_get_size(caps);
 
-    cap_ns: &bool := n == 0;
+    capture_ns: &bool := n == 0;
+
+    expr: &v_ast_expr_t := {};
+    stmt: &v_ast_stmt_t := {};
 
     if (n)
     {
-        expr: &v_ast_expr_t := {};
-
-        any: &v_std_any_t := {};
-
         vis = v_get_compiler();
 
         v_push_result();
@@ -641,7 +708,7 @@ collect_captures: (caps: *v_ast_expr_list_t, map: *v_util_map_t) ~> void
 
             if (q == star_q)
             {
-                cap_ns := true;
+                capture_ns := true;
 
                 continue;
             }
@@ -655,15 +722,15 @@ collect_captures: (caps: *v_ast_expr_list_t, map: *v_util_map_t) ~> void
 
             v_ast_make_expr_compiled(&expr, t, v);
 
-            v_std_any_set_pointer(&any, &expr);
+            v_ast_make_stmt_q(&stmt, q, &expr);
 
-            v_map_insert(map, map, (q: intptr_t), &any);
+            v_list_append(list, list, &stmt);
         }
 
         v_pop_result();
     }
 
-    if (cap_ns)
+    if (capture_ns)
     {
         lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
 
@@ -673,11 +740,11 @@ collect_captures: (caps: *v_ast_expr_list_t, map: *v_util_map_t) ~> void
 
             cur_ns = (v_std_any_get_value(intptr_t, r) : *v_namespace_t);
 
-            any: &v_std_any_t := {};
+            v_ast_make_expr_identifier_q(&expr, cur_ns->name);
 
-            v_std_any_set_value(&any, cur_ns->name);
+            v_ast_make_stmt_q(&stmt, star_q, &expr);
 
-            v_map_insert(map, map, 0, &any);        //- Sic!
+            v_list_append(list, list, &stmt);
         }
     }
 }
@@ -1169,7 +1236,19 @@ voidc_enable_macros_compiler: () ~> void
 
     v_add_constant_q(enabled_q, v_void_type(), 0);
 
+    ctx = new macro_expr_identifier_ctx_t;
+
+    v_make_map(&ctx->map);          //- Sic!
+
+    v_add_local_cleaner(macro_expr_identifier_ctx_cleaner, ctx);
+
     vis = v_get_compiler();
+
+    q = expr_identifier_q;
+
+    ctx->fun := voidc_visitor_get_method(vis, q, &ctx->aux);
+
+    voidc_visitor_set_method(vis, vis, q, macro_compile_expr_identifier, ctx);
 
     voidc_visitor_set_method(vis, vis, macro_defn_q,      compile_macro_define, 0);
     voidc_visitor_set_method(vis, vis, macro_spec_defn_q, compile_macro_define, 0);

@@ -88,18 +88,28 @@ lookup_overload_default(void *aux, v_quark_t quark, v_type_t *type, void **paux)
 
     const v_quark_t *qname = nullptr;
 
-    if (auto *it = lctx.decls.overloads.find(quark))
+    for (auto &do_ : {lctx.decls.overloads, lctx.outer_decls.overloads})
     {
-        qname = it->find(type);
+        if (auto *it = do_.find(quark))
+        {
+            qname = it->find(type);
+        }
+
+        if (!lctx.use_outer)  break;
     }
 
     if (!qname)  return nullptr;
 
-    if (auto p = lctx.decls.intrinsics.find(*qname))
+    for (auto &di : {lctx.decls.intrinsics, lctx.outer_decls.intrinsics})
     {
-        if (paux) *paux = p->second;
+        if (auto p = di.find(*qname))
+        {
+            if (paux) *paux = p->second;
 
-        return  overloaded_intrinsic_t(p->first);
+            return  overloaded_intrinsic_t(p->first);
+        }
+
+        if (!lctx.use_outer)  break;
     }
 
     if (paux) *paux = (void *)uintptr_t(*qname);
@@ -120,11 +130,16 @@ get_lookup_overload_hook(void **paux)
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    if (auto *p = lctx.decls.intrinsics.find(lookup_overload_q))
+    for (auto &di : {lctx.decls.intrinsics, lctx.outer_decls.intrinsics})
     {
-        if (paux) *paux = p->second;
+        if (auto *p = di.find(lookup_overload_q))
+        {
+            if (paux) *paux = p->second;
 
-        return  lookup_overload_t(p->first);
+            return  lookup_overload_t(p->first);
+        }
+
+        if (!lctx.use_outer)  break;
     }
 
     if (paux) *paux = &lctx;

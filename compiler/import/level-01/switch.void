@@ -494,7 +494,7 @@
     list = v_getelementptr(obj, 0, 1);
 
 
-    v_save_variables();
+    v_push_variables();
 
 
     //- Compile switch argument
@@ -764,7 +764,7 @@
     LLVMPositionBuilderAtEnd(builder, switch_exit_b);
 
 
-    v_restore_variables();
+    v_pop_variables();
 }
 
 

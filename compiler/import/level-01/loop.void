@@ -237,7 +237,7 @@
     stmt = v_getelementptr(obj, 0, 0);
 
 
-    v_save_variables();
+    v_push_variables();
 
 
     lltyp = v_alloca(LLVMTypeRef);
@@ -342,7 +342,7 @@
     LLVMPositionBuilderAtEnd(builder, loop_stop_b);
 
 
-    v_restore_variables();
+    v_pop_variables();
 }
 
 

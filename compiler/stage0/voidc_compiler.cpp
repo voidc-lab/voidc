@@ -123,10 +123,17 @@ void compile_expr_call(void *, const visitor_t *vis, const ast_base_t *self)
 
     if (auto fname = std::dynamic_pointer_cast<const ast_expr_identifier_data_t>(call.fun_expr))
     {
-        if (auto p = lctx.decls.intrinsics.find(fname->name))
+        for (auto &di : {lctx.decls.intrinsics, lctx.outer_decls.intrinsics})
         {
-            void_fun = p->first;
-            void_aux = p->second;
+            if (auto p = di.find(fname->name))
+            {
+                void_fun = p->first;
+                void_aux = p->second;
+
+                break;
+            }
+
+            if (!lctx.use_outer)  break;
         }
     }
 
@@ -740,9 +747,14 @@ v_cast(void *, const visitor_t *vis, const ast_base_t *self)
 
                     static const v_quark_t typenames_q = v_quark_from_string("voidc.typenames_dict");
 
-                    if (auto *i = lctx.decls.overloads.find(typenames_q))           //- WTF ?!?!?!?!?!?!?
+                    for (auto &do_ : {lctx.decls.overloads, lctx.outer_decls.overloads})
                     {
-                        pq = i->find(reinterpret_cast<v_type_t *>(src_value));
+                        if (auto *i = do_.find(typenames_q))            //- WTF ?!?!?!?!?!?!?
+                        {
+                            pq = i->find(reinterpret_cast<v_type_t *>(src_value));
+                        }
+
+                        if (!lctx.use_outer)  break;
                     }
 
                     if (pq)

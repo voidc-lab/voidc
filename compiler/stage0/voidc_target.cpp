@@ -492,24 +492,31 @@ base_local_ctx_t::find_constant(v_quark_t raw_name, v_type_t * &type, LLVMValueR
     v_type_t    *t = nullptr;
     LLVMValueRef v = nullptr;
 
-    if (auto p = decls.constants.find(raw_name))
+    for (auto &dc : {decls.constants, outer_decls.constants})
     {
-        t = *p;
-
-        for (auto &cv : {constant_values, global_ctx.constant_values})
+        if (auto p = dc.find(raw_name))
         {
-            auto itv = cv.find(raw_name);
+            t = *p;
 
-            if (itv != cv.end())
-            {
-                v = itv->second;
-
-                break;
-            }
+            break;
         }
+
+        if (!use_outer)  break;
     }
 
     if (!t) return false;
+
+    for (auto &cv : {constant_values, global_ctx.constant_values})
+    {
+        auto itv = cv.find(raw_name);
+
+        if (itv != cv.end())
+        {
+            v = itv->second;
+
+            break;
+        }
+    }
 
     type  = t;
     value = v;
@@ -536,16 +543,33 @@ base_local_ctx_t::find_symbol(v_quark_t raw_name, v_type_t * &type, void * &valu
     return true;
 }
 
+v_type_t *
+base_local_ctx_t::get_symbol_type(v_quark_t raw_name) const
+{
+    for (auto &ds : {decls.symbols, outer_decls.symbols})
+    {
+        if (auto *pt = ds.find(raw_name))  return *pt;
+
+        if (!use_outer)  break;
+    }
+
+    return nullptr;
+}
 
 //---------------------------------------------------------------------
 static void *
 get_hook(base_local_ctx_t *lctx, v_quark_t quark, void **paux)
 {
-    if (auto *p = lctx->decls.intrinsics.find(quark))
+    for (auto &di : {lctx->decls.intrinsics, lctx->outer_decls.intrinsics})
     {
-        if (paux) *paux = p->second;
+        if (auto p = di.find(quark))
+        {
+            if (paux) *paux = p->second;
 
-        return  p->first;
+            return  p->first;
+        }
+
+        if (!lctx->use_outer)  break;
     }
 
     return nullptr;
@@ -663,6 +687,7 @@ base_local_ctx_t::pop_builder_ip(void)
 static v_quark_t voidc_internal_function_type_q;
 static v_quark_t voidc_internal_return_value_q;
 static v_quark_t voidc_internal_branch_target_leave_q;
+static v_quark_t voidc_internal_function_leave_q;
 
 //---------------------------------------------------------------------
 LLVMValueRef
@@ -695,10 +720,11 @@ base_local_ctx_t::prepare_function(const char *raw_name, v_type_t *type)
         vars = vars.set(voidc_internal_return_value_q, {ret_type, ret_var_v});      //- Sic!
     }
 
-    function_leave_b = LLVMAppendBasicBlockInContext(global_ctx.llvm_ctx, f, "f_leave_b");
-    auto f_leave_bv  = LLVMBasicBlockAsValue(function_leave_b);
+    auto f_leave_b = LLVMAppendBasicBlockInContext(global_ctx.llvm_ctx, f, "f_leave_b");
+    auto f_leave_bv  = LLVMBasicBlockAsValue(f_leave_b);
 
     vars = vars.set(voidc_internal_branch_target_leave_q, {nullptr, f_leave_bv});   //- Sic!
+    vars = vars.set(voidc_internal_function_leave_q,      {nullptr, f_leave_bv});   //- Sic!
 
     return f;
 }
@@ -718,9 +744,12 @@ base_local_ctx_t::finish_function(void)
     }
 
 
-    LLVMMoveBasicBlockAfter(function_leave_b, cur_b);
+    auto f_leave_bv = vars[voidc_internal_function_leave_q].second;
+    auto f_leave_b  = LLVMValueAsBasicBlock(f_leave_bv);
 
-    LLVMPositionBuilderAtEnd(global_ctx.builder, function_leave_b);
+    LLVMMoveBasicBlockAfter(f_leave_b, cur_b);
+
+    LLVMPositionBuilderAtEnd(global_ctx.builder, f_leave_b);
 
 
     auto type = vars[voidc_internal_function_type_q].first;
@@ -759,7 +788,12 @@ base_obtain_alias_default(void *void_ctx, v_quark_t name, bool)
 {
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
 
-    if (auto q = lctx.decls.aliases.find(name))  return *q;
+    for (auto &da : {lctx.decls.aliases, lctx.outer_decls.aliases})
+    {
+        if (auto q = da.find(name))  return *q;
+
+        if (!lctx.use_outer)  break;
+    }
 
     return  name;
 }
@@ -769,7 +803,12 @@ base_lookup_alias_default(void *void_ctx, v_quark_t name)
 {
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
 
-    if (auto q = lctx.decls.aliases.find(name))  return *q;
+    for (auto &da : {lctx.decls.aliases, lctx.outer_decls.aliases})
+    {
+        if (auto q = da.find(name))  return *q;
+
+        if (!lctx.use_outer)  break;
+    }
 
     return  name;
 }
@@ -886,13 +925,73 @@ base_try_to_adopt_default(void *void_ctx, v_type_t *type, LLVMValueRef value)
 
 //---------------------------------------------------------------------
 static void
+base_hide_variables_default(void *void_ctx)
+{
+    auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
+    auto &gctx = lctx.global_ctx;
+
+    lctx.vars_stack.push_front({lctx.decls, lctx.cleaners, std::move(lctx.vars)});
+
+    lctx.decls    = std::move(lctx.outer_decls);
+    lctx.cleaners = std::move(lctx.outer_cleaners);
+    lctx.vars     = base_local_ctx_t::variables_t();        //- ?
+
+    lctx.use_outer = false;
+
+    lctx.push_builder_ip();
+
+    LLVMClearInsertionPosition(gctx.builder);               //- ?
+
+    lctx.push_result();
+}
+
+//---------------------------------------------------------------------
+static void
+base_show_variables_default(void *void_ctx)
+{
+    auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
+
+    lctx.pop_result();
+
+    lctx.pop_builder_ip();
+
+    lctx.use_outer = true;
+
+    lctx.outer_decls    = std::move(lctx.decls);
+    lctx.outer_cleaners = std::move(lctx.cleaners);
+
+    std::tie(lctx.decls, lctx.cleaners, lctx.vars) = std::move(lctx.vars_stack.front());
+
+    lctx.vars_stack.pop_front();
+}
+
+
+//---------------------------------------------------------------------
+static void
 base_push_variables_default(void *void_ctx)
 {
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
 
-    lctx.vars_stack.push_front({lctx.compiler, lctx.decls, std::move(lctx.cleaners), lctx.vars});
+    if (lctx.use_outer)
+    {
+        lctx.vars_stack.push_front({lctx.decls, std::move(lctx.cleaners), lctx.vars});
 
-    lctx.cleaners.clear();
+        lctx.cleaners.clear();
+    }
+    else
+    {
+        assert(lctx.vars.size() == 0);
+
+        lctx.outer_decls    = std::move(lctx.decls);
+        lctx.outer_cleaners = std::move(lctx.cleaners);
+
+        lctx.decls = base_local_ctx_t::declarations_t();
+        lctx.cleaners.clear();
+
+        lctx.vars_stack.push_front({lctx.decls, lctx.cleaners, lctx.vars});     //- All empty!
+
+        lctx.use_outer = true;
+    }
 }
 
 //---------------------------------------------------------------------
@@ -904,17 +1003,19 @@ base_pop_variables_default(void *void_ctx)
 {
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
 
+    assert(lctx.use_outer);
+
     if (hold_state <= 0)
     {
         lctx.run_cleaners();
 
-        std::tie(lctx.compiler, lctx.decls, lctx.cleaners, lctx.vars) = std::move(lctx.vars_stack.front());
+        std::tie(lctx.decls, lctx.cleaners, lctx.vars) = std::move(lctx.vars_stack.front());
     }
     else
     {
         auto saved_cleaners = std::move(lctx.cleaners);
 
-        std::tie(std::ignore, std::ignore, lctx.cleaners, lctx.vars) = std::move(lctx.vars_stack.front());
+        std::tie(std::ignore, lctx.cleaners, lctx.vars) = std::move(lctx.vars_stack.front());
 
         saved_cleaners.reverse();
 
@@ -922,11 +1023,39 @@ base_pop_variables_default(void *void_ctx)
         {
             lctx.cleaners.push_front(it);
         }
-
-        hold_state -= 1;
     }
 
     lctx.vars_stack.pop_front();
+
+    if (lctx.vars.size() == 0)
+    {
+        if (hold_state <= 0)
+        {
+            lctx.decls    = std::move(lctx.outer_decls);
+            lctx.cleaners = std::move(lctx.outer_cleaners);
+        }
+        else
+        {
+            auto saved_decls    = std::move(lctx.decls);
+            auto saved_cleaners = std::move(lctx.cleaners);
+
+            lctx.decls    = std::move(lctx.outer_decls);
+            lctx.cleaners = std::move(lctx.outer_cleaners);
+
+            lctx.decls.insert(saved_decls);
+
+            saved_cleaners.reverse();
+
+            for (auto it : saved_cleaners)
+            {
+                lctx.cleaners.push_front(it);
+            }
+        }
+
+        lctx.use_outer = false;
+    }
+
+    if (hold_state > 0)  hold_state -= 1;
 }
 
 }   //- extern "C"
@@ -1863,6 +1992,7 @@ voidc_global_ctx_t::static_initialize(void)
     voidc_internal_function_type_q       = q("voidc.internal_function_type");
     voidc_internal_return_value_q        = q("voidc.internal_return_value");
     voidc_internal_branch_target_leave_q = q("voidc.internal_branch_target_leave");
+    voidc_internal_function_leave_q      = q("voidc.internal_function_leave");
 
     //-------------------------------------------------------------
     LLVMInitializeAllTargetInfos();
@@ -2113,9 +2243,14 @@ voidc_try_to_adopt_default(void *void_ctx, v_type_t *type, LLVMValueRef value)
     {
         const v_quark_t *pq = nullptr;
 
-        if (auto *i = lctx.decls.overloads.find(voidc_typenames_q))         //- WTF ?!?!?!?!?!?!?
+        for (auto &do_ : {lctx.decls.overloads, lctx.outer_decls.overloads})
         {
-            pq = i->find(reinterpret_cast<v_type_t *>(value));
+            if (auto *i = do_.find(voidc_typenames_q))          //- WTF ?!?!?!?!?!?!?
+            {
+                pq = i->find(reinterpret_cast<v_type_t *>(value));
+            }
+
+            if (!lctx.use_outer)  break;
         }
 
         if (pq)
@@ -2503,22 +2638,31 @@ v_find_constant_q(v_quark_t qname, v_type_t **type, LLVMValueRef *value)
     v_type_t    *t = nullptr;
     LLVMValueRef v = nullptr;
 
-    if (auto p = lctx.decls.constants.find(qname))
+    for (auto &dc : {lctx.decls.constants, lctx.outer_decls.constants})
     {
-        t = *p;
-
-        if (value)
+        if (auto p = dc.find(qname))
         {
-            for (auto &cv : {lctx.constant_values, gctx.constant_values})
+            t = *p;
+
+            break;
+        }
+
+        if (!lctx.use_outer)  break;
+    }
+
+    if (!t) return false;
+
+    if (value)
+    {
+        for (auto &cv : {lctx.constant_values, gctx.constant_values})
+        {
+            auto itv = cv.find(qname);
+
+            if (itv != cv.end())
             {
-                auto itv = cv.find(qname);
+                v = itv->second;
 
-                if (itv != cv.end())
-                {
-                    v = itv->second;
-
-                    break;
-                }
+                break;
             }
         }
     }
@@ -2526,7 +2670,7 @@ v_find_constant_q(v_quark_t qname, v_type_t **type, LLVMValueRef *value)
     if (type)   *type  = t;
     if (value)  *value = v;
 
-    return bool(t);
+    return  true;
 }
 
 v_type_t *
@@ -3169,24 +3313,6 @@ v_clear_variables(void)         //- ?
 }
 
 void
-v_save_variables(void)
-{
-    auto &gctx = *voidc_global_ctx_t::target;
-    auto &lctx = *gctx.local_ctx;
-
-    lctx.push_variables();
-}
-
-void
-v_restore_variables(void)
-{
-    auto &gctx = *voidc_global_ctx_t::target;
-    auto &lctx = *gctx.local_ctx;
-
-    lctx.pop_variables();
-}
-
-void
 v_hold_compilation_state(int n)         //- ?!?
 {
     hold_state = n;
@@ -3493,13 +3619,16 @@ v_get_intrinsic_q(v_quark_t qname, void **aux)
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    auto &intrinsics = lctx.decls.intrinsics;
-
-    if (auto p = intrinsics.find(qname))
+    for (auto &di : {lctx.decls.intrinsics, lctx.outer_decls.intrinsics})
     {
-        if (aux)  *aux = p->second;
+        if (auto p = di.find(qname))
+        {
+            if (aux)  *aux = p->second;
 
-        return  p->first;
+            return  p->first;
+        }
+
+        if (!lctx.use_outer)  break;
     }
 
     return nullptr;
@@ -3553,9 +3682,14 @@ v_get_property_q(v_quark_t qname)
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    auto &props = lctx.decls.properties;
+    for (auto &dp : {lctx.decls.properties, lctx.outer_decls.properties})
+    {
+        if (auto p = dp.find(qname))  return p;
 
-    return props.find(qname);
+        if (!lctx.use_outer)  break;
+    }
+
+    return nullptr;
 }
 
 const std::any *
@@ -3606,12 +3740,17 @@ v_get_overload_q(v_quark_t qname, v_type_t *type)
     auto &gctx = *voidc_global_ctx_t::target;
     auto &lctx = *gctx.local_ctx;
 
-    if (auto *i = lctx.decls.overloads.find(qname))
+    for (auto &do_ : {lctx.decls.overloads, lctx.outer_decls.overloads})
     {
-        if (auto *j = i->find(type))
+        if (auto *i = do_.find(qname))
         {
-            return *j;
+            if (auto *j = i->find(type))
+            {
+                return *j;
+            }
         }
+
+        if (!lctx.use_outer)  break;
     }
 
     return 0;

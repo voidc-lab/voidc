@@ -44,6 +44,9 @@ extern "C"
     typedef compile_ctx_action_t pop_result_t;
     typedef compile_ctx_action_t reset_result_t;
 
+    typedef compile_ctx_action_t hide_variables_t;
+    typedef compile_ctx_action_t show_variables_t;
+
     typedef compile_ctx_action_t push_variables_t;
     typedef compile_ctx_action_t pop_variables_t;
 
@@ -111,7 +114,7 @@ public:
     virtual void add_symbol_value(v_quark_t raw_name, void *value) = 0;
 
 public:
-    v_type_t *get_symbol_type(v_quark_t raw_name) const
+    virtual v_type_t *get_symbol_type(v_quark_t raw_name) const
     {
         auto *pt = decls.symbols.find(raw_name);
 
@@ -181,6 +184,8 @@ protected:
     DEF(push_result) \
     DEF(pop_result) \
     DEF(reset_result) \
+    DEF(hide_variables) \
+    DEF(show_variables) \
     DEF(push_variables) \
     DEF(pop_variables) \
     DEF(push_temporaries) \
@@ -284,6 +289,8 @@ public:
 
     virtual void *find_symbol_value(v_quark_t raw_name) = 0;        //- No alias check!
 
+    v_type_t *get_symbol_type(v_quark_t raw_name) const override;   //- No alias check!
+
 public:
     LLVMModuleRef module = nullptr;
 
@@ -316,16 +323,20 @@ public:
     LLVMValueRef prepare_function(const char *raw_name, v_type_t *type);
     void finish_function(void);
 
-    LLVMBasicBlockRef function_leave_b = nullptr;
-
 public:
     typedef immer::map<v_quark_t, std::pair<v_type_t *, LLVMValueRef>> variables_t;
 
     variables_t vars;
 
-    using state_t = std::tuple<visitor_t, declarations_t, cleaners_t, variables_t>;
+    using state_t = std::tuple<declarations_t, cleaners_t, variables_t>;
 
     std::forward_list<state_t> vars_stack;
+
+public:
+    bool use_outer = false;
+
+    declarations_t outer_decls;
+    cleaners_t     outer_cleaners;
 
 public:
     v_type_t    *result_type  = nullptr;

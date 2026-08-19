@@ -312,7 +312,7 @@
     else                            v_return();
 
 
-    v_save_variables();
+    v_push_variables();
 
     lltyp = v_alloca(LLVMTypeRef);
 
@@ -400,7 +400,7 @@
     LLVMPositionBuilderAtEnd(builder, blk_exit_b);
 
 
-    v_restore_variables();
+    v_pop_variables();
 }
 
 

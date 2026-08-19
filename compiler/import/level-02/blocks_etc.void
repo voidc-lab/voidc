@@ -229,7 +229,7 @@ compile_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     obj = *(void_obj: *v_ast_expr_stmt_t);
 
 
-    v_save_variables();
+    v_push_variables();
 
     v_add_variable_q(voidc_internal_break_value_q, tr, (&data : LLVMValueRef));
 
@@ -265,7 +265,7 @@ compile_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     LLVMPositionBuilderAtEnd(builder, expr_stmt_leave_b);
 
 
-    v_restore_variables();
+    v_pop_variables();
 
 
     tr = data[0];
@@ -436,7 +436,7 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     if (top_level)
     {
-        v_save_variables();
+        v_push_variables();
 
         v_add_variable_q(voidc_internal_branch_target_leave_q, 0, 0);           //- Sic !!!
 
@@ -542,7 +542,7 @@ compile_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
             }
         }
 
-        v_restore_variables();
+        v_pop_variables();
     }
 }
 

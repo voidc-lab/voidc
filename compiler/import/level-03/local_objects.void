@@ -1119,7 +1119,7 @@ my_compile_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
     obj = *(void_obj: *v_ast_expr_stmt_t);
 
 
-    v_save_variables();
+    v_push_variables();
 
     v_add_variable_q(voidc_internal_break_value_q, tr, (&data : LLVMValueRef));
 
@@ -1155,7 +1155,7 @@ my_compile_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
     LLVMPositionBuilderAtEnd(builder, expr_stmt_leave_b);
 
 
-    v_restore_variables();
+    v_pop_variables();
 
 
     tr = data[0];
@@ -1316,7 +1316,7 @@ my_compile_expr_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
         if (v_get_result_value())   vr := 0;
         else                        vr := v_make_temporary(0, 0);
 
-        v_save_variables();
+        v_push_variables();
 
         v_add_variable_q(voidc_internal_branch_target_leave_q, 0, 0);           //- Sic !!!
 
@@ -1467,7 +1467,7 @@ my_compile_expr_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) 
             LLVMInstructionEraseFromParent(stack_v);
         }
 
-        v_restore_variables();
+        v_pop_variables();
 
         if (vr) v_set_result_value(vr);         //- !!!
     }
