@@ -134,7 +134,7 @@ export
 private
 namespace_cleaner: (void_ctx: *void) ~> void
 {
-//printf("namespace_cleaner: %s\n", v_quark_to_string((void_ctx: *v_namespace_t)->name));
+//printf("namespace_cleaner: %p %s\n", void_ctx, v_quark_to_string((void_ctx: *v_namespace_t)->name));
 
     delete (void_ctx: *v_namespace_t);
 }
@@ -145,7 +145,10 @@ export
 v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 {
 //printf("v_make_namespace_q: start %p %s\n", parent, v_quark_to_string(qname));
-//defer printf("v_make_namespace_q: stop %s\n", v_quark_to_string(v_get_return_value()->name));
+//defer printf("v_make_namespace_q: stop %p %s\n", v_get_return_value(), v_quark_to_string(v_get_return_value()->name));
+
+    szv = v_get_variables_size();
+    if (szv) v_hide_variables();
 
     ns = new v_namespace_t;
 
@@ -204,6 +207,8 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
     static_namespace_t = v_find_type_q(q_static_namespace_t);
 
     v_add_constant_q(ns->name, static_namespace_t, (ns: LLVMValueRef));
+
+    if (szv) v_show_variables();
 
     return  ns;
 }
@@ -1348,6 +1353,18 @@ lookup_in_namespace: (cache: *v_util_map_t, ns: *v_namespace_t, q: v_quark_t) ~>
 
     return  0;
 }
+
+//---------------------------------------------------------------------
+export
+v_lookup_in_namespace: (ns: *v_namespace_t, q: v_quark_t) ~> v_quark_t
+{
+    cache: &v_util_map_t := {};
+
+    v_make_map(&cache);
+
+    return  lookup_in_namespace(&cache, ns, q);
+}
+
 
 //---------------------------------------------------------------------
 private

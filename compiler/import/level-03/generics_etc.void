@@ -948,6 +948,50 @@ my_postfix_call_object_intrinsic_intrinsic: (*void, vis: *voidc_visitor_t, self:
 
 
 //---------------------------------------------------------------------
+//- v_defined intrinsic
+//---------------------------------------------------------------------
+private
+my_defined_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+    args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
+
+    n = v_list_get_size(args);
+    v_assert(1 <= n <= 2);
+
+    qname = compute_generic_quark(vis, v_list_get_item(args, n-1));
+
+    ok: &bool := undef;
+
+    if (n == 1)         //- Simple case
+    {
+        qname = v_lookup_alias_q(qname);            //- ?
+
+        ok := v_find_constant_q(qname, 0, 0);
+    }
+    else                //- With namespace
+    {
+        v_push_result();
+
+        v_set_result_type(v_find_type_q(q_static_namespace_t));
+
+        v_ast_accept_visitor(v_list_get_item(args, 0), vis);
+
+        ns = (v_get_result_value() : *v_namespace_t);
+
+        v_pop_result();
+
+        ok := v_lookup_in_namespace(ns, qname) != 0;
+    }
+
+    bool_ = v_uint_type(1);
+
+    ok = LLVMConstInt(v_type_get_llvm_type(bool_), ok, false);
+
+    v_adopt_result(bool_, ok);
+}
+
+
+//---------------------------------------------------------------------
 //- Enable generics etc
 //---------------------------------------------------------------------
 private
@@ -1005,6 +1049,9 @@ voidc_enable_generics_etc: () ~> void
     v_add_intrinsic("v.postfix_call_object_intrinsic_intrinsic", my_postfix_call_object_intrinsic_intrinsic, 0);
 
     v_add_overload("v.op_postfix_call", object_intrinsic_t, "v.postfix_call_object_intrinsic_intrinsic");
+
+    //---------------------------------------------------------------------
+    v_add_intrinsic("v_defined", my_defined_intrinsic, 0);
 }
 
 
