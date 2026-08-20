@@ -250,6 +250,12 @@ macro_expr_identifier_ctx_t = struct
     aux: *void;
 
     map: v_util_map_t;
+
+    hide_fun: *((*void) ~> void);
+    hide_aux: *void;
+
+    show_fun: *((*void) ~> void);
+    show_aux: *void;
 };
 
 private
@@ -284,6 +290,42 @@ macro_compile_expr_identifier: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_
     }
 
     bind.fun(bind.aux, vis, self);
+}
+
+//---------------------------------------------------------------------
+private
+my_hide_variables: (aux: *void) ~> void
+{
+    ctx = *(aux: *macro_expr_identifier_ctx_t);
+
+    map: &v_util_map_t := {};
+
+    v_move(&map, &ctx.map);
+
+    v_make_map(&ctx.map);
+
+    any: &v_std_any_t := {};
+
+    v_std_any_set_pointer(&any, &map);
+
+    v_map_insert(&ctx.map, &ctx.map, 0, &any);          //- Sic!
+
+    ctx.hide_fun(ctx.hide_aux);
+}
+
+private
+my_show_variables: (aux: *void) ~> void
+{
+    ctx = *(aux: *macro_expr_identifier_ctx_t);
+
+    ctx.show_fun(ctx.show_aux);
+
+    any = v_map_find(&ctx.map, 0);                      //- Sic!
+    v_assert(any);
+
+    map = v_std_any_get_pointer(v_util_map_t, any);
+
+    v_move(&ctx.map, map);
 }
 
 //---------------------------------------------------------------------
@@ -1241,6 +1283,12 @@ voidc_enable_macros_compiler: () ~> void
     v_make_map(&ctx->map);          //- Sic!
 
     v_add_local_cleaner(macro_expr_identifier_ctx_cleaner, ctx);
+
+    ctx->hide_fun := v_get_hide_variables_hook(&ctx->hide_aux);
+    ctx->show_fun := v_get_show_variables_hook(&ctx->show_aux);
+
+    v_set_hide_variables_hook(my_hide_variables, ctx);
+    v_set_show_variables_hook(my_show_variables, ctx);
 
     vis = v_get_compiler();
 
