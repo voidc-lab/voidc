@@ -72,7 +72,7 @@ namespace .std {
         impl_t = v_get_implementation_type(refcnt_ptr(T));
 
         alwaysinline
-        (_.impl): (s: &refcnt_ptr(T)) ~> &impl_t  =  *(&s : *impl_t);
+        impl: (s: &refcnt_ptr(T)) ~> &impl_t  =  *(&s : *impl_t);
     }
 
     private
@@ -134,15 +134,15 @@ namespace .std {
       alwaysinline
       get_data: (p: &refcnt_ptr(T)) ~> &data_t  =
       {
-          v_assert(p.impl);
+          v_assert(impl(p));
 
-          *((p.impl: *char) - (&(0: *data_t)->data : intptr_t) : *data_t)
+          *((impl(p): *char) - (&(0: *data_t)->data : intptr_t) : *data_t)
       };
 
       inlinehint
       inc: (p: &refcnt_ptr(T)) ~> void
       {
-          if (!p.impl)  return;
+          if (!impl(p))  return;
 
           d = get_data(p);
 
@@ -152,7 +152,7 @@ namespace .std {
       inlinehint
       dec: (p: &refcnt_ptr(T)) ~> void
       {
-          if (!p.impl)  return;
+          if (!impl(p))  return;
 
           d = get_data(p);
 
@@ -210,7 +210,7 @@ namespace .std {
 
             #endif
 
-            ret.impl := (&d.data : *ET);
+            detail_ns.impl(ret) := (&d.data : *ET);
         }
 
       #else
@@ -224,7 +224,7 @@ namespace .std {
 
             dp = new detail_ns.data_t {{1}};
 
-            ret.impl := &dp->data;
+            detail_ns.impl(ret) := &dp->data;
         }
 
       #endif
@@ -244,7 +244,7 @@ namespace .std {
         detail_ns.dec(*d);
         detail_ns.inc(*s);
 
-        d->impl := s->impl;
+        detail_ns.impl(*d) := detail_ns.impl(*s);
     }
 
     inlinehint
@@ -252,16 +252,16 @@ namespace .std {
     {
         detail_ns.dec(*d);
 
-        d->impl := s->impl;
-        s->impl := 0;
+        detail_ns.impl(*d) := detail_ns.impl(*s);
+        detail_ns.impl(*s) := 0;
     }
 
     alwaysinline
-    (v_empty(_)): (p: *refcnt_ptr(T)) ~> bool  =  p->impl == 0;
+    (v_empty(_)): (p: *refcnt_ptr(T)) ~> bool  =  detail_ns.impl(*p) == 0;
 
     //-------------------------------------------------------------
     alwaysinline
-    (_.get()): (p: refcnt_ptr(T)) ~> *ET  =  (&p)->impl;
+    (_.get()): (p: refcnt_ptr(T)) ~> *ET  =  detail_ns.impl(*&p);
 
     #if (is_incomplete_array)
 

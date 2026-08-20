@@ -42,8 +42,11 @@ namespace .std {
         impl_t = v_get_implementation_type(unique_ptr(T));
 
         alwaysinline
-        (_.impl): (s: &unique_ptr(T)) ~> &impl_t  =  *(&s : *impl_t);
+        impl: (s: &unique_ptr(T)) ~> &impl_t  =  *(&s : *impl_t);
     }
+
+    private
+    detail_ns = v_generic_ns(unique_ptr_detail, t(T));
 
     //-------------------------------------------------------------
     inlinehint
@@ -55,7 +58,7 @@ namespace .std {
     }
 
     alwaysinline
-    (_.get()): (p: unique_ptr(T)) ~> *ET  =  (&p)->impl;
+    (_.get()): (p: unique_ptr(T)) ~> *ET  =  detail_ns.impl(*&p);
 
     inlinehint
     (v_terminate(_)): (sp: *unique_ptr(T)) ~> void
@@ -73,7 +76,7 @@ namespace .std {
     {
         r = sp.get();
 
-        sp.impl := 0;
+        detail_ns.impl(sp) := 0;
 
         r
     };
@@ -88,7 +91,7 @@ namespace .std {
             #endif
         }
 
-        sp.impl := p;
+        detail_ns.impl(sp) := p;
     }
 
     #define
@@ -104,7 +107,7 @@ namespace .std {
     }
 
     alwaysinline
-    (v_empty(_)): (p: *unique_ptr(T)) ~> bool  =  p->impl == 0;
+    (v_empty(_)): (p: *unique_ptr(T)) ~> bool  =  detail_ns.impl(*p) == 0;
 
     //-------------------------------------------------------------
     namespace v_generic_ns(unique_ptr_public, t(T))

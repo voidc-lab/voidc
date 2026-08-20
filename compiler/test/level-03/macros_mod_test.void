@@ -188,31 +188,33 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
         impl_t = v_get_implementation_type(list(T));
 
         alwaysinline
-        (_.impl): (s: &list(T)) ~> &impl_t  =  *(&s : *impl_t);
+        impl: (s: &list(T)) ~> &impl_t  =  *(&s : *impl_t);
     }
+
+    using v_generic_ns(list_detail, t(T)).impl;
 
     //-------------------------------------------------------------
     inlinehint
     (v_initialize(_)): (sp: *list(T), N: size_t) ~> void
     {
-        v_initialize(&sp->impl, N);
+        v_initialize(&impl(*sp), N);
 
         for (i: &int := 0; i < N; ++i)
         {
-            v_make_list_nil(&sp[i].impl);
+            v_make_list_nil(&impl(sp[i]));
         }
     }
 
     alwaysinline
     (v_terminate(_)): (sp: *list(T), N: size_t) ~> void
     {
-        v_terminate(&sp->impl, N);
+        v_terminate(&impl(*sp), N);
     }
 
     alwaysinline
     (v_copy(_)): (dst: *list(T), src: *const list(T), N: size_t) ~> void
     {
-        v_copy(&dst->impl, &src->impl, N);
+        v_copy(&impl(*dst), &impl(*src), N);
     }
 
     #do (register_list_op_braces(T, list(T)))
@@ -221,7 +223,7 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
     inlinehint
     (_[]): (sp: list(T), i: size_t) ~> T
     {
-        a = v_list_get_item(&sp.impl, i);
+        a = v_list_get_item(&impl(*&sp), i);
         v_assert(a);
 
         return  v_std_any_get_value(T, a);
@@ -234,7 +236,7 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
         v_std_any_set_value(&a, v);
 
-        v_list_append(&v_get_return_value().impl, &sp.impl, &a);
+        v_list_append(&impl(v_get_return_value()), &impl(*&sp), &a);
     }
 
     inlinehint
@@ -244,7 +246,7 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
 
         v_std_any_set_value(&a, v);
 
-        lst = &sp.impl;
+        lst = &impl(sp);
 
         v_list_append(lst, lst, &a);
 
@@ -252,7 +254,7 @@ register_list_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_b
     };
 
     alwaysinline
-    (_.size): (sp: list(T)) ~> size_t  =  v_list_get_size(&sp.impl);
+    (_.size): (sp: list(T)) ~> size_t  =  v_list_get_size(&impl(*&sp));
 
   }   //- namespace my
 
