@@ -105,6 +105,8 @@ struct v_namespace_t
     used:   v_util_list_t;          //- Used namespaces
 
     privates: v_util_map_t;         //- ...
+
+    stack: *v_namespace_t;          //- ...
 };
 
 
@@ -122,13 +124,15 @@ export
     v_make_map(&p->map);
     v_make_list_nil(&p->used);
     v_make_map(&p->privates);
+
+    p->stack := 0;
 }
 
 export
 (v_terminate(_)): (*v_namespace_t) ~> void  =  derive;
 
 export
-(v_copy(_)): (*v_namespace_t, *const v_namespace_t) ~> void  =  derive;         //- ?
+(v_copy(_)): (*v_namespace_t, *const v_namespace_t) ~> void  =  derive;
 
 //---------------------------------------------------------------------
 private
@@ -136,7 +140,38 @@ namespace_cleaner: (void_ctx: *void) ~> void
 {
 //printf("namespace_cleaner: %p %s\n", void_ctx, v_quark_to_string((void_ctx: *v_namespace_t)->name));
 
-    delete (void_ctx: *v_namespace_t);
+    p = (void_ctx: *v_namespace_t);
+
+    v_assert(p->stack == 0);
+
+    delete p;
+}
+
+private
+namespace_local_cleaner: (void_ctx: *void) ~> void
+{
+//printf("namespace_local_cleaner: %p %s\n", void_ctx, v_quark_to_string((void_ctx: *v_namespace_t)->name));
+
+    p = (void_ctx: *v_namespace_t);
+
+    if (s = v_load(&p->stack))
+    {
+        v_copy(&p->list,     &s->list);
+        v_copy(&p->map,      &s->map);
+        v_copy(&p->used,     &s->used);
+        v_copy(&p->privates, &s->privates);
+
+        p->stack := s->stack;
+
+        delete s;
+    }
+    else
+    {
+        v_make_list_nil(&p->list);
+        v_make_map(&p->map);
+        v_make_list_nil(&p->used);
+        v_make_map(&p->privates);
+    }
 }
 
 
@@ -150,35 +185,76 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
     szv = v_get_variables_size();
     if (szv) v_hide_variables();
 
-    ns = new v_namespace_t;
+    static_namespace_t = v_find_type_q(q_static_namespace_t);
 
-    v_add_local_cleaner(namespace_cleaner, ns);
+    ns: &*v_namespace_t := undef;
 
-    pref = &ns->prefix;
-
-    if (parent)
+    block
     {
-        v_copy(pref, &parent->prefix);
+        sstr: &v_std_string_t := {};
 
-        v_std_string_append_char(pref, NAMESPACE_SEPARATOR);
+        v_std_string_set(&sstr, "v.namespace.");
 
-        v_std_string_append(pref, v_quark_to_string(qname));
+        if (parent)  v_std_string_append(&sstr, v_std_string_get(&parent->prefix));
 
-        qm: &v_quark_t := undef;
+        v_std_string_append_char(&sstr, NAMESPACE_SEPARATOR);
 
-        if (a = v_map_find(&parent->map, (qname: intptr_t)))
+        v_std_string_append(&sstr, v_quark_to_string(qname));
+
+        qi = v_quark_from_string(v_std_string_get(&sstr));
+
+        gctx = v_target_get_global_ctx();
+
+        ns := (v_target_global_ctx_get_constant_value(gctx, qi) : *v_namespace_t);
+
+        if (ns)
         {
-            qm := v_std_any_get_value(v_quark_t, a);
+            s = new v_namespace_t;
+
+            v_copy(s, ns);
+
+            v_make_list_nil(&ns->list);             //- ?..
+            v_make_map(&ns->map);                   //- ?..
+            v_make_list_nil(&ns->used);             //- ?..
+            v_make_map(&ns->privates);              //- ?..
+
+            ns->stack := s;
+
+            v_assert(ns->parent == parent);
+
+            if (parent  &&  !v_map_find(&parent->map, (qname: intptr_t)))
+            {
+                a: &v_std_any_t := {};
+
+                v_std_any_set_value(&a, ns->name);
+
+                v_map_insert(&parent->map, &parent->map, (qname: intptr_t), &a);
+            }
+
+            break;
         }
-        else
+
+        ns := new v_namespace_t;
+
+        v_target_global_ctx_add_constant_value(gctx, qi, (ns: LLVMValueRef));
+
+        v_add_cleaner(namespace_cleaner, ns);
+
+        pref = &ns->prefix;
+
+        if (parent)
         {
-            sstr: &v_std_string_t := {};
+            v_copy(pref, &parent->prefix);
+
+            v_std_string_append_char(pref, NAMESPACE_SEPARATOR);
+
+            v_std_string_append(pref, v_quark_to_string(qname));
 
             v_std_string_set(&sstr, "v__");
 
             voidc_internal_std_string_append_mangle(&sstr, pref);
 
-            qm := v_quark_from_string(v_std_string_get(&sstr));
+            qm = v_quark_from_string(v_std_string_get(&sstr));
 
             a: &v_std_any_t := {};
 
@@ -189,24 +265,26 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
             v_std_any_set_value(&a, qm);
 
             v_map_insert(&parent->map, &parent->map, (qname: intptr_t), &a);
+
+            ns->name   := qm;
+            ns->local  := qname;
+            ns->parent := parent;
         }
+        else    //- Kinda "root"
+        {
+            v_std_string_set(pref, v_quark_to_string(qname));
 
-        ns->name   := qm;
-        ns->local  := qname;
-        ns->parent := parent;
-    }
-    else    //- Kinda "root"
-    {
-        v_std_string_set(pref, v_quark_to_string(qname));
-
-        ns->name   := qname;
-        ns->local  := qname;
-        ns->parent := 0;
+            ns->name   := qname;
+            ns->local  := qname;
+            ns->parent := 0;
+        }
     }
 
-    static_namespace_t = v_find_type_q(q_static_namespace_t);
+    v_assert(ns);
 
     v_add_constant_q(ns->name, static_namespace_t, (ns: LLVMValueRef));
+
+    v_add_local_cleaner(namespace_local_cleaner, ns);
 
     if (szv) v_show_variables();
 
@@ -1028,6 +1106,9 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 export
 voidc_unit_namespace_close_effort: (*void) ~> void
 {
+//printf("voidc_unit_namespace_close_effort: start\n");
+//defer printf("voidc_unit_namespace_close_effort: stop\n");
+
     anss = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_stack));
 
     i = v_list_get_size(anss) - 1;
@@ -1519,6 +1600,9 @@ my_postfix_dot_root_helper: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_bas
                              arg_ptrs: **v_ast_expr_t, arg_count: unsigned
                             ) ~> void
 {
+//printf("my_postfix_dot_root_helper: start\n");
+//defer printf("my_postfix_dot_root_helper: stop\n");
+
     args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
 
     op = v_list_get_item(args, 0);

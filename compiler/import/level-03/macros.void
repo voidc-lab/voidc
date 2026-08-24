@@ -723,6 +723,9 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 private
 collect_captures: (caps: *v_ast_expr_list_t, list: *v_ast_stmt_list_t) ~> void
 {
+//printf("collect_captures: start\n");
+//defer printf("collect_captures: stop\n");
+
     v_assert(v_empty(list));
 
     if (v_empty(caps))  return;
