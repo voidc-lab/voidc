@@ -690,6 +690,10 @@ static v_quark_t voidc_internal_function_leave_q;
 LLVMValueRef
 base_local_ctx_t::prepare_function(const char *raw_name, v_type_t *type)
 {
+    if (!module)  module = obtain_module();
+
+    assert(module);
+
     LLVMValueRef f = LLVMGetNamedFunction(module, raw_name);        //- Sic!
 
     if (!f)  f = LLVMAddFunction(module, raw_name, type->llvm_type());
