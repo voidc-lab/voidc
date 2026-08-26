@@ -343,7 +343,6 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
 
     //-------------------------------------------------------------
     bmap_old: &v_util_map_t := {};
-    bmap_new: &v_util_map_t := {};
 
     bmap =
     {
@@ -360,7 +359,7 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
 
     v_copy(&bmap_old, bmap);
 
-    defer  v_copy(bmap, &bmap_old);         //- Sic!
+    defer  v_move(bmap, &bmap_old);         //- Sic!
 
     ns_capture: &v_quark_t := 0;
 
@@ -393,8 +392,6 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
             v_map_insert(bmap, bmap, (name: intptr_t), &any);
         }
     }
-
-    v_copy(&bmap_new, bmap);
 
     if (ns_capture)
     {
@@ -455,12 +452,14 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
         {
             arg = v_list_get_item(args, i);
 
-            v_copy(&bmap_new, bmap);
+            bmap_tmp: &v_util_map_t := {};
+
+            v_move(&bmap_tmp, bmap);
             v_copy(bmap, &bmap_old);
 
             v_ast_accept_visitor(arg, vis);
 
-            v_copy(bmap, &bmap_new);
+            v_move(bmap, &bmap_tmp);
         }
 
         t = v_get_result_type();
@@ -540,7 +539,6 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     //-------------------------------------------------------------
     bmap_old: &v_util_map_t := {};
-    bmap_new: &v_util_map_t := {};
 
     bmap =
     {
@@ -557,7 +555,7 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
     v_copy(&bmap_old, bmap);
 
-    defer  v_copy(bmap, &bmap_old);         //- Sic!
+    defer  v_move(bmap, &bmap_old);         //- Sic!
 
     ns_capture: &v_quark_t := 0;
 
@@ -648,12 +646,14 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
         {
             arg = arg_ptrs[i];
 
-            v_copy(&bmap_new, bmap);
+            bmap_tmp: &v_util_map_t := {};
+
+            v_move(&bmap_tmp, bmap);
             v_copy(bmap, &bmap_old);
 
             v_ast_accept_visitor(arg, vis);
 
-            v_copy(bmap, &bmap_new);
+            v_move(bmap, &bmap_tmp);
         }
 
         t = v_get_result_type();
