@@ -1280,6 +1280,8 @@ export
 voidc_get_macro_definition: (q: v_quark_t, p: **const v_macro_definition_t)
                             ~> *voidc_intrinsic_t
 {
+    if (q == 0)  return  macro_expand_intrinsic;        //- !
+
     #if (!v_defined(NDEBUG))        //- ?
 
       { name = v_quark_to_string(q);
