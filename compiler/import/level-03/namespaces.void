@@ -191,15 +191,35 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 
     block
     {
+        sname = v_quark_to_string(qname);
+
         sstr: &v_std_string_t := {};
 
         v_std_string_set(&sstr, "v.namespace.");
 
-        if (parent)  v_std_string_append(&sstr, v_std_string_get(&parent->prefix));
+        if (parent)
+        {
+            {   strncmp: (*const char, *const char, size_t) ~> int;
 
-        v_std_string_append_char(&sstr, NAMESPACE_SEPARATOR);
+                v_assert(strncmp(sname, "v__", 3) != 0);
+            }
 
-        v_std_string_append(&sstr, v_quark_to_string(qname));
+            pref: &v_std_string_t := {};
+
+            v_copy(&pref, &parent->prefix);
+
+            v_std_string_append_char(&pref, NAMESPACE_SEPARATOR);
+
+            v_std_string_append(&pref, sname);
+
+            v_std_string_append(&sstr, "v__");
+
+            voidc_internal_std_string_append_mangle(&sstr, &pref);
+        }
+        else
+        {
+            v_std_string_append(&sstr, sname);              //- Sic !!!
+        }
 
         qi = v_quark_from_string(v_std_string_get(&sstr));
 
@@ -220,15 +240,26 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 
             ns->stack := s;
 
-            v_assert(ns->parent == parent);
+            if (ns->parent)
+            {
+                pname = ns->parent->name;
 
-            if (parent  &&  !v_map_find(&parent->map, (qname: intptr_t)))
+                pns: &*v_namespace_t := (v_find_constant_value_q(pname) : *v_namespace_t);
+
+                if (!pns)  pns := v_make_namespace_q(0, pname);
+
+                v_assert(ns->parent == pns);
+            }
+
+            pns = ns->parent;
+
+            if (pns  &&  !v_map_find(&pns->map, (ns->local: intptr_t)))
             {
                 a: &v_std_any_t := {};
 
                 v_std_any_set_value(&a, ns->name);
 
-                v_map_insert(&parent->map, &parent->map, (qname: intptr_t), &a);
+                v_map_insert(&pns->map, &pns->map, (ns->local: intptr_t), &a);
             }
 
             break;
@@ -1174,7 +1205,11 @@ voidc_unit_defn_using_namespace_effort: (aux: *void) ~> void
 //printf("voidc_unit_defn_using_namespace_effort start %s\n", v_quark_to_string((aux: v_quark_t)));
 //defer printf("voidc_unit_defn_using_namespace_effort stop\n");
 
-    ns = (v_find_constant_value_q((aux: v_quark_t)) : *v_namespace_t);
+    ns: &*v_namespace_t := (v_find_constant_value_q((aux: v_quark_t)) : *v_namespace_t);
+
+    if (!ns)  ns := v_make_namespace_q(0, (aux: v_quark_t));        //- Sic !!!
+
+    v_assert(ns);
 
     a: &v_std_any_t := {};
 
