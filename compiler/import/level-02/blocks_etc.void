@@ -733,6 +733,8 @@ voidc_enable_blocks_etc: () ~> void
     v_ast_make_operator_unary(&op_prefix_break, q_op_prefix_break, 0, 0);       //- Minimal priority
 
     v_add_cleaner(voidc_blocks_etc_internal_globals_cleaner, 0);
+
+    v_export_symbol("v_op_prefix_break", v_ast_expr_t, &op_prefix_break);       //- ...
 }
 
 
