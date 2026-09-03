@@ -892,10 +892,12 @@ voidc_internal_define_macro_helper: (q: v_quark_t, t: *v_type_t, ast: *v_ast_bas
 
     v_std_string_set(&sstr, "v.macro.");
 
-    v_std_string_append(&sstr, v_quark_to_string(q));
-
     if (t == 0)     //- Just "identifier"...
     {
+        qintr = v_obtain_alias_q(q, true);
+
+        v_std_string_append(&sstr, v_quark_to_string(qintr));
+
         qintr = v_quark_from_string(v_std_string_get(&sstr));
 
         object_intrinsic_t = v_find_type_q(q_object_intrinsic_t);
@@ -906,6 +908,8 @@ voidc_internal_define_macro_helper: (q: v_quark_t, t: *v_type_t, ast: *v_ast_bas
     }
     else            //- Special identifier
     {
+        v_std_string_append(&sstr, v_quark_to_string(q));
+
         v_std_string_append(&sstr, ", ");
 
         voidc_internal_std_string_append_type(&sstr, t);
@@ -1141,7 +1145,12 @@ compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
         v_std_string_set(&sstr, "v.macro.");
 
-        v_std_string_append(&sstr, v_quark_to_string(quark));
+        qintr: &v_quark_t := undef;
+
+        if (kind)  qintr := quark;
+        else       qintr := v_obtain_alias_q(quark, export);
+
+        v_std_string_append(&sstr, v_quark_to_string(qintr));
 
         qintr = v_quark_from_string(v_std_string_get(&sstr));
 

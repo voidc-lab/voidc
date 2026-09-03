@@ -34,6 +34,11 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
 
 NAMESPACE_SEPARATOR: char32_t = 0x1F;       //- "Unit Separator"...
 
+
+//---------------------------------------------------------------------
+strncmp: (*const char, *const char, size_t) ~> int;
+
+
 //---------------------------------------------------------------------
 {
     q_ref = v_reference_type(v_quark_t, 0);
@@ -199,10 +204,7 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 
         if (parent)
         {
-            {   strncmp: (*const char, *const char, size_t) ~> int;
-
-                v_assert(strncmp(sname, "v__", 3) != 0);
-            }
+            v_assert(strncmp(sname, "v__", 3) != 0);
 
             pref: &v_std_string_t := {};
 
@@ -279,7 +281,7 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
 
             v_std_string_append_char(pref, NAMESPACE_SEPARATOR);
 
-            v_std_string_append(pref, v_quark_to_string(qname));
+            v_std_string_append(pref, sname);
 
             v_std_string_set(&sstr, "v__");
 
@@ -303,7 +305,7 @@ v_make_namespace_q: (parent: *v_namespace_t, qname: v_quark_t) ~> *v_namespace_t
         }
         else    //- Kinda "root"
         {
-            v_std_string_set(pref, v_quark_to_string(qname));
+            v_std_string_set(pref, sname);
 
             ns->name   := qname;
             ns->local  := qname;
@@ -342,8 +344,6 @@ v_obtain_namespace_q: (qname: v_quark_t) ~> *v_namespace_t
 //defer printf("v_obtain_namespace_q: stop %s\n", v_quark_to_string(v_get_return_value()->name));
 
     is_root: &bool := false;
-
-    strncmp: (*const char, *const char, size_t) ~> int;
 
     qns: &v_quark_t := qname;
 
@@ -1019,7 +1019,7 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
                         q: &v_quark_t := v_std_any_get_value(v_quark_t, a);
 
-                        if (j == s  &&  ns == 0)
+                        if (j == s  &&  ns == 0  &&  strncmp(v_quark_to_string(q), "v__", 3) != 0)
                         {
                             sstr: &v_std_string_t := {};
 
@@ -1544,8 +1544,6 @@ my_obtain_alias: (aux: *void, q: v_quark_t, export: bool) ~> v_quark_t
 //printf("my_obtain_alias start %s %d\n", v_quark_to_string(q), (export: int));
 //defer printf("my_obtain_alias stop  %s\n", v_quark_to_string(v_get_return_value()));
 
-    strncmp: (*const char, *const char, size_t) ~> int;
-
     nm = v_quark_to_string(q);
 
     if (strncmp(nm, "v__", 3) == 0) return q;                            //- Sic!
@@ -1590,8 +1588,6 @@ my_lookup_alias: (aux: *void, q: v_quark_t) ~> v_quark_t
 {
 //printf("my_lookup_alias start %s\n", v_quark_to_string(q));
 //defer printf("my_lookup_alias stop  %s\n", v_quark_to_string(v_get_return_value()));
-
-    strncmp: (*const char, *const char, size_t) ~> int;
 
     nm = v_quark_to_string(q);
 
