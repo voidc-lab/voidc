@@ -374,16 +374,29 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
             item = v_list_get_item(&ctx.caps, i);
 
             name = v_ast_stmt_get_name_q(item);
-            expr = v_ast_stmt_get_expr(item);
 
             if (name == star_q)
             {
                 v_assert(ns_capture == 0);
 
+                expr = v_ast_stmt_get_expr(item);
+
                 ns_capture := v_ast_expr_identifier_get_name_q(expr);
 
-                continue;
+                break;
             }
+        }
+
+        if (ns_capture)  v_make_map(bmap);          //- Sic !!!
+
+        for (i: &int := 0; i < n; ++i)
+        {
+            item = v_list_get_item(&ctx.caps, i);
+
+            name = v_ast_stmt_get_name_q(item);
+            expr = v_ast_stmt_get_expr(item);
+
+            if (name == star_q)  continue;
 
             any: &v_std_any_t := {};
 
@@ -570,14 +583,29 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
             item = v_list_get_item(&ctx.caps, i);
 
             name = v_ast_stmt_get_name_q(item);
-            expr = v_ast_stmt_get_expr(item);
 
             if (name == star_q)
             {
+                v_assert(ns_capture == 0);
+
+                expr = v_ast_stmt_get_expr(item);
+
                 ns_capture := v_ast_expr_identifier_get_name_q(expr);
 
-                continue;
+                break;
             }
+        }
+
+        if (ns_capture)  v_make_map(bmap);          //- Sic !!!
+
+        for (i: &int := 0; i < n; ++i)
+        {
+            item = v_list_get_item(&ctx.caps, i);
+
+            name = v_ast_stmt_get_name_q(item);
+            expr = v_ast_stmt_get_expr(item);
+
+            if (name == star_q)  continue;
 
             any: &v_std_any_t := {};
 
