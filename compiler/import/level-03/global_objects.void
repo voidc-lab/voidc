@@ -1391,6 +1391,8 @@ voidc_finish_module_cdtors: (void_ctx: *void, module: LLVMModuleRef) ~> void
 
         LLVMBuildRetVoid(builder);
 
+        LLVMClearInsertionPosition(builder);
+
         LLVMDeleteGlobal(cdt);
     }
 

@@ -931,6 +931,8 @@ base_hide_variables_default(void *void_ctx)
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
     auto &gctx = lctx.global_ctx;
 
+    lctx.push_result();
+
     lctx.vars_stack.push_front({lctx.decls, lctx.cleaners, std::move(lctx.vars)});
 
     lctx.decls    = std::move(lctx.outer_decls);
@@ -942,8 +944,6 @@ base_hide_variables_default(void *void_ctx)
     lctx.push_builder_ip();
 
     LLVMClearInsertionPosition(gctx.builder);               //- ?
-
-    lctx.push_result();
 }
 
 //---------------------------------------------------------------------
@@ -951,8 +951,6 @@ static void
 base_show_variables_default(void *void_ctx)
 {
     auto &lctx = *(reinterpret_cast<base_local_ctx_t *>(void_ctx));
-
-    lctx.pop_result();
 
     lctx.pop_builder_ip();
 
@@ -964,6 +962,8 @@ base_show_variables_default(void *void_ctx)
     std::tie(lctx.decls, lctx.cleaners, lctx.vars) = std::move(lctx.vars_stack.front());
 
     lctx.vars_stack.pop_front();
+
+    lctx.pop_result();
 }
 
 
