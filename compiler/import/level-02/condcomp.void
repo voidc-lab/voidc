@@ -583,7 +583,38 @@ compile_cc_message: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     case 'f':   stag := "Fail";     break;
     }
 
-    msg = v_ast_expr_string_get_string(v_list_get_item(elst, 0));      //- Sic!
+    //-----------------------------------------------------------------
+    sstr = v_make_object(v_std_string_t);
+
+    n = v_list_get_size(elst);
+
+    for (i: &int := 0; i < n; ++i)
+    {
+        arg = v_list_get_item(elst, i);
+
+        if (i)  v_std_string_append_char(sstr, ' ');
+
+        if (v_ast_base_get_tag((arg: *v_ast_base_t)) == v_ast_expr_string_tag)
+        {
+            v_std_string_append(sstr, v_ast_expr_string_get_string(arg));
+        }
+        else
+        {
+            v_push_result();
+
+            v_ast_accept_visitor((arg: *v_ast_base_t), vis);
+
+            l: &size_t := undef;
+
+            s = LLVMGetAsString(v_get_result_value(), &l);
+
+            v_std_string_append_data(sstr, s, l-1);
+
+            v_pop_result();
+        }
+    }
+
+    msg = v_std_string_get(sstr);
 
     //-----------------------------------------------------------------
     function: &*const char := 0;
@@ -597,6 +628,13 @@ compile_cc_message: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
             len: &size_t := undef;
 
             function := LLVMGetValueName2(fun, &len);
+        }
+
+        strncmp: (*const char, *const char, size_t) ~> int;
+
+        if (function  &&  strncmp(function, "v__", 3) == 0)
+        {
+            function := "v__...";
         }
     }
 
