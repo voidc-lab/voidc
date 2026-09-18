@@ -446,6 +446,34 @@ check_private_thing: (thing: intptr_t) ~> void
 
 //---------------------------------------------------------------------
 private
+save_private_things: () ~> void
+{
+    a = v_get_property_q(q_current_namespace_list);
+
+    l = v_std_any_get_pointer(v_util_list_t, a);
+
+    s = v_list_get_size(l);
+    if (!s) return;
+
+    c = v_list_get_item(l, s-1);
+
+    ns = (v_std_any_get_value(intptr_t, c): *v_namespace_t);
+
+    priv = &ns->privates;
+
+    if (v_map_get_size(priv) == 0)  return;
+
+    any: &v_std_any_t := {};
+
+    v_std_any_set_pointer(&any, priv);
+
+    v_make_map(priv);
+
+    v_map_insert(priv, priv, 0, &any);          //- Sic!
+}
+
+//---------------------------------------------------------------------
+private
 clear_private_things: () ~> void
 {
 //printf("clear_private_things: start\n");
@@ -513,7 +541,16 @@ clear_private_things: () ~> void
         --n;
     }
 
-    v_make_map(priv);
+    if (any = v_map_find(priv, 0))
+    {
+        p: &v_util_map_t := *v_std_any_get_pointer(v_util_map_t, any);
+
+        v_copy(priv, &p);
+    }
+    else
+    {
+        v_make_map(priv);
+    }
 }
 
 
@@ -1044,6 +1081,8 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
                         if (export) v_export_effort(voidc_unit_namespace_open_item_effort, q);
                         else        v_add_effort(voidc_unit_namespace_open_item_effort, q);
+
+                        save_private_things();
                     }
                 }
 
@@ -1063,6 +1102,8 @@ compile_unit_namespace_open: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
 
             if (export) v_export_effort(voidc_unit_namespace_open_item_effort, q);
             else        v_add_effort(voidc_unit_namespace_open_item_effort, q);
+
+            save_private_things();
         }
 
         v_assert(is_namespace);             //- Sic!
