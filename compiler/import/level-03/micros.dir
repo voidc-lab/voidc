@@ -19,6 +19,8 @@ Generating AST                                                 │generating_ast
                                                                │
 Macros                                                         │macros.void
                                                                │
+Templates                                                      │templates.void
+                                                               │
                                                                │
 ───────────────────────────────────────────────────────────────│
 __import__.void                                                │__import__.void -T

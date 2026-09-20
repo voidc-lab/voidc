@@ -1,0 +1,135 @@
+{   v_import("level-00");
+    v_import("level-01");
+    v_import("level-02");
+
+    v_import("level-03/intrinsics_derive.void");
+    v_import("level-03/local_objects.void");
+    v_import("level-03/heap_objects.void");
+    v_import("level-03/global_objects.void");
+    v_import("level-03/coercions.void");
+    v_import("level-03/namespaces.void");
+    v_import("level-03/generics_etc.void");
+    v_import("level-03/generating_ast.void");
+    v_import("level-03/macros.void");
+    v_import("level-03/templates.void");
+
+    v_import("printf.void");
+}
+
+{   v_enable_level_01();
+    v_enable_level_02();
+
+    voidc_enable_intrinsics_derive();
+    voidc_enable_local_objects();
+    voidc_enable_heap_objects();
+    voidc_enable_global_objects();
+    voidc_enable_coercions();
+    voidc_enable_namespaces();
+    voidc_enable_generics_etc();
+    voidc_enable_generating_ast();
+    voidc_enable_macros();
+    voidc_enable_templates();
+}
+
+
+//=====================================================================
+{   voidc_unit_begin_module("templates_mod_test_module"); }
+
+
+//---------------------------------------------------------------------
+export
+namespace .my {
+
+
+//---------------------------------------------------------------------
+#define map: [](K: v_static_type_t, T: v_static_type_t) ~> v_static_type_t  =
+{
+    MT = v_generic(".my.map", T[K, T]);
+
+    #template [*, MT, K, T]()
+    {
+        private impl_t = v_util_map_t;
+
+        #do (v_set_implementation_type(MT, impl_t))
+
+        private alwaysinline
+        impl: (s: &MT) ~> &impl_t  =  *(&s : *impl_t);
+
+        inlinehint
+        (v_initialize(_)): (p: *MT, n: size_t) ~> void
+        {
+            v_initialize(&impl(*p), n);
+
+            for (i: &int := 0; i < n; ++i)  v_make_map(&impl(p[i]));
+        }
+
+        alwaysinline
+        (v_terminate(_)): (p: *MT, n: size_t) ~> void
+        {
+            v_terminate(&impl(*p), n);
+        }
+
+        alwaysinline
+        (v_copy(_)): (d: *MT, s: *const MT, n: size_t) ~> void
+        {
+            v_copy(&impl(*d), &impl(*s), n);
+        }
+
+        alwaysinline
+        (v_move(_)): (d: *MT, s: *MT, n: size_t) ~> void
+        {
+            v_move(&impl(*d), &impl(*s), n);
+        }
+
+        //-------------------------------------------------------------
+        alwaysinline
+        (_:=_): (d: &MT, s: MT) ~> &MT  =
+        {
+            v_copy(&d, &s);
+
+            d
+        };
+
+        //-------------------------------------------------------------
+        inlinehint
+        (_[]): (m: MT, i: K) ~> T  =
+        {
+            a = v_map_find(&impl(*&m), (i: intptr_t));
+            v_assert(a);
+
+            v_std_any_get_value(T, a)
+        };
+
+        inlinehint
+        (_.insert()): (m: MT, i: K, v: T) ~> MT
+        {
+            a: &v_std_any_t := {};
+
+            v_std_any_set_value(&a, v);
+
+            v_map_insert(&impl(v_get_return_value()), &impl(*&m), (i: intptr_t), &a);
+        }
+
+        inlinehint
+        (_.erase()): (m: MT, i: K) ~> MT
+        {
+            v_map_erase(&impl(v_get_return_value()), &impl(*&m), (i: intptr_t));
+        }
+
+        alwaysinline
+        (_.size): (m: MT) ~> size_t  =  v_map_get_size(&impl(*&m));
+
+    }   //- #template
+
+    MT
+};
+
+
+//---------------------------------------------------------------------
+}   //- namespace .my
+
+
+//=====================================================================
+{   voidc_unit_end_module(); }
+
+

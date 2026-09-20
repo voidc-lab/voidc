@@ -24,6 +24,9 @@ Generating ast test                 !!!                        │generating_ast
 Macros test                                                    │macros_test.void
     ...                                                        │macros_mod_test.void
                                                                │
+Templates test                                                 │templates_test.void
+    ...                                                        │templates_mod_test.void
+                                                               │
                                                                │
 ───────────────────────────────────────────────────────────────│
 ...                                                            │README.md

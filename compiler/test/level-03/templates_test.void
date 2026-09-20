@@ -1,0 +1,71 @@
+{   v_import("level-00");
+    v_import("level-01");
+    v_import("level-02");
+
+    v_import("level-03/intrinsics_derive.void");
+    v_import("level-03/local_objects.void");
+    v_import("level-03/heap_objects.void");
+    v_import("level-03/global_objects.void");
+    v_import("level-03/coercions.void");
+    v_import("level-03/namespaces.void");
+    v_import("level-03/generics_etc.void");
+    v_import("level-03/generating_ast.void");
+    v_import("level-03/macros.void");
+    v_import("level-03/templates.void");
+
+    v_import("printf.void");
+}
+
+{   v_enable_level_01();
+    v_enable_level_02();
+
+    voidc_enable_intrinsics_derive();
+    voidc_enable_local_objects();
+    voidc_enable_heap_objects();
+    voidc_enable_global_objects();
+    voidc_enable_coercions();
+    voidc_enable_namespaces();
+    voidc_enable_generics_etc();
+    voidc_enable_generating_ast();
+    voidc_enable_macros();
+    voidc_enable_templates();
+}
+
+
+//---------------------------------------------------------------------
+
+
+//=====================================================================
+{ v_import("templates_mod_test.void"); }
+
+
+
+{   m: &my.map(int, long) := {};
+
+    N = 100;
+
+    for (i: &int := 0; i < N; ++i)
+    {
+        v: long = i;
+
+        v = v * v;
+        v = v * v;
+        v = v * v;
+
+        m := m.insert(i, v);
+    }
+
+    for (i: &int := 0; i < N; ++i)
+    {
+        j = i * 83 % N;
+
+        printf("m[%d]: %ld\n", j, m[j]);
+    }
+
+}
+
+
+
+
+
+
