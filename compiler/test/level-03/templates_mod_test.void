@@ -31,9 +31,157 @@
     voidc_enable_templates();
 }
 
+//---------------------------------------------------------------------
+{   q_ref = v_reference_type(v_quark_t, 0);
+
+    q = v_quark_ptr_from_string;
+
+    v_add_symbol("q_static_type_t", q_ref, q("v_static_type_t"));
+}
+
 
 //=====================================================================
 {   voidc_unit_begin_module("templates_mod_test_module"); }
+
+
+//---------------------------------------------------------------------
+private
+map_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t,
+                           arg_ptrs: **v_ast_expr_t, arg_count: unsigned
+                          ) ~> void
+{
+//printf("list_op_braces_intrinsic: start\n");
+//defer printf("list_op_braces_intrinsic: stop\n");
+
+    tr: &*v_type_t := v_get_result_type();
+
+    is_reference = v_type_is_reference(tr);
+
+    addr_sp: &unsigned := undef;
+
+    if (is_reference)
+    {
+        addr_sp := v_type_refptr_get_address_space(tr);         //- Sic!
+        tr      := v_type_refptr_get_element_type(tr);          //- Sic!
+    }
+
+    vr: &LLVMValueRef := v_get_result_value();
+
+    if (vr == 0)  vr := v_make_temporary(tr, 0);
+
+    list: &v_ast_stmt_list_t :=
+    {'stmt_list'
+
+         my_any: &v_std_any_t := {};
+
+         #define my_step: (m, kv)
+         {'stmt_list'
+
+             v_std_any_set_value(&my_any, kv[1]);
+
+             v_map_insert(m, m, (kv[0]: intptr_t), &my_any);
+
+         'stmt_list'}
+
+    'stmt_list'};
+
+    expr: &v_ast_expr_t[2] := {};
+
+    v_ast_make_expr_compiled(expr+0, v_pointer_type(v_util_map_t, 0), vr);
+
+    typ = (aux: *v_type_t);
+
+    my_step_q = v_quark_from_string("my_step");
+
+    stmt: &v_ast_stmt_t := {};
+
+    for (i: &int := 0; i < arg_count; ++i)
+    {
+        v_reset_result();
+
+        v_set_result_type(typ);
+
+        v_ast_accept_visitor(arg_ptrs[i], vis);
+
+        kv = v_get_result_value();
+
+        v_ast_make_expr_compiled(expr+1, typ, kv);
+
+        v_ast_make_stmt_call(&stmt, 0, my_step_q, expr, 2);
+
+        v_list_append(&list, &list, &stmt);
+    }
+
+    v_ast_make_stmt_block(&stmt, &list, false);
+
+    v_reset_result();
+
+    v_ast_accept_visitor(&stmt, vis);
+
+    if (is_reference) v_set_result_type(v_reference_type(tr, addr_sp));
+    else              v_set_result_type(tr);
+
+    v_set_result_value(vr);
+}
+
+//---------------------------------------------------------------------
+private
+register_map_op_braces_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+    args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
+
+    arg0 = v_list_get_item(args, 0);        //- Map type
+    arg1 = v_list_get_item(args, 1);        //- Key type
+    arg2 = v_list_get_item(args, 2);        //- Value type
+
+    static_type_t = v_find_type_q(q_static_type_t);
+
+    v_reset_result();
+
+    v_set_result_type(static_type_t);
+
+    v_ast_accept_visitor(arg0, vis);
+
+    map_type = (v_get_result_value() : *v_type_t);
+
+    v_reset_result();
+
+    v_set_result_type(static_type_t);
+
+    v_ast_accept_visitor(arg1, vis);
+
+    key_type = (v_get_result_value() : *v_type_t);
+
+    v_reset_result();
+
+    v_set_result_type(static_type_t);
+
+    v_ast_accept_visitor(arg2, vis);
+
+    val_type = (v_get_result_value() : *v_type_t);
+
+    sstr: &v_std_string_t := {};
+
+    v_std_string_set(&sstr, "my.map_op_braces-(");
+
+    voidc_internal_std_string_append_type(&sstr, key_type);
+
+    v_std_string_append(&sstr, ", ");
+
+    voidc_internal_std_string_append_type(&sstr, val_type);
+
+    v_std_string_append(&sstr, ")");
+
+    iname = v_std_string_get(&sstr);
+
+    v_add_overload("v.op_braces", map_type, iname);
+
+    typ: &(*v_type_t)[2] := { key_type, val_type };
+
+    elt_type = v_struct_type(typ, 2, false);
+
+    v_add_intrinsic(iname, map_op_braces_intrinsic, elt_type);      //- Sic!
+}
 
 
 //---------------------------------------------------------------------
@@ -91,6 +239,8 @@ namespace .my {
         };
 
         //-------------------------------------------------------------
+        #do (register_map_op_braces(MT, K, T))
+
         inlinehint
         (_[]): (m: MT, i: K) ~> T  =
         {
@@ -126,10 +276,21 @@ namespace .my {
 
 
 //---------------------------------------------------------------------
+enable_map_effort: (*void) ~> void
+{
+    v_add_intrinsic("register_map_op_braces", register_map_op_braces_intrinsic, 0);
+}
+
+
+//---------------------------------------------------------------------
 }   //- namespace .my
 
 
 //=====================================================================
 {   voidc_unit_end_module(); }
+
+
+//---------------------------------------------------------------------
+{   v_export_effort(my.enable_map_effort, 0); }
 
 
