@@ -383,19 +383,22 @@ compile_template_body: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     v_std_string_set(&sstr, "v.template.guard-");
 
-    v_std_string_append(&sstr, v_quark_to_string(cur_ns->name));
-
     if (!v_empty(guard))
     {
-        v_std_string_append(&sstr, "-");
-
         v_std_string_append(&sstr, v_ast_expr_identifier_get_name(guard));
+
+        v_std_string_append(&sstr, "-");
     }
+
+    v_std_string_append(&sstr, v_quark_to_string(cur_ns->name));
 
     quark = v_quark_from_string(v_std_string_get(&sstr));
 
     if (!v_map_find(&cur_ns->map, (quark: intptr_t)))
     {
+//printf("+ %s\n", v_std_string_get(&sstr));
+//defer printf("-\n");
+
         //- Define guard constant...
 
         v_add_constant_q(quark, v_void_type(), 0);

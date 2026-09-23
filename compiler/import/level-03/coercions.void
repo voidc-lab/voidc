@@ -8,6 +8,8 @@
     v_import("level-01");
     v_import("level-02");
 
+    v_import("llvm-c/Core.void");
+
     v_import("intrinsics_derive.void");
     v_import("local_objects.void");
     v_import("heap_objects.void");
@@ -1426,6 +1428,20 @@ voidc_enable_coercions_compiler: () ~> void
     v_add_local_cleaner(free, &ctx);
 
     //-----------------------------------------------------------------
+    {   gctx = v_target_get_global_ctx();
+        vctx = v_target_get_voidc_global_ctx();
+
+        if (gctx != vctx)
+        {
+            int_t = v_find_type("int");
+            int_  = v_type_get_llvm_type(int_t);
+
+            v_add_constant("v_coe_injective",  int_t, LLVMConstInt(int_, v_coe_injective,  0));
+            v_add_constant("v_coe_projective", int_t, LLVMConstInt(int_, v_coe_projective, 0));
+            v_add_constant("v_coe_single",     int_t, LLVMConstInt(int_, v_coe_single,     0));
+        }
+    }
+
     enable_voidc_ast_coercions();
 }
 
