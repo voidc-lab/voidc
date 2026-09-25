@@ -393,7 +393,10 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         if (export) v_export_constant(name, var_type, 0);       //- Sic!
         else        v_add_constant(name, var_type, 0);          //- Sic!
 
-        sym_type := v_reference_type(var_type, 0);              //- HACK!
+        if (!v_type_is_void(var_type))
+        {
+            sym_type := v_reference_type(var_type, 0);          //- HACK!
+        }
     }
     else        //- have_value              //- Definition
     {
@@ -428,8 +431,11 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         sym_type := var_type := v_reference_type(t, a);
     }
 
-    if (export) v_export_symbol_type(name, sym_type);
-    else        v_add_symbol(name, sym_type, 0);
+    if (!v_type_is_void(var_type))
+    {
+        if (export) v_export_symbol_type(name, sym_type);
+        else        v_add_symbol(name, sym_type, 0);
+    }
 
     if (have_value)                         //- Definition
     {
@@ -537,6 +543,8 @@ my_compile_unit_var_defn: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_
         else        v_ast_make_stmt_call(&stmt, 0, q_add_constant, expr, 3);
 
         v_list_append(stmt_list, stmt_list, &stmt);
+
+        if (v_type_is_void(var_type))  return;
     }
 
     if (sym_type != var_type)
