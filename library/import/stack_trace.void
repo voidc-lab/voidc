@@ -38,6 +38,7 @@
 
     v_add_symbol("expr_call_q",       q_ref, q("expr_call"));
     v_add_symbol("expr_identifier_q", q_ref, q("expr_identifier"));
+    v_add_symbol("template_defn_q",   q_ref, q("template_defn"));
 
 #endif
 
@@ -215,6 +216,19 @@ print_trace: () ~> void
                 s = v_ast_expr_identifier_get_name((item->ast: *v_ast_expr_t));
 
                 printf(", %s", s);
+            }
+            else if (qtag == template_defn_q)
+            {
+                list = (item->ast: *v_ast_generic_list_t);
+
+                name = (v_list_get_item(list, 1) : *v_ast_expr_t);
+
+                if (!v_empty(name))
+                {
+                    s = v_ast_expr_identifier_get_name(name);
+
+                    printf(", %s", s);
+                }
             }
 
             printf("\n");
