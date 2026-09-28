@@ -40,6 +40,9 @@
     v_add_symbol("expr_identifier_q", q_ref, q("expr_identifier"));
     v_add_symbol("template_defn_q",   q_ref, q("template_defn"));
 
+    v_add_symbol("q_op_postfix_dot", q_ref, q("v.op_postfix_dot"));
+    v_add_symbol("q_op_postfix_to",  q_ref, q("v.op_postfix_to"));
+
 #endif
 
     //-----------------------------------------------------------------
@@ -209,6 +212,27 @@ print_trace: () ~> void
                     s = v_ast_expr_identifier_get_name(f);
 
                     printf(", %s", s);
+
+                    q = v_ast_expr_identifier_get_name_q(f);
+
+                    if (q == q_op_postfix_dot  ||  q == q_op_postfix_to)
+                    {
+                        args = v_ast_expr_call_get_arg_list((item->ast: *v_ast_expr_t));
+
+                        op = v_list_get_item(args, 0);
+
+                        void_obj = v_ast_generic_get_object(op);
+
+                        obj = *(void_obj: *v_ast_operator_unary_t);
+
+                        pay = (&obj[2] : *v_ast_generic_list_t);
+
+                        etmp = (v_list_get_item(pay, 0) : *v_ast_expr_t);
+
+                        name = v_ast_expr_identifier_get_name(etmp);
+
+                        printf(", %s", name);
+                    }
                 }
             }
             else if (qtag == expr_identifier_q)
