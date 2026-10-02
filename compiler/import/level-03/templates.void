@@ -322,9 +322,18 @@ template_instantiation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_as
 
     v_set_module(0);        //- Sic!
 
+    hidden_flag = v_get_hidden_flag();
+    export_flag = v_get_export_flag();
+
+    v_set_hidden_flag(false);
+    v_set_export_flag(true);
+
     //---------------------------
     fun(&ctx->macro, vis, &expr);
     //---------------------------
+
+    v_set_export_flag(export_flag);
+    v_set_hidden_flag(hidden_flag);
 
     v_set_module(saved_module);
 
@@ -337,6 +346,41 @@ template_instantiation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_as
     if (is_inner)  v_show_variables();
     //--------------------------------
 }
+
+//---------------------------------------------------------------------
+//TRACE_GUARD: void;
+
+#if (v_defined(TRACE_GUARD))
+
+    private
+    indent: &int := 0;
+
+    private
+    trace_guard_in: (guard: *v_ast_expr_t) ~> void
+    {
+        printf: (*const char, ...) ~> int;
+
+        for (i: &int := 0; i < indent; ++i)  printf(" ");
+
+        ++indent;
+
+        if (v_empty(guard))  printf("+\n");
+        else                 printf("+ %s\n", v_ast_expr_identifier_get_name(guard));
+    }
+
+    private
+    trace_guard_out: () ~> void
+    {
+        printf: (*const char, ...) ~> int;
+
+        --indent;
+
+        for (i: &int := 0; i < indent; ++i)  printf(" ");
+
+        printf("-\n");
+    }
+
+#endif
 
 //---------------------------------------------------------------------
 private
@@ -396,9 +440,7 @@ compile_template_body: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     if (!v_map_find(&cur_ns->map, (quark: intptr_t)))
     {
-//printf("+ %s\n", v_std_string_get(&sstr));
-//defer printf("-\n");
-
+#if (v_defined(TRACE_GUARD))  trace_guard_in(guard);  defer trace_guard_out();  #endif
         //- Define guard constant...
 
         v_add_constant_q(quark, v_void_type(), 0);

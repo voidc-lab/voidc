@@ -75,6 +75,9 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
     v_add_symbol("q_object_intrinsic_t", q_ref, q("v_object_intrinsic_t"));
 
     v_add_symbol("star_q", q_ref, q("*"));
+
+    v_add_symbol("unit_namespace_open_q", q_ref, q("unit_namespace_open"));
+    v_add_symbol("unit_defn_close_q",     q_ref, q("unit_defn_close"));
 }
 
 
@@ -330,6 +333,74 @@ my_show_variables: (aux: *void) ~> void
 
 //---------------------------------------------------------------------
 private
+push_current_namespace: (qns: v_quark_t) ~> void
+{
+    if (v_get_variables_size() != 0)        //- Inner...
+    {
+        ns = (v_find_constant_value_q(qns) : *v_namespace_t);
+
+        any: &v_std_any_t := {};
+
+        v_std_any_set_value(&any, (ns: intptr_t));
+
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        v_list_append(lst, lst, &any);
+    }
+    else        //- Outer...
+    {
+        expr: &v_ast_expr_t := {};
+        glst: &v_ast_generic_list_t := {};
+
+        v_ast_make_expr_integer(&expr, 0);
+
+        v_make_list(&glst, unit_namespace_open_q, &expr);
+
+        v_ast_make_expr_identifier_q(&expr, qns);
+
+        v_ast_make_expr_op_unary(&expr, v_op_parentheses, &expr);
+
+        v_list_append(&glst, &glst, &expr);
+
+        //- Open namespace
+
+        v_push_result();
+
+        v_ast_accept_visitor(&glst, v_get_compiler());
+
+        v_pop_result();
+    }
+}
+
+private
+pop_current_namespace: () ~> void
+{
+    if (v_get_variables_size() != 0)        //- Inner...
+    {
+        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
+
+        i = v_list_get_size(lst) - 1;
+
+        v_list_erase(lst, lst, i, 1);
+    }
+    else        //- Outer...
+    {
+        glst: &v_ast_generic_list_t := {};
+
+        //- Close namespace
+
+        v_make_list_nil(&glst, unit_defn_close_q);
+
+        v_push_result();
+
+        v_ast_accept_visitor(&glst, v_get_compiler());
+
+        v_pop_result();
+    }
+}
+
+//---------------------------------------------------------------------
+private
 macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) ~> void
 {
 //printf("macro_expand_intrinsic start\n");
@@ -406,27 +477,8 @@ macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) 
         }
     }
 
-    if (ns_capture)
-    {
-        ns = (v_find_constant_value_q(ns_capture) : *v_namespace_t);
-
-        any: &v_std_any_t := {};
-
-        v_std_any_set_value(&any, (ns: intptr_t));
-
-        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
-
-        v_list_append(lst, lst, &any);
-    }
-
-    defer if (ns_capture)
-    {
-        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
-
-        i = v_list_get_size(lst) - 1;
-
-        v_list_erase(lst, lst, i, 1);
-    }
+    if (ns_capture)  push_current_namespace(ns_capture);
+    defer if (ns_capture)  pop_current_namespace();
 
     np = v_list_get_size(&ctx.pars);
     na = v_list_get_size(args);
@@ -615,27 +667,8 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
         }
     }
 
-    if (ns_capture)
-    {
-        ns = (v_find_constant_value_q(ns_capture) : *v_namespace_t);
-
-        any: &v_std_any_t := {};
-
-        v_std_any_set_value(&any, (ns: intptr_t));
-
-        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
-
-        v_list_append(lst, lst, &any);
-    }
-
-    defer if (ns_capture)
-    {
-        lst = v_std_any_get_pointer(v_util_list_t, v_get_property_q(q_current_namespace_list));
-
-        i = v_list_get_size(lst) - 1;
-
-        v_list_erase(lst, lst, i, 1);
-    }
+    if (ns_capture)  push_current_namespace(ns_capture);
+    defer if (ns_capture)  pop_current_namespace();
 
     np = v_list_get_size(&ctx.pars);
     na = arg_count;
