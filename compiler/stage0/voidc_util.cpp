@@ -14,6 +14,8 @@
 #include <map>
 #include <set>
 
+#include <time.h>
+
 #include <llvm-c/Core.h>
 
 #include <immer/flex_vector.hpp>
@@ -788,6 +790,26 @@ DEF(map)
 
 //---------------------------------------------------------------------
 
+VOIDC_DLLEXPORT_END
+}   //- extern "C"
+
+
+//---------------------------------------------------------------------
+extern "C"
+{
+VOIDC_DLLEXPORT_BEGIN_FUNCTION
+
+//---------------------------------------------------------------------
+double voidc_clock(void)
+{
+    struct timespec rawtime;
+
+    clock_gettime(CLOCK_REALTIME, &rawtime);
+
+    return  rawtime.tv_sec + rawtime.tv_nsec * 1e-9;
+}
+
+//---------------------------------------------------------------------
 VOIDC_DLLEXPORT_END
 }   //- extern "C"
 

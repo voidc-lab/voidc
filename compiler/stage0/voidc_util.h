@@ -85,6 +85,8 @@ void fun_name(std::any *dst, val_t *p) \
 }
 
 
+//-----------------------------------------------------------------
+extern "C" { double voidc_clock(void); }
 
 
 #endif  //- VOIDC_UTIL_H

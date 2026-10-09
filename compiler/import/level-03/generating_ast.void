@@ -153,7 +153,7 @@ struct voidc_ast_generator_t
 //---------------------------------------------------------------------
 (_.push_var()): (gen: &voidc_ast_generator_t) ~> int
 {
-    r = v_load(& ++gen.cur_var);
+    r: int = ++gen.cur_var;
 
     if (gen.max_var < r)  gen.max_var := r;
 
@@ -1344,6 +1344,9 @@ mk_parse_any_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
 private
 mk_quote_ast_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_t) ~> void
 {
+//printf("mk_quote_ast_grammar_action: start\n");
+//defer printf("mk_quote_ast_grammar_action: stop\n");
+
     ast = v_ast_std_any_get_base(any);
     if (!ast)   return;
 

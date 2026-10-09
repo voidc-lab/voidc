@@ -1817,8 +1817,8 @@
     v_add_parameter_name(f, 2, "self",    v_ast_base_ptr);
 }
 {
-//  printf("compile_defn_list_unit\n");
-//  defer printf("compile_defn_list_unit leave\n");
+//printf("compile_defn_list_unit: start\n"); _tm = voidc_clock();
+//defer printf("compile_defn_list_unit: stop %g\n", voidc_clock() - _tm);
 
     {   vis = v_get_compiler();
 
@@ -2055,6 +2055,10 @@
     v_add_parameter_name(f, 2, "self",    v_ast_base_ptr);
 }
 {
+//printf("compile_unit_defn_list: start\n"); _tm = voidc_clock();
+//defer printf("compile_unit_defn_list: stop %g\n", voidc_clock() - _tm);
+
+
     list = v_cast(self, v_ast_generic_list_ptr);
 
     n = v_list_get_size(list);
