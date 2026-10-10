@@ -806,7 +806,9 @@ double voidc_clock(void)
 
     clock_gettime(CLOCK_REALTIME, &rawtime);
 
-    return  rawtime.tv_sec + rawtime.tv_nsec * 1e-9;
+    static time_t start = rawtime.tv_sec;
+
+    return  (rawtime.tv_sec - start) + rawtime.tv_nsec * 1e-9;
 }
 
 //---------------------------------------------------------------------

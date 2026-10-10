@@ -403,8 +403,8 @@ pop_current_namespace: () ~> void
 private
 macro_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_ast_base_t) ~> void
 {
-//printf("macro_expand_intrinsic start\n");
-//defer printf("macro_expand_intrinsic stop\n");
+//printf("macro_expand_intrinsic start\n"); _tm = voidc_clock();
+//defer printf("macro_expand_intrinsic stop %g\n", voidc_clock() - _tm);
 
     ctx = *(aux: *v_macro_definition_t);
 
@@ -595,8 +595,8 @@ macro_spec_expand_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_ba
                               arg_ptrs: **v_ast_expr_t, arg_count: unsigned
                              ) ~> void
 {
-//printf("macro_spec_expand_intrinsic: start\n");
-//defer printf("macro_spec_expand_intrinsic: stop\n");
+//printf("macro_spec_expand_intrinsic: start\n"); _tm = voidc_clock();
+//defer printf("macro_spec_expand_intrinsic: stop %g\n", voidc_clock() - _tm);
 
     ctx = *(aux: *v_macro_definition_t);
 
@@ -1104,8 +1104,8 @@ gen_macro_definition: (ret: *v_ast_stmt_t, q: v_quark_t, t: *v_type_t,
 private
 compile_macro_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-//printf("compile_macro_define start\n");
-//defer printf("compile_macro_define stop\n");
+//printf("compile_macro_define start\n"); _tm = voidc_clock();
+//defer printf("compile_macro_define stop %g\n", voidc_clock() - _tm);
 
     list = (self: *v_ast_generic_list_t);
 

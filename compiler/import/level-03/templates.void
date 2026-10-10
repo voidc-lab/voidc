@@ -369,7 +369,7 @@ template_instantiation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_as
     }
 
     private
-    trace_guard_out: () ~> void
+    trace_guard_out: (tm: float(64)) ~> void
     {
         printf: (*const char, ...) ~> int;
 
@@ -377,7 +377,7 @@ template_instantiation_intrinsic: (aux: *void, vis: *voidc_visitor_t, self:*v_as
 
         for (i: &int := 0; i < indent; ++i)  printf(" ");
 
-        printf("-\n");
+        printf("- %g\n", tm);
     }
 
 #endif
@@ -440,7 +440,10 @@ compile_template_body: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
     if (!v_map_find(&cur_ns->map, (quark: intptr_t)))
     {
-#if (v_defined(TRACE_GUARD))  trace_guard_in(guard);  defer trace_guard_out();  #endif
+#if (v_defined(TRACE_GUARD))
+    trace_guard_in(guard); _tm = voidc_clock();
+    defer trace_guard_out(voidc_clock() - _tm);
+#endif
         //- Define guard constant...
 
         v_add_constant_q(quark, v_void_type(), 0);
@@ -604,8 +607,8 @@ gen_template_definition: (ret: *v_ast_stmt_t,
 private
 compile_template_define: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-//printf("compile_template_define start\n");
-//defer printf("compile_template_define stop\n");
+//printf("compile_template_define start\n"); _tm = voidc_clock();
+//defer printf("compile_template_define stop %g\n", voidc_clock() - _tm);
 
     list = (self: *v_ast_generic_list_t);
 
