@@ -8,6 +8,9 @@
 
 {   v_import("printf.void"); }
 
+{   voidc_enable_function_hack();
+}
+
 
 {   typ = v_alloca(v_type_ptr);
 

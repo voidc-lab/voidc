@@ -6,7 +6,8 @@
 
 {   v_import("printf.void"); }
 
-{   voidc_enable_memory_intrinsics();
+{   voidc_enable_function_hack();
+    voidc_enable_memory_intrinsics();
 }
 
 

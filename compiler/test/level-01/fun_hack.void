@@ -7,6 +7,9 @@
     v_import("printf.void");
 }
 
+{   voidc_enable_function_hack();
+}
+
 
 //---------------------------------------------------------------------
 //- int QWERTY(int, char *);

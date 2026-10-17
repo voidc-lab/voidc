@@ -10,7 +10,7 @@
 
 
 //---------------------------------------------------------------------
-{
+{   voidc_enable_function_hack();
     voidc_enable_statement_grammar();
 }
 
