@@ -1081,32 +1081,44 @@ gen_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
 
 //---------------------------------------------------------------------
-//- operator nullary
+//- operator ...
 //---------------------------------------------------------------------
 export
 voidc_internal_make_operator: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
 {
-    quark = v_quark_from_string((cmd[0] : *const char));
+    op = (cmd[0] : *v_ast_expr_t);
 
     ast = top;
 
     ret = (ast: *v_ast_expr_t);
 
+    v_copy(ret, op);
+
+    top += 1;
+    cmd += 1;
+}
+
+private
+gen_operator_helper: (gen: &voidc_ast_generator_t, quark: v_quark_t) ~> void
+{
     sstr: &v_std_string_t := {};
 
     v_std_string_set(&sstr, "v_");
 
     v_std_string_append(&sstr, v_quark_to_string(quark)+2);     //- Skip "v."
 
-    op = v_find_symbol_value(v_std_string_get(&sstr));          //- Sic!
-    v_assert(op);
+    opstr = v_quark_to_string(v_quark_from_string(v_std_string_get(&sstr)));
 
-    v_copy(ret, (op: *v_ast_expr_t));
+    gen.push;
 
-    top += 1;
-    cmd += 1;
+    gen.add_data(k_identifier, &"voidc_internal_make_operator");
+    gen.add_data(k_identifier, opstr);
 }
 
+
+//---------------------------------------------------------------------
+//- operator nullary
+//---------------------------------------------------------------------
 export
 voidc_internal_make_operator_nullary: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
 {
@@ -1136,18 +1148,15 @@ gen_operator_nullary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
 
     if (v_empty(pay))
     {
-        gen.push;
-
-        gen.add_data(k_identifier, &"voidc_internal_make_operator");
+        gen_operator_helper(gen, quark);
     }
     else
     {
         gen.visit(pay);
 
         gen.add_data(k_identifier, &"voidc_internal_make_operator_nullary");
+        gen.add_data(k_quark,      (quark: *void));
     }
-
-    gen.add_data(k_quark, (quark: *void));
 }
 
 
@@ -1185,9 +1194,7 @@ gen_operator_unary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     if (v_empty(pay))
     {
-        gen.push;
-
-        gen.add_data(k_identifier, &"voidc_internal_make_operator");
+        gen_operator_helper(gen, quark);
     }
     else
     {
@@ -1195,9 +1202,8 @@ gen_operator_unary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
         gen.add_data(k_identifier, &"voidc_internal_make_operator_unary");
         gen.add_data(k_number,     (prec: *void));
+        gen.add_data(k_quark,      (quark: *void));
     }
-
-    gen.add_data(k_quark, (quark: *void));
 }
 
 
@@ -1239,9 +1245,7 @@ gen_operator_binary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     if (v_empty(pay))
     {
-        gen.push;
-
-        gen.add_data(k_identifier, &"voidc_internal_make_operator");
+        gen_operator_helper(gen, quark);
     }
     else
     {
@@ -1250,9 +1254,8 @@ gen_operator_binary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
         gen.add_data(k_identifier, &"voidc_internal_make_operator_binary");
         gen.add_data(k_number,     (prec_l: *void));
         gen.add_data(k_number,     (prec_r: *void));
+        gen.add_data(k_quark,      (quark: *void));
     }
-
-    gen.add_data(k_quark, (quark: *void));
 }
 
 
