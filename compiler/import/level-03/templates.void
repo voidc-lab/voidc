@@ -48,8 +48,7 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
 
     v_add_symbol("enabled_q", q_ref, q("voidc.internal.templates_enabled"));
 
-    v_add_symbol("unit_val_defn_q",  q_ref, q("unit_val_defn"));
-    v_add_symbol("unit_defn_list_q", q_ref, q("unit_defn_list"));
+    v_add_symbol("ast_generic_list_q", q_ref, q("ast.generic_list"));
 
     v_add_symbol("unit_namespace_open_q", q_ref, q("unit_namespace_open"));
     v_add_symbol("unit_defn_close_q",     q_ref, q("unit_defn_close"));
@@ -57,15 +56,6 @@ qf_private = voidc_definitions_internal_qf_private;     //- 1 << 1
     v_add_symbol("macro_params_q",  q_ref, q("macro_params"));
     v_add_symbol("template_defn_q", q_ref, q("template_defn"));
     v_add_symbol("template_body_q", q_ref, q("template_body"));
-
-    v_add_symbol("q_initialize", q_ref, q("v_initialize"));
-    v_add_symbol("q_terminate",  q_ref, q("v_terminate"));
-
-    v_add_symbol("q_malloc",        q_ref, q("v_malloc"));
-    v_add_symbol("q_free",          q_ref, q("v_free"));
-    v_add_symbol("q_getelementptr", q_ref, q("v_getelementptr"));
-
-    v_add_symbol("q_base", q_ref, q("v_ast_base_ptr"));
 
     v_add_symbol("voidc_compile_quark_q", q_ref, q("voidc.compile_quark"));
 
@@ -467,14 +457,16 @@ compile_template_body: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
 
 //---------------------------------------------------------------------
 export
-voidc_internal_define_template_helper: (q: v_quark_t, ast: *v_ast_base_t) ~> void
+voidc_internal_define_template_helper: (q: v_quark_t, ast: v_ast_base_t) ~> void
 {
 //printf("voidc_internal_define_template_helper: start %s\n", v_quark_to_string(q));
 //defer printf("voidc_internal_define_template_helper: stop\n");
 
-    body =  ast+0;
-    pars = (ast+1 : *v_ast_generic_list_t);
-    caps = (ast+2 : *v_ast_expr_list_t);
+    glst = (&ast: *v_ast_generic_list_t);
+
+    body =  v_list_get_item(glst, 0);
+    pars = (v_list_get_item(glst, 1) : *v_ast_generic_list_t);
+    caps = (v_list_get_item(glst, 2) : *v_ast_expr_list_t);
 
     ctx = new v_template_definition_t;
 
@@ -516,69 +508,19 @@ gen_template_definition: (ret: *v_ast_stmt_t,
 //printf("gen_template_definition: start\n"); _tm = voidc_clock();
 //defer printf("gen_template_definition: stop %g\n", voidc_clock() - _tm);
 
-    gen: &voidc_ast_generator_t := {};
+    glst: &v_ast_generic_list_t := {};
 
-    gen.visit(&ctx.macro.body);
-    v_assert(gen.cur_var == 0 <= gen.max_var);          //- 0 - body
+    v_make_list_nil(&glst, v_quark_from_string("ast.generic_list"));
 
-    gen.visit(&ctx.macro.pars);
-    v_assert(gen.cur_var == 1 <= gen.max_var);          //- 1 - pars
+    v_list_append(&glst, &glst, &ctx.macro.body);       //- 0 - body
+    v_list_append(&glst, &glst, &ctx.macro.pars);       //- 1 - pars
+    v_list_append(&glst, &glst, caps);                  //- 2 - caps
 
-    gen.visit(caps);
-    v_assert(gen.cur_var == 2 <= gen.max_var);          //- 2 - caps
-
-    slst: &v_ast_stmt_list_t[2] := {};
-
-    v_make_list_nil(slst+0);
-
+    //-----------------------------------------------------------------
     expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier(expr+0, "v_ast_base_t");
-
-    n = gen.max_var + 1;
-
-    v_ast_make_expr_integer(expr+1, n);
-
-    stmt: &v_ast_stmt_t := {};
-
-    qv0 = gen.cast_var(0, q_base);
-
-    v_ast_make_stmt_call(&stmt, qv0, q_malloc, expr, 2);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    v_ast_make_expr_identifier_q(expr+0, qv0);
-
-    v_ast_make_stmt_call(&stmt, 0, q_initialize, expr, 2);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    v_ast_make_stmt_call(&stmt, 0, q_terminate, expr, 2);
-    v_make_list(slst+1, &stmt);
-
-    v_ast_make_stmt_call(&stmt, 0, q_free, expr, 1);
-    v_list_append(slst+1, slst+1, &stmt);
-
-    v_ast_make_stmt_block(&stmt, slst+1, false);
-    v_ast_make_stmt_defer(&stmt, &stmt);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    for (i: &int := 1; i < n; ++i)
-    {
-        v_ast_make_expr_integer(expr+1, i);
-
-        v_ast_make_stmt_call(&stmt, gen.cast_var(i, q_base), q_getelementptr, expr, 2);
-        v_list_append(slst+0, slst+0, &stmt);
-    }
-
-    for (N = v_list_get_size(&gen.gen_list), i: &int := 0; i < N; ++i)
-    {
-        item = v_list_get_item(&gen.gen_list, i);
-
-        v_list_append(slst+0, slst+0, item);
-    }
+    elst: &v_ast_expr_list_t := {};
 
     v_ast_make_expr_integer(expr+0, ctx.guard);
-
-    elst: &v_ast_expr_list_t := {};
 
     v_make_list(&elst, expr+0);
 
@@ -586,20 +528,19 @@ gen_template_definition: (ret: *v_ast_stmt_t,
 
     v_ast_make_expr_call(expr+0, expr+0, &elst);
 
-    v_make_list(&elst, expr+0);
+    v_make_list(&elst, (&glst: *v_ast_expr_t));
 
-    v_ast_make_expr_identifier_q(expr+0, gen.cast_var(0, q_base));
+    v_ast_make_expr_identifier(expr+1, "v.compile_ast_repr");
 
-    v_list_append(&elst, &elst, expr+0);
+    v_ast_make_expr_call(expr+1, expr+1, &elst);
+
+    v_make_list(&elst, expr+0, 2);
 
     v_ast_make_expr_identifier(expr+0, "voidc_internal_define_template_helper");
 
     v_ast_make_expr_call(expr+0, expr+0, &elst);
 
-    v_ast_make_stmt(&stmt, "", expr+0);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    v_ast_make_stmt_block(ret, slst+0, false);
+    v_ast_make_stmt(ret, "", expr+0);
 }
 
 
@@ -795,7 +736,7 @@ voidc_enable_templates_compiler: () ~> void
 
     gen_aux: &*void := undef;
 
-    gen_generic = voidc_visitor_get_method(gen, unit_defn_list_q, &gen_aux);
+    gen_generic = voidc_visitor_get_method(gen, ast_generic_list_q, &gen_aux);
 
     voidc_visitor_set_method(gen, gen, template_defn_q, gen_generic, gen_aux);
     voidc_visitor_set_method(gen, gen, template_body_q, gen_generic, gen_aux);      //- ?

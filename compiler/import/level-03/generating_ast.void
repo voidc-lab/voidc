@@ -16,6 +16,8 @@
     v_import("namespaces.void");
     v_import("generics_etc.void");
 
+    v_import("llvm-c/Core.void");
+
 //  v_import("printf.void");
 }
 
@@ -38,56 +40,6 @@
     q = v_quark_ptr_from_string;
 
     v_add_symbol("enabled_q", q_ref, q("voidc.internal.generating_ast_enabled"));
-
-    v_add_symbol("q_base",         q_ref, q("v_ast_base_ptr"));
-    v_add_symbol("q_unit",         q_ref, q("v_ast_unit_ptr"));
-    v_add_symbol("q_stmt_list",    q_ref, q("v_ast_stmt_list_ptr"));
-    v_add_symbol("q_stmt",         q_ref, q("v_ast_stmt_ptr"));
-    v_add_symbol("q_expr_list",    q_ref, q("v_ast_expr_list_ptr"));
-    v_add_symbol("q_expr",         q_ref, q("v_ast_expr_ptr"));
-    v_add_symbol("q_generic_list", q_ref, q("v_ast_generic_list_ptr"));
-
-    v_add_symbol("q_cast",          q_ref, q("v_cast"));
-    v_add_symbol("q_malloc",        q_ref, q("v_malloc"));
-    v_add_symbol("q_free",          q_ref, q("v_free"));
-    v_add_symbol("q_getelementptr", q_ref, q("v_getelementptr"));
-    v_add_symbol("q_break",         q_ref, q("v_break"));
-    v_add_symbol("q_reference",     q_ref, q("v_reference"));
-
-    v_add_symbol("q_ast_make_unit", q_ref, q("v_ast_make_unit"));
-    v_add_symbol("q_make_list_nil", q_ref, q("v_make_list_nil"));
-    v_add_symbol("q_list_append",   q_ref, q("v_list_append"));
-
-    v_add_symbol("q_quark_from_string", q_ref, q("v_quark_from_string"));
-
-    v_add_symbol("q_ast_make_unit_stmt_init", q_ref, q("v_ast_make_unit_stmt_init"));
-    v_add_symbol("q_ast_make_unit_stmt_term", q_ref, q("v_ast_make_unit_stmt_term"));
-
-    v_add_symbol("q_initialize", q_ref, q("v_initialize"));
-    v_add_symbol("q_terminate",  q_ref, q("v_terminate"));
-    v_add_symbol("q_copy",       q_ref, q("v_copy"));
-
-    v_add_symbol("q_ast_make_stmt_q",            q_ref, q("v_ast_make_stmt_q"));
-    v_add_symbol("q_ast_make_stmt_if_then_else", q_ref, q("v_ast_make_stmt_if_then_else"));
-    v_add_symbol("q_ast_make_stmt_block",        q_ref, q("v_ast_make_stmt_block"));
-    v_add_symbol("q_ast_make_stmt_loop",         q_ref, q("v_ast_make_stmt_loop"));
-    v_add_symbol("q_ast_make_stmt_defer",        q_ref, q("v_ast_make_stmt_defer"));
-    v_add_symbol("q_ast_make_stmt_switch",       q_ref, q("v_ast_make_stmt_switch"));
-    v_add_symbol("q_ast_make_case_block",        q_ref, q("v_ast_make_case_block"));
-
-    v_add_symbol("q_ast_make_expr_call",         q_ref, q("v_ast_make_expr_call"));
-    v_add_symbol("q_ast_make_expr_identifier_q", q_ref, q("v_ast_make_expr_identifier_q"));
-    v_add_symbol("q_ast_make_expr_integer",      q_ref, q("v_ast_make_expr_integer"));
-    v_add_symbol("q_ast_make_expr_string_data",  q_ref, q("v_ast_make_expr_string_data"));
-    v_add_symbol("q_ast_make_expr_char",         q_ref, q("v_ast_make_expr_char"));
-    v_add_symbol("q_ast_make_expr_struct",       q_ref, q("v_ast_make_expr_struct"));
-    v_add_symbol("q_ast_make_expr_union",        q_ref, q("v_ast_make_expr_union"));
-    v_add_symbol("q_ast_make_expr_stmt",         q_ref, q("v_ast_make_expr_stmt"));
-    v_add_symbol("q_ast_make_expr_block",        q_ref, q("v_ast_make_expr_block"));
-
-    v_add_symbol("q_ast_make_operator_nullary", q_ref, q("v_ast_make_operator_nullary"));
-    v_add_symbol("q_ast_make_operator_unary",   q_ref, q("v_ast_make_operator_unary"));
-    v_add_symbol("q_ast_make_operator_binary",  q_ref, q("v_ast_make_operator_binary"));
 }
 
 
@@ -105,16 +57,12 @@ struct voidc_ast_generator_t
     visitor: voidc_visitor_t;           //- Kinda, "base class"...
 
     //---------------------------------------------------------
-    gen_list: v_ast_stmt_list_t;
+    data_list: v_util_list_t;
 
-    max_var: int;
-    cur_var: int;
-
-    ret_var: v_quark_t;
-
-    var_map: v_util_map_t;
-
+    max_stk: int;
+    cur_stk: int;
 };
+
 
 //---------------------------------------------------------------------
 (v_initialize(_)): (d: *voidc_ast_generator_t) ~> void
@@ -125,159 +73,54 @@ struct voidc_ast_generator_t
 
     v_copy(&d->visitor, v_get_ast_generator_visitor());
 
-    v_initialize(&d->gen_list);
+    v_initialize(&d->data_list);
 
-    v_make_list_nil(&d->gen_list);
+    v_make_list_nil(&d->data_list);
 
-    d->max_var := -1;
-    d->cur_var := -1;
-
-    v_initialize(&d->var_map);
-
-    v_make_map(&d->var_map);
+    d->max_stk := 0;
+    d->cur_stk := 0;
 }
 
 (v_terminate(_)): (*voidc_ast_generator_t) ~> void  =  derive;
 
-(v_copy(_)): (*voidc_ast_generator_t, *const voidc_ast_generator_t) ~> void  =  derive;
-
 
 //---------------------------------------------------------------------
-(_.add_stmt()): (gen: &voidc_ast_generator_t, stmt: *v_ast_stmt_t) ~> void
+private
+(_.add_data()): (gen: &voidc_ast_generator_t, key: unsigned, data: *void) ~> void
 {
-    list = &gen.gen_list;
+    list = &gen.data_list;
 
-    v_list_append(list, list, stmt);
+    a: &v_std_any_t := {};
+
+    v_std_any_set_value(&a, (key: intptr_t));   v_list_append(list, list, &a);
+    v_std_any_set_value(&a, (data: intptr_t));  v_list_append(list, list, &a);
 }
 
 //---------------------------------------------------------------------
-(_.push_var()): (gen: &voidc_ast_generator_t) ~> int
+private
+(_.push): (gen: &voidc_ast_generator_t) ~> void
 {
-    r: int = ++gen.cur_var;
+    r: int = ++gen.cur_stk;
 
-    if (gen.max_var < r)  gen.max_var := r;
-
-    return  r;
+    if (gen.max_stk < r)  gen.max_stk := r;
 }
 
-(_.pop_var()): (gen: &voidc_ast_generator_t) ~> void
+private
+(_.pop): (gen: &voidc_ast_generator_t) ~> void
 {
-    v_assert(gen.cur_var);
+    v_assert(gen.cur_stk > 0);
 
-    --gen.cur_var;
+    --gen.cur_stk;
 }
 
-//---------------------------------------------------------------------
-(_.cast_var()): (gen: &voidc_ast_generator_t, vn: int, qt: v_quark_t) ~> v_quark_t
+private
+(_.pop_n()): (gen: &voidc_ast_generator_t, n: int) ~> void
 {
-    if (gen.max_var < vn)  gen.max_var := vn;           //- Sic !!!
+    v_assert(gen.cur_stk >= n);
 
-    sstr: &v_std_string_t := {};
+    gen.cur_stk -= n;
 
-    v_std_string_set(&sstr, "v.var.");
-
-    v_std_string_append_number(&sstr, vn);
-
-    qv = v_quark_from_string(v_std_string_get(&sstr));
-
-    if (qt == q_base)   return qv;
-
-    v_std_string_append(&sstr, ".");
-    v_std_string_append(&sstr, v_quark_to_string(qt));
-
-    qr = v_quark_from_string(v_std_string_get(&sstr));
-
-    vmap = &gen.var_map;
-
-    if (!v_map_find(vmap, (qr: intptr_t)))
-    {
-        a: &v_std_any_t := {};
-
-        v_map_insert(vmap, vmap, (qr: intptr_t), &a);
-
-        expr: &v_ast_expr_t[2] := {};
-
-        v_ast_make_expr_identifier_q(expr+0, qv);
-        v_ast_make_expr_identifier_q(expr+1, qt);
-
-        stmt: &v_ast_stmt_t := {};
-
-        v_ast_make_stmt_call(&stmt, qr, q_cast, expr, 2);
-        gen.add_stmt(&stmt);
-    }
-
-    return  qr;
-}
-
-//---------------------------------------------------------------------
-(_.get_quark()): (gen: &voidc_ast_generator_t, q: v_quark_t) ~> v_quark_t
-{
-    sstr: &v_std_string_t := {};
-
-    v_std_string_set(&sstr, "v.quark.");
-
-    sq = v_quark_to_string(q);
-
-    if (sq) v_std_string_append(&sstr, sq);
-    else    v_std_string_append(&sstr, "()");
-
-    qr = v_quark_from_string(v_std_string_get(&sstr));
-
-    vmap = &gen.var_map;
-
-    if (!v_map_find(vmap, (qr: intptr_t)))
-    {
-        a: &v_std_any_t := {};
-
-        v_map_insert(vmap, vmap, (qr: intptr_t), &a);
-
-        expr: &v_ast_expr_t := {};
-        stmt: &v_ast_stmt_t := {};
-
-        if (sq)
-        {
-            v_ast_make_expr_string(&expr, sq);
-
-            v_ast_make_stmt_call(&stmt, qr, q_quark_from_string, &expr, 1);
-        }
-        else
-        {
-            v_ast_make_expr_integer(&expr, 0);
-
-            v_ast_make_stmt_q(&stmt, qr, &expr);
-        }
-
-        gen.add_stmt(&stmt);
-    }
-
-    return  qr;
-}
-
-//---------------------------------------------------------------------
-(_.visit()): (gen: &voidc_ast_generator_t, ast: *v_ast_base_t) ~> void
-{
-    if (v_empty(ast))
-    {
-        gen.push_var();
-
-        q = gen.cast_var(gen.cur_var, q_base);          //- Sic !!!
-
-        expr: &v_ast_expr_t := {};
-
-        v_ast_make_expr_identifier_q(&expr, q);
-
-        stmt: &v_ast_stmt_t := {};
-
-        v_ast_make_stmt_call(&stmt, 0, q_terminate, &expr, 1);
-        gen.add_stmt(&stmt);
-
-        v_ast_make_stmt_call(&stmt, 0, q_initialize, &expr, 1);
-        gen.add_stmt(&stmt);
-    }
-    else
-    {
-        v_ast_accept_visitor(ast, &gen.visitor);
-    }
+    if (n < 0  &&  gen.max_stk < gen.cur_stk)  gen.max_stk := gen.cur_stk;
 }
 
 
@@ -288,8 +131,55 @@ struct voidc_ast_generator_t
 
 
 //---------------------------------------------------------------------
+k_identifier: unsigned = 0;
+k_number:     unsigned = 1;
+k_quark:      unsigned = 2;
+k_string:     unsigned = 3;
+
+//---------------------------------------------------------------------
+export
+voidc_internal_make_empty: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    v_terminate(top);
+    v_initialize(top);
+
+    ++top;
+}
+
+(_.visit()): (gen: &voidc_ast_generator_t, ast: *v_ast_base_t) ~> void
+{
+    if (v_empty(ast))
+    {
+        gen.push;
+
+        gen.add_data(k_identifier, &"voidc_internal_make_empty");
+    }
+    else
+    {
+        v_ast_accept_visitor(ast, &gen.visitor);
+    }
+}
+
+
+//---------------------------------------------------------------------
 //- unit
 //---------------------------------------------------------------------
+export
+voidc_internal_make_unit: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    line   = (cmd[0] : int);
+    column = (cmd[1] : int);
+
+    ast = top - 1;
+
+    ret  = (ast: *v_ast_unit_t);
+    list = (ast: *v_ast_stmt_list_t);
+
+    v_ast_make_unit(ret, list, line, column);
+
+    cmd += 2;
+}
+
 private
 gen_unit: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -303,29 +193,49 @@ gen_unit: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     gen.visit(list);
 
-    ql = gen.cast_var(gen.cur_var, q_stmt_list);
-    qr = gen.cast_var(gen.cur_var, q_unit);
-
-    expr: &v_ast_expr_t[4] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, ql);
-
-    v_ast_make_expr_integer(expr+2, line);
-    v_ast_make_expr_integer(expr+3, column);
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_unit, expr, 4);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_unit");
+    gen.add_data(k_number,     (line  : *void));
+    gen.add_data(k_number,     (column: *void));
 }
 
 
 //---------------------------------------------------------------------
 //- generic list
 //---------------------------------------------------------------------
+export
+voidc_internal_make_generic_list: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    size  = (cmd[0] : size_t);
+    quark = v_quark_from_string((cmd[1] : *const char));
+
+    ast = top - size;
+
+    ret = (ast: *v_ast_generic_list_t);
+
+    if (size) v_make_list(ret, quark, ast, size);
+    else      v_make_list_nil(ret, quark);
+
+    top := ret + 1;
+
+    cmd += 2;
+}
+
+export
+voidc_internal_append_generic_list: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    size = (cmd[0] : size_t);
+
+    ast = top - (size + 1);
+
+    ret = (ast: *v_ast_generic_list_t);
+
+    v_list_append(ret, ret, ast+1, size);
+
+    top := ret + 1;
+
+    cmd += 1;
+}
+
 private
 gen_generic_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -333,51 +243,59 @@ gen_generic_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     quark = v_ast_base_get_tag(self);
 
-    stmt: &v_ast_stmt_t := {};
-
-    nvar = gen.push_var();
-
-    qr = gen.cast_var(nvar, q_generic_list);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
-
-    v_ast_make_stmt_call(&stmt, 0, q_make_list_nil, expr, 2);
-    gen.add_stmt(&stmt);
-
     lst = (self: *v_ast_generic_list_t);
 
-    if (N = v_list_get_size(lst))
+    size = v_list_get_size(lst);
+
+    M = 32;         //- ?
+
+    for (i: &size_t := 0;;)
     {
-        v_copy(expr+1, expr+0);
+        n: &size_t := undef;
 
-        qi = gen.cast_var(nvar+1, q_base);
+        if (m = size - i, m < M)  n := m;
+        else                      n := M;
 
-        v_ast_make_expr_identifier_q(expr+2, qi);
-
-        for (i: &int := 0; i < N; ++i)
+        for (s = i+n; i < s; ++i)
         {
-            item = v_list_get_item(lst, i);
-
-            gen.visit(item);
-
-            v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
-            gen.add_stmt(&stmt);
-
-            gen.pop_var();
+            gen.visit(v_list_get_item(lst, i));
         }
-    }
 
-    gen.ret_var := qr;
+        if (i == n)
+        {
+            gen.pop_n((n - 1 : int));
+
+            gen.add_data(k_identifier, &"voidc_internal_make_generic_list");
+            gen.add_data(k_number,     (n: *void));
+            gen.add_data(k_quark,      (quark: *void));
+        }
+        else
+        {
+            gen.pop_n((n: int));
+
+            gen.add_data(k_identifier, &"voidc_internal_append_generic_list");
+            gen.add_data(k_number,     (n: *void));
+        }
+
+        if (i == size)  break;
+    }
 }
 
 
 //---------------------------------------------------------------------
 //- unit_stmt_init
 //---------------------------------------------------------------------
+export
+voidc_internal_make_unit_stmt_init: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 1;
+
+    ret  =  ast;
+    stmt = (ast: *v_ast_stmt_t);
+
+    v_ast_make_unit_stmt_init(ret, stmt);
+}
+
 private
 gen_unit_stmt_init: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -389,25 +307,24 @@ gen_unit_stmt_init: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     gen.visit(&obj.body);
 
-    qb = gen.cast_var(gen.cur_var, q_stmt);
-    qr = gen.cast_var(gen.cur_var, q_base);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qb);
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_unit_stmt_init, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_unit_stmt_init");
 }
+
 
 //---------------------------------------------------------------------
 //- unit_stmt_term
 //---------------------------------------------------------------------
+export
+voidc_internal_make_unit_stmt_term: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 1;
+
+    ret  =  ast;
+    stmt = (ast: *v_ast_stmt_t);
+
+    v_ast_make_unit_stmt_term(ret, stmt);
+}
+
 private
 gen_unit_stmt_term: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -419,74 +336,109 @@ gen_unit_stmt_term: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     gen.visit(&obj.body);
 
-    qb = gen.cast_var(gen.cur_var, q_stmt);
-    qr = gen.cast_var(gen.cur_var, q_base);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qb);
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_unit_stmt_term, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_unit_stmt_term");
 }
 
 
 //---------------------------------------------------------------------
 //- stmt list
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt_list: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    size = (cmd[0] : size_t);
+
+    ast = top - size;
+
+    ret  = (ast: *v_ast_stmt_list_t);
+    stmt = (ast: *v_ast_stmt_t);
+
+    if (size) v_make_list(ret, stmt, size);
+    else      v_make_list_nil(ret);
+
+    top := ret + 1;
+
+    cmd += 1;
+}
+
+export
+voidc_internal_append_stmt_list: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    size = (cmd[0] : size_t);
+
+    ast = top - (size + 1);
+
+    ret  = (ast   : *v_ast_stmt_list_t);
+    stmt = (ast+1 : *v_ast_stmt_t);
+
+    v_list_append(ret, ret, stmt, size);
+
+    top := ret + 1;
+
+    cmd += 1;
+}
+
 private
 gen_stmt_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     gen = *(vis: *voidc_ast_generator_t);
 
-    stmt: &v_ast_stmt_t := {};
+    lst = (self: *v_ast_stmt_list_t);
 
-    nvar = gen.push_var();
+    size = v_list_get_size(lst);
 
-    qr = gen.cast_var(nvar, q_stmt_list);
+    M = 32;         //- ?
 
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    v_ast_make_stmt_call(&stmt, 0, q_make_list_nil, expr, 1);
-    gen.add_stmt(&stmt);
-
-    lst = (self: *v_ast_expr_list_t);
-
-    if (N = v_list_get_size(lst))
+    for (i: &size_t := 0;;)
     {
-        v_copy(expr+1, expr+0);
+        n: &size_t := undef;
 
-        qi = gen.cast_var(nvar+1, q_stmt);
+        if (m = size - i, m < M)  n := m;
+        else                      n := M;
 
-        v_ast_make_expr_identifier_q(expr+2, qi);
-
-        for (i: &int := 0; i < N; ++i)
+        for (s = i+n; i < s; ++i)
         {
-            item = v_list_get_item(lst, i);
-
-            gen.visit(item);
-
-            v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
-            gen.add_stmt(&stmt);
-
-            gen.pop_var();
+            gen.visit(v_list_get_item(lst, i));
         }
-    }
 
-    gen.ret_var := qr;
+        if (i == n)
+        {
+            gen.pop_n((n - 1 : int));
+
+            gen.add_data(k_identifier, &"voidc_internal_make_stmt_list");
+            gen.add_data(k_number,     (n: *void));
+        }
+        else
+        {
+            gen.pop_n((n: int));
+
+            gen.add_data(k_identifier, &"voidc_internal_append_stmt_list");
+            gen.add_data(k_number,     (n: *void));
+        }
+
+        if (i == size)  break;
+    }
 }
 
 
 //---------------------------------------------------------------------
 //- stmt
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    qname = v_quark_from_string((cmd[0] : *const char));
+
+    ast = top - 1;
+
+    ret  = (ast: *v_ast_stmt_t);
+    expr = (ast: *v_ast_expr_t);
+
+    v_ast_make_stmt_q(ret, qname, expr);
+
+    cmd += 1;
+}
+
 private
 gen_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -497,28 +449,31 @@ gen_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     qname = v_ast_stmt_get_name_q(stm);
     sexpr = v_ast_stmt_get_expr(stm);
 
-    expr: &v_ast_expr_t[3] := {};
-
-    qr = gen.cast_var(gen.cur_var+1, q_stmt);
-    qe = gen.cast_var(gen.cur_var+1, q_expr);
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, gen.get_quark(qname));
-    v_ast_make_expr_identifier_q(expr+2, qe);
-
     gen.visit(sexpr);
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_stmt_q, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_stmt");
+    gen.add_data(k_quark,      (qname: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- stmt if_then_else
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt_if_then_else: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 3;
+
+    ret  = (ast:   *v_ast_stmt_t);
+    cond = (ast+0: *v_ast_expr_t);
+    then = (ast+1: *v_ast_stmt_t);
+    else = (ast+2: *v_ast_stmt_t);
+
+    v_ast_make_stmt_if_then_else(ret, cond, then, else);
+
+    top -= 2;
+}
+
 private
 gen_stmt_if_then_else: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -532,38 +487,34 @@ gen_stmt_if_then_else: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> vo
     then = &obj[1];
     else = &obj[2];
 
-    qcond = gen.cast_var(gen.cur_var+1, q_expr);
-    qthen = gen.cast_var(gen.cur_var+2, q_stmt);
-    qelse = gen.cast_var(gen.cur_var+3, q_stmt);
-
-    qr = gen.cast_var(gen.cur_var+1, q_stmt);
-
-    expr: &v_ast_expr_t[4] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qcond);
-    v_ast_make_expr_identifier_q(expr+2, qthen);
-    v_ast_make_expr_identifier_q(expr+3, qelse);
-
     gen.visit(cond);
     gen.visit(then);
-
     gen.visit(else);
 
-    stmt: &v_ast_stmt_t := {};
+    gen.pop_n(2);
 
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_stmt_if_then_else, expr, 4);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_stmt_if_then_else");
 }
+
 
 //---------------------------------------------------------------------
 //- stmt block
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt_block: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    flag = (cmd[0] : bool);
+
+    ast = top - 1;
+
+    ret  = (ast: *v_ast_stmt_t);
+    body = (ast: *v_ast_stmt_list_t);
+
+    v_ast_make_stmt_block(ret, body, flag);
+
+    cmd += 1;
+}
+
 private
 gen_stmt_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -576,29 +527,27 @@ gen_stmt_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     body = &obj[0];
     flag = obj[1];
 
-    qb = gen.cast_var(gen.cur_var+1, q_stmt_list);
-    qr = gen.cast_var(gen.cur_var+1, q_stmt);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qb);
-
-    v_ast_make_expr_integer(expr+2, flag);
-
     gen.visit(body);
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_stmt_block, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_stmt_block");
+    gen.add_data(k_number,     (flag: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- stmt loop
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt_loop: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 1;
+
+    ret  = (ast: *v_ast_stmt_t);
+    body = (ast: *v_ast_stmt_t);
+
+    v_ast_make_stmt_loop(ret, body);
+}
+
 private
 gen_stmt_loop: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -610,26 +559,26 @@ gen_stmt_loop: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     body = &obj[0];
 
-    qr = gen.cast_var(gen.cur_var+1, q_stmt);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qr);
-
     gen.visit(body);
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_stmt_loop, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_stmt_loop");
 }
+
 
 //---------------------------------------------------------------------
 //- stmt defer
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt_defer: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 1;
+
+    ret  = (ast: *v_ast_stmt_t);
+    body = (ast: *v_ast_stmt_t);
+
+    v_ast_make_stmt_defer(ret, body);
+}
+
 private
 gen_stmt_defer: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -641,26 +590,29 @@ gen_stmt_defer: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     body = &obj[0];
 
-    qr = gen.cast_var(gen.cur_var+1, q_stmt);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qr);
-
     gen.visit(body);
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_stmt_defer, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_stmt_defer");
 }
+
 
 //---------------------------------------------------------------------
 //- stmt switch
 //---------------------------------------------------------------------
+export
+voidc_internal_make_stmt_switch: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 2;
+
+    ret = (ast:   *v_ast_stmt_t);
+    arg = (ast:   *v_ast_expr_t);
+    lst = (ast+1: *v_ast_generic_list_t);
+
+    v_ast_make_stmt_switch(ret, arg, lst);
+
+    top -= 1;
+}
+
 private
 gen_stmt_switch: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -673,33 +625,32 @@ gen_stmt_switch: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     arg = &obj[0];
     lst = &obj[1];
 
-    qarg = gen.cast_var(gen.cur_var+1, q_expr);
-    qlst = gen.cast_var(gen.cur_var+2, q_generic_list);
-
-    qr = gen.cast_var(gen.cur_var+1, q_stmt);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qarg);
-    v_ast_make_expr_identifier_q(expr+2, qlst);
-
     gen.visit(arg);
     gen.visit(lst);
 
-    stmt: &v_ast_stmt_t := {};
+    gen.pop;
 
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_stmt_switch, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_stmt_switch");
 }
+
 
 //---------------------------------------------------------------------
 //- case block
 //---------------------------------------------------------------------
+export
+voidc_internal_make_case_block: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 2;
+
+    ret =  ast;
+    arg = (ast+0: *v_ast_expr_list_t);
+    lst = (ast+1: *v_ast_stmt_list_t);
+
+    v_ast_make_case_block(ret, arg, lst);
+
+    top -= 1;
+}
+
 private
 gen_case_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -712,82 +663,113 @@ gen_case_block: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     arg = &obj[0];
     lst = &obj[1];
 
-    qarg = gen.cast_var(gen.cur_var+1, q_expr_list);
-    qlst = gen.cast_var(gen.cur_var+2, q_stmt_list);
-
-    qr = gen.cast_var(gen.cur_var+1, q_base);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qarg);
-    v_ast_make_expr_identifier_q(expr+2, qlst);
-
     gen.visit(arg);
     gen.visit(lst);
 
-    stmt: &v_ast_stmt_t := {};
+    gen.pop;
 
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_case_block, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_case_block");
 }
 
 
 //---------------------------------------------------------------------
 //- expr list
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_list: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    size = (cmd[0] : size_t);
+
+    ast = top - size;
+
+    ret  = (ast: *v_ast_expr_list_t);
+    expr = (ast: *v_ast_expr_t);
+
+    if (size) v_make_list(ret, expr, size);
+    else      v_make_list_nil(ret);
+
+    top := ret + 1;
+
+    cmd += 1;
+}
+
+export
+voidc_internal_append_expr_list: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    size = (cmd[0] : size_t);
+
+    ast = top - (size + 1);
+
+    ret  = (ast   : *v_ast_expr_list_t);
+    expr = (ast+1 : *v_ast_expr_t);
+
+    v_list_append(ret, ret, expr, size);
+
+    top := ret + 1;
+
+    cmd += 1;
+}
+
 private
 gen_expr_list: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     gen = *(vis: *voidc_ast_generator_t);
 
-    stmt: &v_ast_stmt_t := {};
+    lst = (self: *v_ast_expr_list_t);
 
-    nvar = gen.push_var();
+    size = v_list_get_size(lst);
 
-    qr = gen.cast_var(nvar, q_expr_list);
+    M = 32;         //- ?
 
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    v_ast_make_stmt_call(&stmt, 0, q_make_list_nil, expr, 1);
-    gen.add_stmt(&stmt);
-
-    lst = (self: *v_ast_stmt_list_t);
-
-    if (N = v_list_get_size(lst))
+    for (i: &size_t := 0;;)
     {
-        v_copy(expr+1, expr+0);
+        n: &size_t := undef;
 
-        qi = gen.cast_var(nvar+1, q_expr);
+        if (m = size - i, m < M)  n := m;
+        else                      n := M;
 
-        v_ast_make_expr_identifier_q(expr+2, qi);
-
-        for (i: &int := 0; i < N; ++i)
+        for (s = i+n; i < s; ++i)
         {
-            item = v_list_get_item(lst, i);
-
-            gen.visit(item);
-
-            v_ast_make_stmt_call(&stmt, 0, q_list_append, expr, 3);
-            gen.add_stmt(&stmt);
-
-            gen.pop_var();
+            gen.visit(v_list_get_item(lst, i));
         }
-    }
 
-    gen.ret_var := qr;
+        if (i == n)
+        {
+            gen.pop_n((n - 1 : int));
+
+            gen.add_data(k_identifier, &"voidc_internal_make_expr_list");
+            gen.add_data(k_number,     (n    : *void));
+        }
+        else
+        {
+            gen.pop_n((n: int));
+
+            gen.add_data(k_identifier, &"voidc_internal_append_expr_list");
+            gen.add_data(k_number,     (n: *void));
+        }
+
+        if (i == size)  break;
+    }
 }
 
 
 //---------------------------------------------------------------------
 //- expr call
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_call: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 2;
+
+    ret = (ast:   *v_ast_expr_t);
+    fun = (ast+0: *v_ast_expr_t);
+    lst = (ast+1: *v_ast_expr_list_t);
+
+    v_ast_make_expr_call(ret, fun, lst);
+
+    top -= 1;
+}
+
 private
 gen_expr_call: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -798,33 +780,33 @@ gen_expr_call: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     fun = v_ast_expr_call_get_fun_expr(call);
     lst = v_ast_expr_call_get_arg_list(call);
 
-    qfun = gen.cast_var(gen.cur_var+1, q_expr);
-    qlst = gen.cast_var(gen.cur_var+2, q_expr_list);
-
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qfun);
-    v_ast_make_expr_identifier_q(expr+2, qlst);
-
     gen.visit(fun);
     gen.visit(lst);
 
-    stmt: &v_ast_stmt_t := {};
+    gen.pop;
 
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_call, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_call");
 }
+
 
 //---------------------------------------------------------------------
 //- expr identifier
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_identifier: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    qn = v_quark_from_string((cmd[0] : *const char));
+
+    ast = top;
+
+    ret = (ast: *v_ast_expr_t);
+
+    v_ast_make_expr_identifier_q(ret, qn);
+
+    cmd += 1;
+    top += 1;
+}
+
 private
 gen_expr_identifier: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -834,26 +816,31 @@ gen_expr_identifier: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     qn = v_ast_expr_identifier_get_name_q(eid);
 
-    nvar = gen.push_var();
+    gen.push;
 
-    qr = gen.cast_var(nvar, q_expr);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, gen.get_quark(qn));
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_identifier_q, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_identifier");
+    gen.add_data(k_quark,      (qn: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- expr integer
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_integer: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    num = (cmd[0] : intptr_t);
+
+    ast = top;
+
+    ret = (ast: *v_ast_expr_t);
+
+    v_ast_make_expr_integer(ret, num);
+
+    cmd += 1;
+    top += 1;
+}
+
 private
 gen_expr_integer: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -861,27 +848,34 @@ gen_expr_integer: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     enum = (self: *v_ast_expr_t);
 
-    nvar = gen.push_var();
+    num = v_ast_expr_integer_get_number(enum);
 
-    qr = gen.cast_var(nvar, q_expr);
+    gen.push;
 
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    v_copy(expr+1, enum);           //- !?!
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_integer, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_integer");
+    gen.add_data(k_number,     (num: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- expr string
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_string: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    str = (cmd[0] : *const char);
+    len = (cmd[1] : size_t);
+
+    ast = top;
+
+    ret = (ast: *v_ast_expr_t);
+
+    v_ast_make_expr_string_data(ret, str, len);
+
+    cmd += 2;
+    top += 1;
+}
+
 private
 gen_expr_string: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -891,65 +885,76 @@ gen_expr_string: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     len: &size_t := undef;
 
-    v_ast_expr_string_get_string_data(estr, &len);
+    str = v_ast_expr_string_get_string_data(estr, &len);
 
-    nvar = gen.push_var();
+    gen.push;
 
-    qr = gen.cast_var(nvar, q_expr);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    v_copy(expr+1, estr);           //- !?!
-
-    v_ast_make_expr_integer(expr+2, len);
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_string_data, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_string");
+    gen.add_data(k_string,     str);
+    gen.add_data(k_number,     (len: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- expr char
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_char: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    chr = (cmd[0] : char32_t);
+
+    ast = top;
+
+    ret = (ast: *v_ast_expr_t);
+
+    v_ast_make_expr_char(ret, chr);
+
+    cmd += 1;
+    top += 1;
+}
+
 private
 gen_expr_char: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
     gen = *(vis: *voidc_ast_generator_t);
 
-    echar = (self: *v_ast_expr_t);
+    echr = (self: *v_ast_expr_t);
 
-    nvar = gen.push_var();
+    chr = v_ast_expr_char_get_char(echr);
 
-    qr = gen.cast_var(nvar, q_expr);
+    gen.push;
 
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    v_copy(expr+1, echar);          //- !?!
-
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_char, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_char");
+    gen.add_data(k_number,     (chr: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- expr struct
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_struct: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    flags = (cmd[0] : int);
+
+    packed = (flags >> 1  : bool);
+    export = (flags & 0x1 : bool);
+
+    ast = top - 2;
+
+    ret  = (ast:   *v_ast_expr_t);
+    name = (ast+0: *v_ast_expr_t);
+    body = (ast+1: *v_ast_stmt_list_t);
+
+    v_ast_make_expr_struct(ret, name, body, packed, export);
+
+    cmd += 1;
+    top -= 1;
+}
+
 private
 gen_expr_struct: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
-//printf("gen_expr_struct: start\n");
-//defer printf("gen_expr_struct: stop\n");
-
     gen = *(vis: *voidc_ast_generator_t);
 
     void_obj = v_ast_generic_get_object(self);
@@ -962,36 +967,36 @@ gen_expr_struct: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     packed = obj[2];
     export = obj[3];
 
-    qname = gen.cast_var(gen.cur_var+1, q_expr);
-    qbody = gen.cast_var(gen.cur_var+2, q_stmt_list);
-
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[5] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qname);
-    v_ast_make_expr_identifier_q(expr+2, qbody);
-
     gen.visit(name);
     gen.visit(body);
 
-    v_ast_make_expr_integer(expr+3, packed);
-    v_ast_make_expr_integer(expr+4, export);
+    gen.pop;
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_struct, expr, 5);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_struct");
+    gen.add_data(k_number,     ((packed << 1) | export: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- expr union
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_union: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    export = (cmd[0] : bool);
+
+    ast = top - 2;
+
+    ret  = (ast:   *v_ast_expr_t);
+    name = (ast+0: *v_ast_expr_t);
+    body = (ast+1: *v_ast_stmt_list_t);
+
+    v_ast_make_expr_union(ret, name, body, export);
+
+    cmd += 1;
+    top -= 1;
+}
+
 private
 gen_expr_union: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -1001,35 +1006,30 @@ gen_expr_union: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     obj = *(void_obj: *v_ast_expr_union_t);
 
-    qname = gen.cast_var(gen.cur_var+1, q_expr);
-    qbody = gen.cast_var(gen.cur_var+2, q_stmt_list);
-
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[4] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qname);
-    v_ast_make_expr_identifier_q(expr+2, qbody);
-
     gen.visit(&obj.name);
     gen.visit(&obj.body);
 
-    v_ast_make_expr_integer(expr+3, obj.export);
+    gen.pop;
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_union, expr, 4);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_union");
+    gen.add_data(k_number,     (obj.export: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- expr stmt
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_stmt: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 1;
+
+    ret  = (ast: *v_ast_expr_t);
+    stmt = (ast: *v_ast_stmt_t);
+
+    v_ast_make_expr_stmt(ret, stmt);
+}
+
 private
 gen_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -1039,28 +1039,29 @@ gen_expr_stmt: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     obj = *(void_obj: *v_ast_expr_stmt_t);
 
-    qstmt = gen.cast_var(gen.cur_var+1, q_stmt);
-
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qstmt);
-
     gen.visit(&obj.stmt);
 
-    stmt: &v_ast_stmt_t := {};
-
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_stmt, expr, 2);
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_stmt");
 }
+
 
 //---------------------------------------------------------------------
 //- expr block
 //---------------------------------------------------------------------
+export
+voidc_internal_make_expr_block: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    ast = top - 2;
+
+    ret  = (ast:   *v_ast_expr_t);
+    slst = (ast+0: *v_ast_stmt_list_t);
+    expr = (ast+1: *v_ast_expr_t);
+
+    v_ast_make_expr_block(ret, slst, expr);
+
+    top -= 1;
+}
+
 private
 gen_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -1070,34 +1071,57 @@ gen_expr_block: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 
     obj = *(void_obj: *v_ast_expr_block_t);
 
-    qslst = gen.cast_var(gen.cur_var+1, q_stmt_list);
-    qexpr = gen.cast_var(gen.cur_var+2, q_expr);
-
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-    v_ast_make_expr_identifier_q(expr+1, qslst);
-    v_ast_make_expr_identifier_q(expr+2, qexpr);
-
     gen.visit(&obj.slst);
     gen.visit(&obj.expr);
 
-    stmt: &v_ast_stmt_t := {};
+    gen.pop;
 
-    v_ast_make_stmt_call(&stmt, 0, q_ast_make_expr_block, expr, 3);
-    gen.add_stmt(&stmt);
-
-    gen.pop_var();
-
-    gen.ret_var := qr;
+    gen.add_data(k_identifier, &"voidc_internal_make_expr_block");
 }
 
 
 //---------------------------------------------------------------------
 //- operator nullary
 //---------------------------------------------------------------------
+export
+voidc_internal_make_operator: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    quark = v_quark_from_string((cmd[0] : *const char));
+
+    ast = top;
+
+    ret = (ast: *v_ast_expr_t);
+
+    sstr: &v_std_string_t := {};
+
+    v_std_string_set(&sstr, "v_");
+
+    v_std_string_append(&sstr, v_quark_to_string(quark)+2);     //- Skip "v."
+
+    op = v_find_symbol_value(v_std_string_get(&sstr));          //- Sic!
+    v_assert(op);
+
+    v_copy(ret, (op: *v_ast_expr_t));
+
+    top += 1;
+    cmd += 1;
+}
+
+export
+voidc_internal_make_operator_nullary: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    quark = v_quark_from_string((cmd[0] : *const char));
+
+    ast = top - 1;
+
+    ret = (ast: *v_ast_expr_t);
+    pay =  ast;
+
+    v_ast_make_operator_nullary(ret, quark, pay);
+
+    cmd += 1;
+}
+
 private
 gen_operator_nullary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -1110,49 +1134,42 @@ gen_operator_nullary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> voi
     quark =  obj[0];
     pay   = &obj[1];
 
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[3] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    stmt: &v_ast_stmt_t := {};
-
     if (v_empty(pay))
     {
-        gen.push_var();
+        gen.push;
 
-        sstr: &v_std_string_t := {};
-
-        v_std_string_set(&sstr, "v_");
-
-        v_std_string_append(&sstr, v_quark_to_string(quark)+2);     //- Skip "v."
-
-        v_ast_make_expr_identifier(expr+1, v_std_string_get(&sstr));
-
-        v_ast_make_stmt_call(&stmt, 0, q_copy, expr, 2);
+        gen.add_data(k_identifier, &"voidc_internal_make_operator");
     }
     else
     {
-        qpay = gen.cast_var(gen.cur_var+1, q_base);
-
         gen.visit(pay);
 
-        v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
-
-        v_ast_make_expr_identifier_q(expr+2, qpay);
-
-        v_ast_make_stmt_call(&stmt, 0, q_ast_make_operator_nullary, expr, 3);
+        gen.add_data(k_identifier, &"voidc_internal_make_operator_nullary");
     }
 
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_quark, (quark: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- operator unary
 //---------------------------------------------------------------------
+export
+voidc_internal_make_operator_unary: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    prec  = (cmd[0] : unsigned);
+    quark = v_quark_from_string((cmd[1] : *const char));
+
+    ast = top - 1;
+
+    ret = (ast: *v_ast_expr_t);
+    pay =  ast;
+
+    v_ast_make_operator_unary(ret, quark, prec, pay);
+
+    cmd += 2;
+}
+
 private
 gen_operator_unary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -1166,51 +1183,44 @@ gen_operator_unary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     prec  =  obj[1];
     pay   = &obj[2];
 
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[4] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    stmt: &v_ast_stmt_t := {};
-
     if (v_empty(pay))
     {
-        gen.push_var();
+        gen.push;
 
-        sstr: &v_std_string_t := {};
-
-        v_std_string_set(&sstr, "v_");
-
-        v_std_string_append(&sstr, v_quark_to_string(quark)+2);     //- Skip "v."
-
-        v_ast_make_expr_identifier(expr+1, v_std_string_get(&sstr));
-
-        v_ast_make_stmt_call(&stmt, 0, q_copy, expr, 2);
+        gen.add_data(k_identifier, &"voidc_internal_make_operator");
     }
     else
     {
-        qpay = gen.cast_var(gen.cur_var+1, q_base);
-
         gen.visit(pay);
 
-        v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
-
-        v_ast_make_expr_integer(expr+2, prec);
-
-        v_ast_make_expr_identifier_q(expr+3, qpay);
-
-        v_ast_make_stmt_call(&stmt, 0, q_ast_make_operator_unary, expr, 4);
+        gen.add_data(k_identifier, &"voidc_internal_make_operator_unary");
+        gen.add_data(k_number,     (prec: *void));
     }
 
-    gen.add_stmt(&stmt);
-
-    gen.ret_var := qr;
+    gen.add_data(k_quark, (quark: *void));
 }
+
 
 //---------------------------------------------------------------------
 //- operator binary
 //---------------------------------------------------------------------
+export
+voidc_internal_make_operator_binary: (cmd: &*const *void, top: &*v_ast_base_t) ~> void
+{
+    prec_l = (cmd[0] : unsigned);
+    prec_r = (cmd[1] : unsigned);
+    quark  = v_quark_from_string((cmd[2] : *const char));
+
+    ast = top - 1;
+
+    ret = (ast: *v_ast_expr_t);
+    pay =  ast;
+
+    v_ast_make_operator_binary(ret, quark, prec_l, prec_r, pay);
+
+    cmd += 3;
+}
+
 private
 gen_operator_binary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
 {
@@ -1225,47 +1235,170 @@ gen_operator_binary: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
     prec_r =  obj[2];
     pay    = &obj[3];
 
-    qr = gen.cast_var(gen.cur_var+1, q_expr);
-
-    expr: &v_ast_expr_t[5] := {};
-
-    v_ast_make_expr_identifier_q(expr+0, qr);
-
-    stmt: &v_ast_stmt_t := {};
+    expr: &v_ast_expr_t := {};
 
     if (v_empty(pay))
     {
-        gen.push_var();
+        gen.push;
 
-        sstr: &v_std_string_t := {};
-
-        v_std_string_set(&sstr, "v_");
-
-        v_std_string_append(&sstr, v_quark_to_string(quark)+2);     //- Skip "v."
-
-        v_ast_make_expr_identifier(expr+1, v_std_string_get(&sstr));
-
-        v_ast_make_stmt_call(&stmt, 0, q_copy, expr, 2);
+        gen.add_data(k_identifier, &"voidc_internal_make_operator");
     }
     else
     {
-        qpay = gen.cast_var(gen.cur_var+1, q_base);
-
         gen.visit(pay);
 
-        v_ast_make_expr_identifier_q(expr+1, gen.get_quark(quark));
-
-        v_ast_make_expr_integer(expr+2, prec_l);
-        v_ast_make_expr_integer(expr+3, prec_r);
-
-        v_ast_make_expr_identifier_q(expr+4, qpay);
-
-        v_ast_make_stmt_call(&stmt, 0, q_ast_make_operator_binary, expr, 5);
+        gen.add_data(k_identifier, &"voidc_internal_make_operator_binary");
+        gen.add_data(k_number,     (prec_l: *void));
+        gen.add_data(k_number,     (prec_r: *void));
     }
 
-    gen.add_stmt(&stmt);
+    gen.add_data(k_quark, (quark: *void));
+}
 
-    gen.ret_var := qr;
+
+//---------------------------------------------------------------------
+export
+voidc_internal_ast_repr_helper: (stk_size: size_t, cmd: *const *void, cmd_size: size_t) ~> v_ast_base_t
+{
+    stk = new v_ast_base_t[stk_size];
+    defer delete[] stk;
+
+    for (p: &*const *void := cmd, e = p+cmd_size, s: &*v_ast_base_t := stk; p < e;)
+    {
+        fun = (*p: *((&*const *void, &*v_ast_base_t) ~> void));
+
+        fun(++p, s);
+    }
+
+    ret = v_get_return_value();
+
+    v_copy(&ret, stk+0);
+}
+
+//---------------------------------------------------------------------
+private
+my_compile_ast_repr_intrinsic: (*void, vis: *voidc_visitor_t, self: *v_ast_base_t) ~> void
+{
+//printf("my_compile_ast_repr_intrinsic: start\n");
+//defer printf("my_compile_ast_repr_intrinsic: stop\n");
+
+    args = v_ast_expr_call_get_arg_list((self: *v_ast_expr_t));
+
+    arg0 = v_list_get_item(args, 0);        //- Value
+
+    gen: &voidc_ast_generator_t := {};
+
+    gen.visit(arg0);
+
+    v_assert(gen.cur_stk == 1 <= gen.max_stk);
+
+    list = &gen.data_list;
+
+    //-----------------------------------------------------------------
+    N = v_list_get_size(list);
+
+    vals = v_malloc(LLVMValueRef, N/2);
+    defer v_free(vals);
+
+    builder = v_target_get_builder();
+
+    for (i: &size_t := 0; i < N; i += 2)
+    {
+        key  = (v_std_any_get_value(intptr_t, v_list_get_item(list, i))   : unsigned);
+        data = (v_std_any_get_value(intptr_t, v_list_get_item(list, i+1)) : *void);
+
+        val = vals[i/2];
+
+        flag: &bool := false;
+
+        str: &*const char := undef;
+        len: &size_t      := undef;
+
+        switch(key)
+        {
+        case k_identifier:
+
+            ok = v_obtain_identifier((data: *const char), 0, &val);
+            v_assert(ok);
+
+            break;
+
+        case k_number:
+
+            v = LLVMConstInt(v_type_get_llvm_type(intptr_t), (data: intptr_t), 1);
+            val := LLVMConstIntToPtr(v, v_type_get_llvm_type(v_pointer_type(v_void_type(), 0)));
+
+            break;
+
+        case k_quark:
+
+            quark = (data: v_quark_t);
+
+            str := v_quark_to_string(quark);
+            len := v_quark_to_string_size(quark);
+
+            flag := true;
+
+            break;
+
+        case k_string:
+
+            str := (data: *const char);
+            len := (v_std_any_get_value(intptr_t, v_list_get_item(list, i+3)) : size_t);
+
+            flag := true;
+
+            break;
+        }
+
+        if (flag)
+        {
+            str_v = LLVMConstStringInContext(v_target_get_llvm_ctx(), str, (len: unsigned), 0);
+
+            vv = LLVMAddGlobal(v_get_module(), LLVMTypeOf(str_v), "");
+
+            LLVMSetInitializer(vv, str_v);
+
+            LLVMSetLinkage(vv, LLVMPrivateLinkage);
+
+            LLVMSetUnnamedAddress(vv, LLVMGlobalUnnamedAddr);
+
+            LLVMSetGlobalConstant(vv, true);
+
+            val := vv;
+        }
+    }
+
+    void_ptr = v_pointer_type(v_void_type(), 0);
+
+    arr_v = LLVMConstArray(v_type_get_llvm_type(void_ptr), vals, (N/2 : unsigned));
+
+    vv = LLVMAddGlobal(v_get_module(), LLVMTypeOf(arr_v), "");
+
+    LLVMSetInitializer(vv, arr_v);
+
+    LLVMSetLinkage(vv, LLVMPrivateLinkage);
+
+    LLVMSetUnnamedAddress(vv, LLVMGlobalUnnamedAddr);
+
+    LLVMSetGlobalConstant(vv, true);
+
+    expr: &v_ast_expr_t[3]   := {};
+    elst: &v_ast_expr_list_t := {};
+
+    v_ast_make_expr_integer(expr+0, gen.max_stk);
+
+    v_ast_make_expr_compiled(expr+1, v_pointer_type(void_ptr, 0), vv);
+
+    v_ast_make_expr_integer(expr+2, N/2);
+
+    v_make_list(&elst, expr, 3);
+
+    v_ast_make_expr_identifier(expr+0, "voidc_internal_ast_repr_helper");
+
+    v_ast_make_expr_call(expr+0, expr+0, &elst);
+
+    v_ast_accept_visitor(expr+0, vis);
 }
 
 
@@ -1282,6 +1415,7 @@ block
     q = v_quark_from_string;
 
     voidc_visitor_set_method(vis, vis, q("unit"),                gen_unit,              0);
+    voidc_visitor_set_method(vis, vis, q("ast.generic_list"),    gen_generic_list,      0);     //- Sic !!!
     voidc_visitor_set_method(vis, vis, q("defn_list_unit"),      gen_generic_list,      0);
     voidc_visitor_set_method(vis, vis, q("unit_defn_list"),      gen_generic_list,      0);
     voidc_visitor_set_method(vis, vis, q("unit_fun_defn"),       gen_generic_list,      0);
@@ -1350,74 +1484,17 @@ mk_quote_ast_grammar_action: (ret: *v_std_any_t, *void, any: *v_std_any_t, size_
     ast = v_ast_std_any_get_base(any);
     if (!ast)   return;
 
-    gen: &voidc_ast_generator_t := {};
-
-    gen.visit(ast);
-
-    v_assert(gen.cur_var == 0 <= gen.max_var);
-
-    slst: &v_ast_stmt_list_t[2] := {};
-
-    v_make_list_nil(slst+0);
-
-    expr: &v_ast_expr_t[2] := {};
-
-    v_ast_make_expr_identifier(expr+0, "v_ast_base_t");
-
-    n = gen.max_var + 1;
-
-    v_ast_make_expr_integer(expr+1, n);
-
-    stmt: &v_ast_stmt_t := {};
-
-    qv0 = gen.cast_var(0, q_base);
-
-    v_ast_make_stmt_call(&stmt, qv0, q_malloc, expr, 2);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    v_ast_make_expr_identifier_q(expr+0, qv0);
-
-    v_ast_make_stmt_call(&stmt, 0, q_initialize, expr, 2);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    v_ast_make_stmt_call(&stmt, 0, q_terminate, expr, 2);
-    v_make_list(slst+1, &stmt);
-
-    v_ast_make_stmt_call(&stmt, 0, q_free, expr, 1);
-    v_list_append(slst+1, slst+1, &stmt);
-
-    v_ast_make_stmt_block(&stmt, slst+1, false);
-    v_ast_make_stmt_defer(&stmt, &stmt);
-    v_list_append(slst+0, slst+0, &stmt);
-
-    for (i: &int := 1; i < n; ++i)
-    {
-        v_ast_make_expr_integer(expr+1, i);
-
-        v_ast_make_stmt_call(&stmt, gen.cast_var(i, q_base), q_getelementptr, expr, 2);
-        v_list_append(slst+0, slst+0, &stmt);
-    }
-
-    for (N = v_list_get_size(&gen.gen_list), i: &int := 0; i < N; ++i)
-    {
-        item = v_list_get_item(&gen.gen_list, i);
-
-        v_list_append(slst+0, slst+0, item);
-    }
-
-    v_ast_make_expr_identifier_q(expr+0, gen.ret_var);
-
+    //-----------------------------------------------------------------
+    expr: &v_ast_expr_t := {};
     elst: &v_ast_expr_list_t := {};
 
-    v_make_list(&elst, expr+0);
+    v_make_list(&elst, (ast: *v_ast_expr_t));
 
-    v_ast_make_expr_identifier_q(expr+0, q_reference);
+    v_ast_make_expr_identifier(&expr, "v.compile_ast_repr");
 
-    v_ast_make_expr_call(expr+0, expr+0, &elst);
+    v_ast_make_expr_call(&expr, &expr, &elst);
 
-    v_ast_make_expr_block(expr+0, slst+0, expr+0);
-
-    v_std_any_set_pointer(ret, expr+0);
+    v_std_any_set_pointer(ret, &expr);
 }
 
 
@@ -1432,11 +1509,20 @@ v_get_ast_generator_visitor: () ~> *voidc_visitor_t
 //- Enable generating AST
 //---------------------------------------------------------------------
 export
-voidc_enable_generating_ast: () ~> void
+voidc_enable_generating_ast_compiler: () ~> void
 {
     v_return_if(v_find_constant_q(enabled_q, 0, 0));
 
     v_add_constant_q(enabled_q, v_void_type(), 0);
+
+    v_add_intrinsic("v.compile_ast_repr", my_compile_ast_repr_intrinsic, 0);
+}
+
+//---------------------------------------------------------------------
+export
+voidc_enable_generating_ast: () ~> void
+{
+    voidc_enable_generating_ast_compiler();
 
     gr0 = v_peg_get_grammar();
 

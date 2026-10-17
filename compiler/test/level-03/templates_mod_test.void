@@ -69,7 +69,7 @@ map_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
 
     if (vr == 0)  vr := v_make_temporary(tr, 0);
 
-    list: &v_ast_stmt_list_t :=
+    list =
     {'stmt_list'
 
          my_any: &v_std_any_t := {};
@@ -84,6 +84,8 @@ map_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
          'stmt_list'}
 
     'stmt_list'};
+
+    list = (&list : *v_ast_stmt_list_t);
 
     expr: &v_ast_expr_t[2] := {};
 
@@ -109,10 +111,10 @@ map_op_braces_intrinsic: (aux: *void, vis: *voidc_visitor_t, self: *v_ast_base_t
 
         v_ast_make_stmt_call(&stmt, 0, my_step_q, expr, 2);
 
-        v_list_append(&list, &list, &stmt);
+        v_list_append(list, list, &stmt);
     }
 
-    v_ast_make_stmt_block(&stmt, &list, false);
+    v_ast_make_stmt_block(&stmt, list, false);
 
     v_reset_result();
 
