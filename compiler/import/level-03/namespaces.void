@@ -76,7 +76,6 @@ strncmp: (*const char, *const char, size_t) ~> int;
     v_add_symbol("q_add_constant_q",        q_ref, q("v_add_constant_q"));
     v_add_symbol("q_export_effort",         q_ref, q("v_export_effort"));
     v_add_symbol("q_add_effort",            q_ref, q("v_add_effort"));
-    v_add_symbol("q_cast",                  q_ref, q("v_cast"));
 
     v_add_symbol("quark_q", q_ref, q("quark"));
     v_add_symbol("qname_q", q_ref, q("qname"));

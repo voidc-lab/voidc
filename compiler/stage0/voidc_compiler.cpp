@@ -602,6 +602,15 @@ v_cast(void *, const visitor_t *vis, const ast_base_t *self)
 
     auto dst_type = reinterpret_cast<v_type_t *>(lctx.result_value);
 
+    if (src_type == dst_type)
+    {
+        lctx.pop_result();
+
+        lctx.adopt_result(src_type, src_value);
+
+        return;
+    }
+
     auto opcode = LLVMOpcode(0);
 
     if (auto *pst = dynamic_cast<v_type_reference_t *>(src_type))
@@ -633,7 +642,7 @@ v_cast(void *, const visitor_t *vis, const ast_base_t *self)
         }
     }
 
-    LLVMValueRef v;
+    LLVMValueRef v = src_value;         //- Sic!
 
     if (!opcode)
     {
@@ -778,15 +787,15 @@ v_cast(void *, const visitor_t *vis, const ast_base_t *self)
                         throw std::runtime_error("Bad cast from static type");
                     }
                 }
-                else
+                else if (!lctx.try_to_convert(src_type, src_value, dst_type, v))
                 {
                     throw std::runtime_error("Bad cast");
                 }
             }
-
-            if (opcode) v = LLVMBuildCast(gctx.builder, opcode, src_value, dst_type->llvm_type(), "");
         }
     }
+
+    if (opcode) v = LLVMBuildCast(gctx.builder, opcode, src_value, dst_type->llvm_type(), "");
 
     lctx.pop_result();
 
