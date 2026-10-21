@@ -17,74 +17,44 @@
     arg2 = v_getelementptr(arg0, 2);
     arg3 = v_getelementptr(arg0, 3);
 
-    v0_LLVMMemoryBufferRef = v_find_type("LLVMMemoryBufferRef");
-    v_store(v0_LLVMMemoryBufferRef, arg0);
-    v1_LLVMModuleRef = v_find_type("LLVMModuleRef");
-    v2 = v_pointer_type(v1_LLVMModuleRef, 0);
-    v_store(v2, arg1);
-    v3_char = v_find_type("char");
-    v4 = v_pointer_type(v3_char, 0);
-    v5 = v_pointer_type(v4, 0);
-    v_store(v5, arg2);
-    v6_LLVMBool = v_find_type("LLVMBool");
-    v7 = v_function_type(v6_LLVMBool, arg0, 3, false);
-    v_export_symbol_type("LLVMParseBitcode", v7);
+    v0_LLVMContextRef = v_find_type("LLVMContextRef");
+    v_store(v0_LLVMContextRef, arg0);
+    v1_LLVMMemoryBufferRef = v_find_type("LLVMMemoryBufferRef");
+    v_store(v1_LLVMMemoryBufferRef, arg1);
+    v2_LLVMModuleRef = v_find_type("LLVMModuleRef");
+    v3 = v_pointer_type(v2_LLVMModuleRef, 0);
+    v_store(v3, arg2);
+    v4_char = v_find_type("char");
+    v5 = v_pointer_type(v4_char, 0);
+    v6 = v_pointer_type(v5, 0);
+    v_store(v6, arg3);
+    v7_LLVMBool = v_find_type("LLVMBool");
+    v8 = v_function_type(v7_LLVMBool, arg0, 4, false);
+    v_export_symbol_type("LLVMParseBitcodeInContext", v8);
 
-    v_store(v0_LLVMMemoryBufferRef, arg0);
-    v8 = v_pointer_type(v1_LLVMModuleRef, 0);
-    v_store(v8, arg1);
-    v9 = v_function_type(v6_LLVMBool, arg0, 2, false);
-    v_export_symbol_type("LLVMParseBitcode2", v9);
+    v_store(v0_LLVMContextRef, arg0);
+    v_store(v1_LLVMMemoryBufferRef, arg1);
+    v9 = v_pointer_type(v2_LLVMModuleRef, 0);
+    v_store(v9, arg2);
+    v10 = v_function_type(v7_LLVMBool, arg0, 3, false);
+    v_export_symbol_type("LLVMParseBitcodeInContext2", v10);
 
-    v10_LLVMContextRef = v_find_type("LLVMContextRef");
-    v_store(v10_LLVMContextRef, arg0);
-    v_store(v0_LLVMMemoryBufferRef, arg1);
-    v11 = v_pointer_type(v1_LLVMModuleRef, 0);
+    v_store(v0_LLVMContextRef, arg0);
+    v_store(v1_LLVMMemoryBufferRef, arg1);
+    v11 = v_pointer_type(v2_LLVMModuleRef, 0);
     v_store(v11, arg2);
-    v12 = v_pointer_type(v3_char, 0);
+    v12 = v_pointer_type(v4_char, 0);
     v13 = v_pointer_type(v12, 0);
     v_store(v13, arg3);
-    v14 = v_function_type(v6_LLVMBool, arg0, 4, false);
-    v_export_symbol_type("LLVMParseBitcodeInContext", v14);
+    v14 = v_function_type(v7_LLVMBool, arg0, 4, false);
+    v_export_symbol_type("LLVMGetBitcodeModuleInContext", v14);
 
-    v_store(v10_LLVMContextRef, arg0);
-    v_store(v0_LLVMMemoryBufferRef, arg1);
-    v15 = v_pointer_type(v1_LLVMModuleRef, 0);
+    v_store(v0_LLVMContextRef, arg0);
+    v_store(v1_LLVMMemoryBufferRef, arg1);
+    v15 = v_pointer_type(v2_LLVMModuleRef, 0);
     v_store(v15, arg2);
-    v16 = v_function_type(v6_LLVMBool, arg0, 3, false);
-    v_export_symbol_type("LLVMParseBitcodeInContext2", v16);
-
-    v_store(v10_LLVMContextRef, arg0);
-    v_store(v0_LLVMMemoryBufferRef, arg1);
-    v17 = v_pointer_type(v1_LLVMModuleRef, 0);
-    v_store(v17, arg2);
-    v18 = v_pointer_type(v3_char, 0);
-    v19 = v_pointer_type(v18, 0);
-    v_store(v19, arg3);
-    v20 = v_function_type(v6_LLVMBool, arg0, 4, false);
-    v_export_symbol_type("LLVMGetBitcodeModuleInContext", v20);
-
-    v_store(v10_LLVMContextRef, arg0);
-    v_store(v0_LLVMMemoryBufferRef, arg1);
-    v21 = v_pointer_type(v1_LLVMModuleRef, 0);
-    v_store(v21, arg2);
-    v22 = v_function_type(v6_LLVMBool, arg0, 3, false);
-    v_export_symbol_type("LLVMGetBitcodeModuleInContext2", v22);
-
-    v_store(v0_LLVMMemoryBufferRef, arg0);
-    v23 = v_pointer_type(v1_LLVMModuleRef, 0);
-    v_store(v23, arg1);
-    v24 = v_pointer_type(v3_char, 0);
-    v25 = v_pointer_type(v24, 0);
-    v_store(v25, arg2);
-    v26 = v_function_type(v6_LLVMBool, arg0, 3, false);
-    v_export_symbol_type("LLVMGetBitcodeModule", v26);
-
-    v_store(v0_LLVMMemoryBufferRef, arg0);
-    v27 = v_pointer_type(v1_LLVMModuleRef, 0);
-    v_store(v27, arg1);
-    v28 = v_function_type(v6_LLVMBool, arg0, 2, false);
-    v_export_symbol_type("LLVMGetBitcodeModule2", v28);
+    v16 = v_function_type(v7_LLVMBool, arg0, 3, false);
+    v_export_symbol_type("LLVMGetBitcodeModuleInContext2", v16);
 
 }
 

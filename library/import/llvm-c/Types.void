@@ -68,28 +68,36 @@
     v27 = v_pointer_type(v26, 0);
     v_export_type("LLVMUseRef", v27);
 
-    v28 = v_struct_type_named("struct.LLVMOpaqueAttributeRef");
+    v28 = v_struct_type_named("struct.LLVMOpaqueOperandBundle");
     v29 = v_pointer_type(v28, 0);
-    v_export_type("LLVMAttributeRef", v29);
+    v_export_type("LLVMOperandBundleRef", v29);
 
-    v30 = v_struct_type_named("struct.LLVMOpaqueDiagnosticInfo");
+    v30 = v_struct_type_named("struct.LLVMOpaqueAttributeRef");
     v31 = v_pointer_type(v30, 0);
-    v_export_type("LLVMDiagnosticInfoRef", v31);
+    v_export_type("LLVMAttributeRef", v31);
 
-    v32 = v_struct_type_named("struct.LLVMComdat");
+    v32 = v_struct_type_named("struct.LLVMOpaqueDiagnosticInfo");
     v33 = v_pointer_type(v32, 0);
-    v_export_type("LLVMComdatRef", v33);
+    v_export_type("LLVMDiagnosticInfoRef", v33);
 
-    v34 = v_struct_type_named("struct.LLVMOpaqueModuleFlagEntry");
-    v_export_type("LLVMModuleFlagEntry", v34);
+    v34 = v_struct_type_named("struct.LLVMComdat");
+    v35 = v_pointer_type(v34, 0);
+    v_export_type("LLVMComdatRef", v35);
 
-    v35 = v_struct_type_named("struct.LLVMOpaqueJITEventListener");
-    v36 = v_pointer_type(v35, 0);
-    v_export_type("LLVMJITEventListenerRef", v36);
+    v36 = v_struct_type_named("struct.LLVMOpaqueModuleFlagEntry");
+    v_export_type("LLVMModuleFlagEntry", v36);
 
-    v37 = v_struct_type_named("struct.LLVMOpaqueBinary");
+    v37 = v_struct_type_named("struct.LLVMOpaqueJITEventListener");
     v38 = v_pointer_type(v37, 0);
-    v_export_type("LLVMBinaryRef", v38);
+    v_export_type("LLVMJITEventListenerRef", v38);
+
+    v39 = v_struct_type_named("struct.LLVMOpaqueBinary");
+    v40 = v_pointer_type(v39, 0);
+    v_export_type("LLVMBinaryRef", v40);
+
+    v41 = v_struct_type_named("struct.LLVMOpaqueDbgRecord");
+    v42 = v_pointer_type(v41, 0);
+    v_export_type("LLVMDbgRecordRef", v42);
 
 }
 

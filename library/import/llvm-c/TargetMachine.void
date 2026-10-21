@@ -76,26 +76,41 @@
     val = LLVMConstInt(llvm_int, 1, 0);
     v_export_constant("LLVMObjectFile", _int, val);
 
+    val = LLVMConstInt(llvm_int, 0, 0);
+    v_export_constant("LLVMGlobalISelAbortEnable", _int, val);
+
+    val = LLVMConstInt(llvm_int, 1, 0);
+    v_export_constant("LLVMGlobalISelAbortDisable", _int, val);
+
+    val = LLVMConstInt(llvm_int, 2, 0);
+    v_export_constant("LLVMGlobalISelAbortDisableWithDiag", _int, val);
+
 }
 
 //- Types --------------------------------------------------
 {
-    v0 = v_struct_type_named("struct.LLVMOpaqueTargetMachine");
+    v0 = v_struct_type_named("struct.LLVMOpaqueTargetMachineOptions");
     v1 = v_pointer_type(v0, 0);
-    v_export_type("LLVMTargetMachineRef", v1);
+    v_export_type("LLVMTargetMachineOptionsRef", v1);
 
-    v2 = v_struct_type_named("struct.LLVMTarget");
+    v2 = v_struct_type_named("struct.LLVMOpaqueTargetMachine");
     v3 = v_pointer_type(v2, 0);
-    v_export_type("LLVMTargetRef", v3);
+    v_export_type("LLVMTargetMachineRef", v3);
 
-    v4_int = v_find_type("int");
-    v_export_type("LLVMCodeGenOptLevel", v4_int);
+    v4 = v_struct_type_named("struct.LLVMTarget");
+    v5 = v_pointer_type(v4, 0);
+    v_export_type("LLVMTargetRef", v5);
 
-    v_export_type("LLVMRelocMode", v4_int);
+    v6_int = v_find_type("int");
+    v_export_type("LLVMCodeGenOptLevel", v6_int);
 
-    v_export_type("LLVMCodeModel", v4_int);
+    v_export_type("LLVMRelocMode", v6_int);
 
-    v_export_type("LLVMCodeGenFileType", v4_int);
+    v_export_type("LLVMCodeModel", v6_int);
+
+    v_export_type("LLVMCodeGenFileType", v6_int);
+
+    v_export_type("LLVMGlobalISelAbortMode", v6_int);
 
 }
 
@@ -156,105 +171,174 @@
     v18 = v_function_type(v10_LLVMBool, arg0, 1, false);
     v_export_symbol_type("LLVMTargetHasAsmBackend", v18);
 
+    v19_LLVMTargetMachineOptionsRef = v_find_type("LLVMTargetMachineOptionsRef");
+    v20 = v_function_type(v19_LLVMTargetMachineOptionsRef, arg0, 0, false);
+    v_export_symbol_type("LLVMCreateTargetMachineOptions", v20);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v21_void = v_find_type("void");
+    v22 = v_function_type(v21_void, arg0, 1, false);
+    v_export_symbol_type("LLVMDisposeTargetMachineOptions", v22);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v23 = v_pointer_type(v3_char, 0);
+    v_store(v23, arg1);
+    v24 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMTargetMachineOptionsSetCPU", v24);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v25 = v_pointer_type(v3_char, 0);
+    v_store(v25, arg1);
+    v26 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMTargetMachineOptionsSetFeatures", v26);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v27 = v_pointer_type(v3_char, 0);
+    v_store(v27, arg1);
+    v28 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMTargetMachineOptionsSetABI", v28);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v29_LLVMCodeGenOptLevel = v_find_type("LLVMCodeGenOptLevel");
+    v_store(v29_LLVMCodeGenOptLevel, arg1);
+    v30 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMTargetMachineOptionsSetCodeGenOptLevel", v30);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v31_LLVMRelocMode = v_find_type("LLVMRelocMode");
+    v_store(v31_LLVMRelocMode, arg1);
+    v32 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMTargetMachineOptionsSetRelocMode", v32);
+
+    v_store(v19_LLVMTargetMachineOptionsRef, arg0);
+    v33_LLVMCodeModel = v_find_type("LLVMCodeModel");
+    v_store(v33_LLVMCodeModel, arg1);
+    v34 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMTargetMachineOptionsSetCodeModel", v34);
+
     v_store(v0_LLVMTargetRef, arg0);
-    v19 = v_pointer_type(v3_char, 0);
-    v_store(v19, arg1);
-    v20 = v_pointer_type(v3_char, 0);
-    v_store(v20, arg2);
-    v21 = v_pointer_type(v3_char, 0);
-    v_store(v21, arg3);
-    v22_LLVMCodeGenOptLevel = v_find_type("LLVMCodeGenOptLevel");
-    v_store(v22_LLVMCodeGenOptLevel, arg4);
-    v23_LLVMRelocMode = v_find_type("LLVMRelocMode");
-    v_store(v23_LLVMRelocMode, arg5);
-    v24_LLVMCodeModel = v_find_type("LLVMCodeModel");
-    v_store(v24_LLVMCodeModel, arg6);
-    v25_LLVMTargetMachineRef = v_find_type("LLVMTargetMachineRef");
-    v26 = v_function_type(v25_LLVMTargetMachineRef, arg0, 7, false);
-    v_export_symbol_type("LLVMCreateTargetMachine", v26);
+    v35 = v_pointer_type(v3_char, 0);
+    v_store(v35, arg1);
+    v_store(v19_LLVMTargetMachineOptionsRef, arg2);
+    v36_LLVMTargetMachineRef = v_find_type("LLVMTargetMachineRef");
+    v37 = v_function_type(v36_LLVMTargetMachineRef, arg0, 3, false);
+    v_export_symbol_type("LLVMCreateTargetMachineWithOptions", v37);
 
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v27_void = v_find_type("void");
-    v28 = v_function_type(v27_void, arg0, 1, false);
-    v_export_symbol_type("LLVMDisposeTargetMachine", v28);
-
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v29 = v_function_type(v0_LLVMTargetRef, arg0, 1, false);
-    v_export_symbol_type("LLVMGetTargetMachineTarget", v29);
-
-    v30 = v_pointer_type(v3_char, 0);
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v31 = v_function_type(v30, arg0, 1, false);
-    v_export_symbol_type("LLVMGetTargetMachineTriple", v31);
-
-    v32 = v_pointer_type(v3_char, 0);
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v33 = v_function_type(v32, arg0, 1, false);
-    v_export_symbol_type("LLVMGetTargetMachineCPU", v33);
-
-    v34 = v_pointer_type(v3_char, 0);
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v35 = v_function_type(v34, arg0, 1, false);
-    v_export_symbol_type("LLVMGetTargetMachineFeatureString", v35);
-
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v36_LLVMTargetDataRef = v_find_type("LLVMTargetDataRef");
-    v37 = v_function_type(v36_LLVMTargetDataRef, arg0, 1, false);
-    v_export_symbol_type("LLVMCreateTargetDataLayout", v37);
-
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v_store(v10_LLVMBool, arg1);
-    v38 = v_function_type(v27_void, arg0, 2, false);
-    v_export_symbol_type("LLVMSetTargetMachineAsmVerbosity", v38);
-
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v39_LLVMModuleRef = v_find_type("LLVMModuleRef");
-    v_store(v39_LLVMModuleRef, arg1);
+    v_store(v0_LLVMTargetRef, arg0);
+    v38 = v_pointer_type(v3_char, 0);
+    v_store(v38, arg1);
+    v39 = v_pointer_type(v3_char, 0);
+    v_store(v39, arg2);
     v40 = v_pointer_type(v3_char, 0);
-    v_store(v40, arg2);
-    v41_LLVMCodeGenFileType = v_find_type("LLVMCodeGenFileType");
-    v_store(v41_LLVMCodeGenFileType, arg3);
-    v42 = v_pointer_type(v3_char, 0);
-    v43 = v_pointer_type(v42, 0);
-    v_store(v43, arg4);
-    v44 = v_function_type(v10_LLVMBool, arg0, 5, false);
-    v_export_symbol_type("LLVMTargetMachineEmitToFile", v44);
+    v_store(v40, arg3);
+    v_store(v29_LLVMCodeGenOptLevel, arg4);
+    v_store(v31_LLVMRelocMode, arg5);
+    v_store(v33_LLVMCodeModel, arg6);
+    v41 = v_function_type(v36_LLVMTargetMachineRef, arg0, 7, false);
+    v_export_symbol_type("LLVMCreateTargetMachine", v41);
 
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v_store(v39_LLVMModuleRef, arg1);
-    v_store(v41_LLVMCodeGenFileType, arg2);
-    v45 = v_pointer_type(v3_char, 0);
-    v46 = v_pointer_type(v45, 0);
-    v_store(v46, arg3);
-    v47_LLVMMemoryBufferRef = v_find_type("LLVMMemoryBufferRef");
-    v48 = v_pointer_type(v47_LLVMMemoryBufferRef, 0);
-    v_store(v48, arg4);
-    v49 = v_function_type(v10_LLVMBool, arg0, 5, false);
-    v_export_symbol_type("LLVMTargetMachineEmitToMemoryBuffer", v49);
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v42 = v_function_type(v21_void, arg0, 1, false);
+    v_export_symbol_type("LLVMDisposeTargetMachine", v42);
 
-    v50 = v_pointer_type(v3_char, 0);
-    v51 = v_function_type(v50, arg0, 0, false);
-    v_export_symbol_type("LLVMGetDefaultTargetTriple", v51);
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v43 = v_function_type(v0_LLVMTargetRef, arg0, 1, false);
+    v_export_symbol_type("LLVMGetTargetMachineTarget", v43);
 
-    v52 = v_pointer_type(v3_char, 0);
-    v53 = v_pointer_type(v3_char, 0);
-    v_store(v53, arg0);
-    v54 = v_function_type(v52, arg0, 1, false);
-    v_export_symbol_type("LLVMNormalizeTargetTriple", v54);
+    v44 = v_pointer_type(v3_char, 0);
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v45 = v_function_type(v44, arg0, 1, false);
+    v_export_symbol_type("LLVMGetTargetMachineTriple", v45);
 
-    v55 = v_pointer_type(v3_char, 0);
-    v56 = v_function_type(v55, arg0, 0, false);
-    v_export_symbol_type("LLVMGetHostCPUName", v56);
+    v46 = v_pointer_type(v3_char, 0);
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v47 = v_function_type(v46, arg0, 1, false);
+    v_export_symbol_type("LLVMGetTargetMachineCPU", v47);
 
-    v57 = v_pointer_type(v3_char, 0);
-    v58 = v_function_type(v57, arg0, 0, false);
-    v_export_symbol_type("LLVMGetHostCPUFeatures", v58);
+    v48 = v_pointer_type(v3_char, 0);
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v49 = v_function_type(v48, arg0, 1, false);
+    v_export_symbol_type("LLVMGetTargetMachineFeatureString", v49);
 
-    v_store(v25_LLVMTargetMachineRef, arg0);
-    v59_LLVMPassManagerRef = v_find_type("LLVMPassManagerRef");
-    v_store(v59_LLVMPassManagerRef, arg1);
-    v60 = v_function_type(v27_void, arg0, 2, false);
-    v_export_symbol_type("LLVMAddAnalysisPasses", v60);
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v50_LLVMTargetDataRef = v_find_type("LLVMTargetDataRef");
+    v51 = v_function_type(v50_LLVMTargetDataRef, arg0, 1, false);
+    v_export_symbol_type("LLVMCreateTargetDataLayout", v51);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v_store(v10_LLVMBool, arg1);
+    v52 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMSetTargetMachineAsmVerbosity", v52);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v_store(v10_LLVMBool, arg1);
+    v53 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMSetTargetMachineFastISel", v53);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v_store(v10_LLVMBool, arg1);
+    v54 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMSetTargetMachineGlobalISel", v54);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v55_LLVMGlobalISelAbortMode = v_find_type("LLVMGlobalISelAbortMode");
+    v_store(v55_LLVMGlobalISelAbortMode, arg1);
+    v56 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMSetTargetMachineGlobalISelAbort", v56);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v_store(v10_LLVMBool, arg1);
+    v57 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMSetTargetMachineMachineOutliner", v57);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v58_LLVMModuleRef = v_find_type("LLVMModuleRef");
+    v_store(v58_LLVMModuleRef, arg1);
+    v59 = v_pointer_type(v3_char, 0);
+    v_store(v59, arg2);
+    v60_LLVMCodeGenFileType = v_find_type("LLVMCodeGenFileType");
+    v_store(v60_LLVMCodeGenFileType, arg3);
+    v61 = v_pointer_type(v3_char, 0);
+    v62 = v_pointer_type(v61, 0);
+    v_store(v62, arg4);
+    v63 = v_function_type(v10_LLVMBool, arg0, 5, false);
+    v_export_symbol_type("LLVMTargetMachineEmitToFile", v63);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v_store(v58_LLVMModuleRef, arg1);
+    v_store(v60_LLVMCodeGenFileType, arg2);
+    v64 = v_pointer_type(v3_char, 0);
+    v65 = v_pointer_type(v64, 0);
+    v_store(v65, arg3);
+    v66_LLVMMemoryBufferRef = v_find_type("LLVMMemoryBufferRef");
+    v67 = v_pointer_type(v66_LLVMMemoryBufferRef, 0);
+    v_store(v67, arg4);
+    v68 = v_function_type(v10_LLVMBool, arg0, 5, false);
+    v_export_symbol_type("LLVMTargetMachineEmitToMemoryBuffer", v68);
+
+    v69 = v_pointer_type(v3_char, 0);
+    v70 = v_function_type(v69, arg0, 0, false);
+    v_export_symbol_type("LLVMGetDefaultTargetTriple", v70);
+
+    v71 = v_pointer_type(v3_char, 0);
+    v72 = v_pointer_type(v3_char, 0);
+    v_store(v72, arg0);
+    v73 = v_function_type(v71, arg0, 1, false);
+    v_export_symbol_type("LLVMNormalizeTargetTriple", v73);
+
+    v74 = v_pointer_type(v3_char, 0);
+    v75 = v_function_type(v74, arg0, 0, false);
+    v_export_symbol_type("LLVMGetHostCPUName", v75);
+
+    v76 = v_pointer_type(v3_char, 0);
+    v77 = v_function_type(v76, arg0, 0, false);
+    v_export_symbol_type("LLVMGetHostCPUFeatures", v77);
+
+    v_store(v36_LLVMTargetMachineRef, arg0);
+    v78_LLVMPassManagerRef = v_find_type("LLVMPassManagerRef");
+    v_store(v78_LLVMPassManagerRef, arg1);
+    v79 = v_function_type(v21_void, arg0, 2, false);
+    v_export_symbol_type("LLVMAddAnalysisPasses", v79);
 
 }
 

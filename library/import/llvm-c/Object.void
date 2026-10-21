@@ -63,6 +63,9 @@
     val = LLVMConstInt(llvm_int, 15, 0);
     v_export_constant("LLVMBinaryTypeOffload", _int, val);
 
+    val = LLVMConstInt(llvm_int, 16, 0);
+    v_export_constant("LLVMBinaryTypeDXcontainer", _int, val);
+
 }
 
 //- Types --------------------------------------------------

@@ -51,487 +51,490 @@
 
     v0_void = v_find_type("void");
     v1 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMSP430TargetInfo", v1);
+    v_export_symbol_type("LLVMInitializeAArch64TargetInfo", v1);
 
     v2 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeWebAssemblyTargetInfo", v2);
+    v_export_symbol_type("LLVMInitializeAMDGPUTargetInfo", v2);
 
     v3 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeRISCVTargetInfo", v3);
+    v_export_symbol_type("LLVMInitializeARMTargetInfo", v3);
 
     v4 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSystemZTargetInfo", v4);
+    v_export_symbol_type("LLVMInitializeAVRTargetInfo", v4);
 
     v5 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLoongArchTargetInfo", v5);
+    v_export_symbol_type("LLVMInitializeBPFTargetInfo", v5);
 
     v6 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSparcTargetInfo", v6);
+    v_export_symbol_type("LLVMInitializeHexagonTargetInfo", v6);
 
     v7 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNVPTXTargetInfo", v7);
+    v_export_symbol_type("LLVMInitializeLanaiTargetInfo", v7);
 
     v8 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeXCoreTargetInfo", v8);
+    v_export_symbol_type("LLVMInitializeLoongArchTargetInfo", v8);
 
     v9 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeHexagonTargetInfo", v9);
+    v_export_symbol_type("LLVMInitializeMSP430TargetInfo", v9);
 
     v10 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeVETargetInfo", v10);
+    v_export_symbol_type("LLVMInitializeMipsTargetInfo", v10);
 
     v11 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMipsTargetInfo", v11);
+    v_export_symbol_type("LLVMInitializeNVPTXTargetInfo", v11);
 
     v12 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAVRTargetInfo", v12);
+    v_export_symbol_type("LLVMInitializePowerPCTargetInfo", v12);
 
     v13 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeBPFTargetInfo", v13);
+    v_export_symbol_type("LLVMInitializeRISCVTargetInfo", v13);
 
     v14 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLanaiTargetInfo", v14);
+    v_export_symbol_type("LLVMInitializeSPIRVTargetInfo", v14);
 
     v15 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAArch64TargetInfo", v15);
+    v_export_symbol_type("LLVMInitializeSparcTargetInfo", v15);
 
     v16 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializePowerPCTargetInfo", v16);
+    v_export_symbol_type("LLVMInitializeSystemZTargetInfo", v16);
 
     v17 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeX86TargetInfo", v17);
+    v_export_symbol_type("LLVMInitializeVETargetInfo", v17);
 
     v18 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAMDGPUTargetInfo", v18);
+    v_export_symbol_type("LLVMInitializeWebAssemblyTargetInfo", v18);
 
     v19 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeARMTargetInfo", v19);
+    v_export_symbol_type("LLVMInitializeX86TargetInfo", v19);
 
     v20 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMSP430Target", v20);
+    v_export_symbol_type("LLVMInitializeXCoreTargetInfo", v20);
 
     v21 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeWebAssemblyTarget", v21);
+    v_export_symbol_type("LLVMInitializeAArch64Target", v21);
 
     v22 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeRISCVTarget", v22);
+    v_export_symbol_type("LLVMInitializeAMDGPUTarget", v22);
 
     v23 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSystemZTarget", v23);
+    v_export_symbol_type("LLVMInitializeARMTarget", v23);
 
     v24 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLoongArchTarget", v24);
+    v_export_symbol_type("LLVMInitializeAVRTarget", v24);
 
     v25 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSparcTarget", v25);
+    v_export_symbol_type("LLVMInitializeBPFTarget", v25);
 
     v26 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNVPTXTarget", v26);
+    v_export_symbol_type("LLVMInitializeHexagonTarget", v26);
 
     v27 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeXCoreTarget", v27);
+    v_export_symbol_type("LLVMInitializeLanaiTarget", v27);
 
     v28 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeHexagonTarget", v28);
+    v_export_symbol_type("LLVMInitializeLoongArchTarget", v28);
 
     v29 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeVETarget", v29);
+    v_export_symbol_type("LLVMInitializeMSP430Target", v29);
 
     v30 = v_function_type(v0_void, arg0, 0, false);
     v_export_symbol_type("LLVMInitializeMipsTarget", v30);
 
     v31 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAVRTarget", v31);
+    v_export_symbol_type("LLVMInitializeNVPTXTarget", v31);
 
     v32 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeBPFTarget", v32);
+    v_export_symbol_type("LLVMInitializePowerPCTarget", v32);
 
     v33 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLanaiTarget", v33);
+    v_export_symbol_type("LLVMInitializeRISCVTarget", v33);
 
     v34 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAArch64Target", v34);
+    v_export_symbol_type("LLVMInitializeSPIRVTarget", v34);
 
     v35 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializePowerPCTarget", v35);
+    v_export_symbol_type("LLVMInitializeSparcTarget", v35);
 
     v36 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeX86Target", v36);
+    v_export_symbol_type("LLVMInitializeSystemZTarget", v36);
 
     v37 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAMDGPUTarget", v37);
+    v_export_symbol_type("LLVMInitializeVETarget", v37);
 
     v38 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeARMTarget", v38);
+    v_export_symbol_type("LLVMInitializeWebAssemblyTarget", v38);
 
     v39 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMSP430TargetMC", v39);
+    v_export_symbol_type("LLVMInitializeX86Target", v39);
 
     v40 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeWebAssemblyTargetMC", v40);
+    v_export_symbol_type("LLVMInitializeXCoreTarget", v40);
 
     v41 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeRISCVTargetMC", v41);
+    v_export_symbol_type("LLVMInitializeAArch64TargetMC", v41);
 
     v42 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSystemZTargetMC", v42);
+    v_export_symbol_type("LLVMInitializeAMDGPUTargetMC", v42);
 
     v43 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLoongArchTargetMC", v43);
+    v_export_symbol_type("LLVMInitializeARMTargetMC", v43);
 
     v44 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSparcTargetMC", v44);
+    v_export_symbol_type("LLVMInitializeAVRTargetMC", v44);
 
     v45 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNVPTXTargetMC", v45);
+    v_export_symbol_type("LLVMInitializeBPFTargetMC", v45);
 
     v46 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeXCoreTargetMC", v46);
+    v_export_symbol_type("LLVMInitializeHexagonTargetMC", v46);
 
     v47 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeHexagonTargetMC", v47);
+    v_export_symbol_type("LLVMInitializeLanaiTargetMC", v47);
 
     v48 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeVETargetMC", v48);
+    v_export_symbol_type("LLVMInitializeLoongArchTargetMC", v48);
 
     v49 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMipsTargetMC", v49);
+    v_export_symbol_type("LLVMInitializeMSP430TargetMC", v49);
 
     v50 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAVRTargetMC", v50);
+    v_export_symbol_type("LLVMInitializeMipsTargetMC", v50);
 
     v51 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeBPFTargetMC", v51);
+    v_export_symbol_type("LLVMInitializeNVPTXTargetMC", v51);
 
     v52 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLanaiTargetMC", v52);
+    v_export_symbol_type("LLVMInitializePowerPCTargetMC", v52);
 
     v53 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAArch64TargetMC", v53);
+    v_export_symbol_type("LLVMInitializeRISCVTargetMC", v53);
 
     v54 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializePowerPCTargetMC", v54);
+    v_export_symbol_type("LLVMInitializeSPIRVTargetMC", v54);
 
     v55 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeX86TargetMC", v55);
+    v_export_symbol_type("LLVMInitializeSparcTargetMC", v55);
 
     v56 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAMDGPUTargetMC", v56);
+    v_export_symbol_type("LLVMInitializeSystemZTargetMC", v56);
 
     v57 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeARMTargetMC", v57);
+    v_export_symbol_type("LLVMInitializeVETargetMC", v57);
 
     v58 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMSP430AsmPrinter", v58);
+    v_export_symbol_type("LLVMInitializeWebAssemblyTargetMC", v58);
 
     v59 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeWebAssemblyAsmPrinter", v59);
+    v_export_symbol_type("LLVMInitializeX86TargetMC", v59);
 
     v60 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeRISCVAsmPrinter", v60);
+    v_export_symbol_type("LLVMInitializeXCoreTargetMC", v60);
 
     v61 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSystemZAsmPrinter", v61);
+    v_export_symbol_type("LLVMInitializeAArch64AsmPrinter", v61);
 
     v62 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLoongArchAsmPrinter", v62);
+    v_export_symbol_type("LLVMInitializeAMDGPUAsmPrinter", v62);
 
     v63 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSparcAsmPrinter", v63);
+    v_export_symbol_type("LLVMInitializeARMAsmPrinter", v63);
 
     v64 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNVPTXAsmPrinter", v64);
+    v_export_symbol_type("LLVMInitializeAVRAsmPrinter", v64);
 
     v65 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeXCoreAsmPrinter", v65);
+    v_export_symbol_type("LLVMInitializeBPFAsmPrinter", v65);
 
     v66 = v_function_type(v0_void, arg0, 0, false);
     v_export_symbol_type("LLVMInitializeHexagonAsmPrinter", v66);
 
     v67 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeVEAsmPrinter", v67);
+    v_export_symbol_type("LLVMInitializeLanaiAsmPrinter", v67);
 
     v68 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMipsAsmPrinter", v68);
+    v_export_symbol_type("LLVMInitializeLoongArchAsmPrinter", v68);
 
     v69 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAVRAsmPrinter", v69);
+    v_export_symbol_type("LLVMInitializeMSP430AsmPrinter", v69);
 
     v70 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeBPFAsmPrinter", v70);
+    v_export_symbol_type("LLVMInitializeMipsAsmPrinter", v70);
 
     v71 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLanaiAsmPrinter", v71);
+    v_export_symbol_type("LLVMInitializeNVPTXAsmPrinter", v71);
 
     v72 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAArch64AsmPrinter", v72);
+    v_export_symbol_type("LLVMInitializePowerPCAsmPrinter", v72);
 
     v73 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializePowerPCAsmPrinter", v73);
+    v_export_symbol_type("LLVMInitializeRISCVAsmPrinter", v73);
 
     v74 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeX86AsmPrinter", v74);
+    v_export_symbol_type("LLVMInitializeSPIRVAsmPrinter", v74);
 
     v75 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAMDGPUAsmPrinter", v75);
+    v_export_symbol_type("LLVMInitializeSparcAsmPrinter", v75);
 
     v76 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeARMAsmPrinter", v76);
+    v_export_symbol_type("LLVMInitializeSystemZAsmPrinter", v76);
 
     v77 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMSP430AsmParser", v77);
+    v_export_symbol_type("LLVMInitializeVEAsmPrinter", v77);
 
     v78 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeWebAssemblyAsmParser", v78);
+    v_export_symbol_type("LLVMInitializeWebAssemblyAsmPrinter", v78);
 
     v79 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeRISCVAsmParser", v79);
+    v_export_symbol_type("LLVMInitializeX86AsmPrinter", v79);
 
     v80 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSystemZAsmParser", v80);
+    v_export_symbol_type("LLVMInitializeXCoreAsmPrinter", v80);
 
     v81 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLoongArchAsmParser", v81);
+    v_export_symbol_type("LLVMInitializeAArch64AsmParser", v81);
 
     v82 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSparcAsmParser", v82);
+    v_export_symbol_type("LLVMInitializeAMDGPUAsmParser", v82);
 
     v83 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeHexagonAsmParser", v83);
+    v_export_symbol_type("LLVMInitializeARMAsmParser", v83);
 
     v84 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeVEAsmParser", v84);
+    v_export_symbol_type("LLVMInitializeAVRAsmParser", v84);
 
     v85 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMipsAsmParser", v85);
+    v_export_symbol_type("LLVMInitializeBPFAsmParser", v85);
 
     v86 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAVRAsmParser", v86);
+    v_export_symbol_type("LLVMInitializeHexagonAsmParser", v86);
 
     v87 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeBPFAsmParser", v87);
+    v_export_symbol_type("LLVMInitializeLanaiAsmParser", v87);
 
     v88 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLanaiAsmParser", v88);
+    v_export_symbol_type("LLVMInitializeLoongArchAsmParser", v88);
 
     v89 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAArch64AsmParser", v89);
+    v_export_symbol_type("LLVMInitializeMSP430AsmParser", v89);
 
     v90 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializePowerPCAsmParser", v90);
+    v_export_symbol_type("LLVMInitializeMipsAsmParser", v90);
 
     v91 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeX86AsmParser", v91);
+    v_export_symbol_type("LLVMInitializePowerPCAsmParser", v91);
 
     v92 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAMDGPUAsmParser", v92);
+    v_export_symbol_type("LLVMInitializeRISCVAsmParser", v92);
 
     v93 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeARMAsmParser", v93);
+    v_export_symbol_type("LLVMInitializeSparcAsmParser", v93);
 
     v94 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMSP430Disassembler", v94);
+    v_export_symbol_type("LLVMInitializeSystemZAsmParser", v94);
 
     v95 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeWebAssemblyDisassembler", v95);
+    v_export_symbol_type("LLVMInitializeVEAsmParser", v95);
 
     v96 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeRISCVDisassembler", v96);
+    v_export_symbol_type("LLVMInitializeWebAssemblyAsmParser", v96);
 
     v97 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSystemZDisassembler", v97);
+    v_export_symbol_type("LLVMInitializeX86AsmParser", v97);
 
     v98 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLoongArchDisassembler", v98);
+    v_export_symbol_type("LLVMInitializeAArch64Disassembler", v98);
 
     v99 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeSparcDisassembler", v99);
+    v_export_symbol_type("LLVMInitializeAMDGPUDisassembler", v99);
 
     v100 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeXCoreDisassembler", v100);
+    v_export_symbol_type("LLVMInitializeARMDisassembler", v100);
 
     v101 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeHexagonDisassembler", v101);
+    v_export_symbol_type("LLVMInitializeAVRDisassembler", v101);
 
     v102 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeVEDisassembler", v102);
+    v_export_symbol_type("LLVMInitializeBPFDisassembler", v102);
 
     v103 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeMipsDisassembler", v103);
+    v_export_symbol_type("LLVMInitializeHexagonDisassembler", v103);
 
     v104 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAVRDisassembler", v104);
+    v_export_symbol_type("LLVMInitializeLanaiDisassembler", v104);
 
     v105 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeBPFDisassembler", v105);
+    v_export_symbol_type("LLVMInitializeLoongArchDisassembler", v105);
 
     v106 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeLanaiDisassembler", v106);
+    v_export_symbol_type("LLVMInitializeMSP430Disassembler", v106);
 
     v107 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAArch64Disassembler", v107);
+    v_export_symbol_type("LLVMInitializeMipsDisassembler", v107);
 
     v108 = v_function_type(v0_void, arg0, 0, false);
     v_export_symbol_type("LLVMInitializePowerPCDisassembler", v108);
 
     v109 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeX86Disassembler", v109);
+    v_export_symbol_type("LLVMInitializeRISCVDisassembler", v109);
 
     v110 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAMDGPUDisassembler", v110);
+    v_export_symbol_type("LLVMInitializeSparcDisassembler", v110);
 
     v111 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeARMDisassembler", v111);
+    v_export_symbol_type("LLVMInitializeSystemZDisassembler", v111);
 
     v112 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAllTargetInfos", v112);
+    v_export_symbol_type("LLVMInitializeVEDisassembler", v112);
 
     v113 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAllTargets", v113);
+    v_export_symbol_type("LLVMInitializeWebAssemblyDisassembler", v113);
 
     v114 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAllTargetMCs", v114);
+    v_export_symbol_type("LLVMInitializeX86Disassembler", v114);
 
     v115 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAllAsmPrinters", v115);
+    v_export_symbol_type("LLVMInitializeXCoreDisassembler", v115);
 
     v116 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAllAsmParsers", v116);
+    v_export_symbol_type("LLVMInitializeAllTargetInfos", v116);
 
     v117 = v_function_type(v0_void, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeAllDisassemblers", v117);
+    v_export_symbol_type("LLVMInitializeAllTargets", v117);
 
-    v118_LLVMBool = v_find_type("LLVMBool");
-    v119 = v_function_type(v118_LLVMBool, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNativeTarget", v119);
+    v118 = v_function_type(v0_void, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeAllTargetMCs", v118);
 
-    v120 = v_function_type(v118_LLVMBool, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNativeAsmParser", v120);
+    v119 = v_function_type(v0_void, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeAllAsmPrinters", v119);
 
-    v121 = v_function_type(v118_LLVMBool, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNativeAsmPrinter", v121);
+    v120 = v_function_type(v0_void, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeAllAsmParsers", v120);
 
-    v122 = v_function_type(v118_LLVMBool, arg0, 0, false);
-    v_export_symbol_type("LLVMInitializeNativeDisassembler", v122);
+    v121 = v_function_type(v0_void, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeAllDisassemblers", v121);
 
-    v123_LLVMModuleRef = v_find_type("LLVMModuleRef");
-    v_store(v123_LLVMModuleRef, arg0);
-    v124_LLVMTargetDataRef = v_find_type("LLVMTargetDataRef");
-    v125 = v_function_type(v124_LLVMTargetDataRef, arg0, 1, false);
-    v_export_symbol_type("LLVMGetModuleDataLayout", v125);
+    v122_LLVMBool = v_find_type("LLVMBool");
+    v123 = v_function_type(v122_LLVMBool, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeNativeTarget", v123);
 
-    v_store(v123_LLVMModuleRef, arg0);
-    v_store(v124_LLVMTargetDataRef, arg1);
-    v126 = v_function_type(v0_void, arg0, 2, false);
-    v_export_symbol_type("LLVMSetModuleDataLayout", v126);
+    v124 = v_function_type(v122_LLVMBool, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeNativeAsmParser", v124);
 
-    v127_char = v_find_type("char");
-    v128 = v_pointer_type(v127_char, 0);
-    v_store(v128, arg0);
-    v129 = v_function_type(v124_LLVMTargetDataRef, arg0, 1, false);
-    v_export_symbol_type("LLVMCreateTargetData", v129);
+    v125 = v_function_type(v122_LLVMBool, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeNativeAsmPrinter", v125);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v130 = v_function_type(v0_void, arg0, 1, false);
-    v_export_symbol_type("LLVMDisposeTargetData", v130);
+    v126 = v_function_type(v122_LLVMBool, arg0, 0, false);
+    v_export_symbol_type("LLVMInitializeNativeDisassembler", v126);
 
-    v131_LLVMTargetLibraryInfoRef = v_find_type("LLVMTargetLibraryInfoRef");
-    v_store(v131_LLVMTargetLibraryInfoRef, arg0);
-    v132_LLVMPassManagerRef = v_find_type("LLVMPassManagerRef");
-    v_store(v132_LLVMPassManagerRef, arg1);
-    v133 = v_function_type(v0_void, arg0, 2, false);
-    v_export_symbol_type("LLVMAddTargetLibraryInfo", v133);
+    v127_LLVMModuleRef = v_find_type("LLVMModuleRef");
+    v_store(v127_LLVMModuleRef, arg0);
+    v128_LLVMTargetDataRef = v_find_type("LLVMTargetDataRef");
+    v129 = v_function_type(v128_LLVMTargetDataRef, arg0, 1, false);
+    v_export_symbol_type("LLVMGetModuleDataLayout", v129);
 
-    v134 = v_pointer_type(v127_char, 0);
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v135 = v_function_type(v134, arg0, 1, false);
-    v_export_symbol_type("LLVMCopyStringRepOfTargetData", v135);
+    v_store(v127_LLVMModuleRef, arg0);
+    v_store(v128_LLVMTargetDataRef, arg1);
+    v130 = v_function_type(v0_void, arg0, 2, false);
+    v_export_symbol_type("LLVMSetModuleDataLayout", v130);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v136_int = v_find_type("int");
-    v137 = v_function_type(v136_int, arg0, 1, false);
-    v_export_symbol_type("LLVMByteOrder", v137);
+    v131_char = v_find_type("char");
+    v132 = v_pointer_type(v131_char, 0);
+    v_store(v132, arg0);
+    v133 = v_function_type(v128_LLVMTargetDataRef, arg0, 1, false);
+    v_export_symbol_type("LLVMCreateTargetData", v133);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v137_unsigned = v_find_type("unsigned");
-    v138 = v_function_type(v137_unsigned, arg0, 1, false);
-    v_export_symbol_type("LLVMPointerSize", v138);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v134 = v_function_type(v0_void, arg0, 1, false);
+    v_export_symbol_type("LLVMDisposeTargetData", v134);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v137_unsigned, arg1);
-    v139 = v_function_type(v137_unsigned, arg0, 2, false);
-    v_export_symbol_type("LLVMPointerSizeForAS", v139);
+    v135_LLVMTargetLibraryInfoRef = v_find_type("LLVMTargetLibraryInfoRef");
+    v_store(v135_LLVMTargetLibraryInfoRef, arg0);
+    v136_LLVMPassManagerRef = v_find_type("LLVMPassManagerRef");
+    v_store(v136_LLVMPassManagerRef, arg1);
+    v137 = v_function_type(v0_void, arg0, 2, false);
+    v_export_symbol_type("LLVMAddTargetLibraryInfo", v137);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v140_LLVMTypeRef = v_find_type("LLVMTypeRef");
-    v141 = v_function_type(v140_LLVMTypeRef, arg0, 1, false);
-    v_export_symbol_type("LLVMIntPtrType", v141);
+    v138 = v_pointer_type(v131_char, 0);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v139 = v_function_type(v138, arg0, 1, false);
+    v_export_symbol_type("LLVMCopyStringRepOfTargetData", v139);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v137_unsigned, arg1);
-    v142 = v_function_type(v140_LLVMTypeRef, arg0, 2, false);
-    v_export_symbol_type("LLVMIntPtrTypeForAS", v142);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v140_int = v_find_type("int");
+    v141 = v_function_type(v140_int, arg0, 1, false);
+    v_export_symbol_type("LLVMByteOrder", v141);
 
-    v143_LLVMContextRef = v_find_type("LLVMContextRef");
-    v_store(v143_LLVMContextRef, arg0);
-    v_store(v124_LLVMTargetDataRef, arg1);
-    v144 = v_function_type(v140_LLVMTypeRef, arg0, 2, false);
-    v_export_symbol_type("LLVMIntPtrTypeInContext", v144);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v142_unsigned = v_find_type("unsigned");
+    v143 = v_function_type(v142_unsigned, arg0, 1, false);
+    v_export_symbol_type("LLVMPointerSize", v143);
 
-    v_store(v143_LLVMContextRef, arg0);
-    v_store(v124_LLVMTargetDataRef, arg1);
-    v_store(v137_unsigned, arg2);
-    v145 = v_function_type(v140_LLVMTypeRef, arg0, 3, false);
-    v_export_symbol_type("LLVMIntPtrTypeForASInContext", v145);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v142_unsigned, arg1);
+    v144 = v_function_type(v142_unsigned, arg0, 2, false);
+    v_export_symbol_type("LLVMPointerSizeForAS", v144);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v146_unsigned_long_long = v_find_type("unsigned_long_long");
-    v147 = v_function_type(v146_unsigned_long_long, arg0, 2, false);
-    v_export_symbol_type("LLVMSizeOfTypeInBits", v147);
+    v145_LLVMContextRef = v_find_type("LLVMContextRef");
+    v_store(v145_LLVMContextRef, arg0);
+    v_store(v128_LLVMTargetDataRef, arg1);
+    v146_LLVMTypeRef = v_find_type("LLVMTypeRef");
+    v147 = v_function_type(v146_LLVMTypeRef, arg0, 2, false);
+    v_export_symbol_type("LLVMIntPtrTypeInContext", v147);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v148 = v_function_type(v146_unsigned_long_long, arg0, 2, false);
-    v_export_symbol_type("LLVMStoreSizeOfType", v148);
+    v_store(v145_LLVMContextRef, arg0);
+    v_store(v128_LLVMTargetDataRef, arg1);
+    v_store(v142_unsigned, arg2);
+    v148 = v_function_type(v146_LLVMTypeRef, arg0, 3, false);
+    v_export_symbol_type("LLVMIntPtrTypeForASInContext", v148);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v149 = v_function_type(v146_unsigned_long_long, arg0, 2, false);
-    v_export_symbol_type("LLVMABISizeOfType", v149);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v149_unsigned_long_long = v_find_type("unsigned_long_long");
+    v150 = v_function_type(v149_unsigned_long_long, arg0, 2, false);
+    v_export_symbol_type("LLVMSizeOfTypeInBits", v150);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v150 = v_function_type(v137_unsigned, arg0, 2, false);
-    v_export_symbol_type("LLVMABIAlignmentOfType", v150);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v151 = v_function_type(v149_unsigned_long_long, arg0, 2, false);
+    v_export_symbol_type("LLVMStoreSizeOfType", v151);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v151 = v_function_type(v137_unsigned, arg0, 2, false);
-    v_export_symbol_type("LLVMCallFrameAlignmentOfType", v151);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v152 = v_function_type(v149_unsigned_long_long, arg0, 2, false);
+    v_export_symbol_type("LLVMABISizeOfType", v152);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v152 = v_function_type(v137_unsigned, arg0, 2, false);
-    v_export_symbol_type("LLVMPreferredAlignmentOfType", v152);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v153 = v_function_type(v142_unsigned, arg0, 2, false);
+    v_export_symbol_type("LLVMABIAlignmentOfType", v153);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v153_LLVMValueRef = v_find_type("LLVMValueRef");
-    v_store(v153_LLVMValueRef, arg1);
-    v154 = v_function_type(v137_unsigned, arg0, 2, false);
-    v_export_symbol_type("LLVMPreferredAlignmentOfGlobal", v154);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v154 = v_function_type(v142_unsigned, arg0, 2, false);
+    v_export_symbol_type("LLVMCallFrameAlignmentOfType", v154);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v_store(v146_unsigned_long_long, arg2);
-    v155 = v_function_type(v137_unsigned, arg0, 3, false);
-    v_export_symbol_type("LLVMElementAtOffset", v155);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v155 = v_function_type(v142_unsigned, arg0, 2, false);
+    v_export_symbol_type("LLVMPreferredAlignmentOfType", v155);
 
-    v_store(v124_LLVMTargetDataRef, arg0);
-    v_store(v140_LLVMTypeRef, arg1);
-    v_store(v137_unsigned, arg2);
-    v156 = v_function_type(v146_unsigned_long_long, arg0, 3, false);
-    v_export_symbol_type("LLVMOffsetOfElement", v156);
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v156_LLVMValueRef = v_find_type("LLVMValueRef");
+    v_store(v156_LLVMValueRef, arg1);
+    v157 = v_function_type(v142_unsigned, arg0, 2, false);
+    v_export_symbol_type("LLVMPreferredAlignmentOfGlobal", v157);
+
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v_store(v149_unsigned_long_long, arg2);
+    v158 = v_function_type(v142_unsigned, arg0, 3, false);
+    v_export_symbol_type("LLVMElementAtOffset", v158);
+
+    v_store(v128_LLVMTargetDataRef, arg0);
+    v_store(v146_LLVMTypeRef, arg1);
+    v_store(v142_unsigned, arg2);
+    v159 = v_function_type(v149_unsigned_long_long, arg0, 3, false);
+    v_export_symbol_type("LLVMOffsetOfElement", v159);
 
 }
 
